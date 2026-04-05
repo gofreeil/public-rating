@@ -10,4 +10,12 @@
         </p>
     </section>
 
+
+    <!-- קומה שנייה: דירוג שופטים -->
+    <section class="text-center py-10">
+        <h2 class="text-3xl md:text-4xl font-black text-white mb-3">
+            דירוג שופטים
+        </h2>
+    </section>
+
 </div>
