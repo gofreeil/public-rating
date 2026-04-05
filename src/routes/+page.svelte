@@ -2,19 +2,20 @@
 
     <!-- קומה ראשונה: נבחרי ציבור -->
     <section>
-        <div class="flex items-center gap-6 mb-8">
+        <div class="relative mb-8">
             <!-- תמונה בצד ימין -->
-            <div class="relative flex-shrink-0">
-                <img
-                    src="/images/דירוג ציבורי.jpeg"
-                    alt="דירוג ציבורי"
-                    class="h-72 w-auto object-contain rounded-3xl"
-                />
-                <!-- fade חזק לכל הצדדים -->
-                <div class="absolute inset-0 rounded-3xl" style="box-shadow: inset 0 0 70px 35px #0f172a;"></div>
+            <div class="absolute top-0 right-0 h-full flex items-center">
+                <div class="relative">
+                    <img
+                        src="/images/דירוג ציבורי.jpeg"
+                        alt="דירוג ציבורי"
+                        class="h-96 w-auto object-contain rounded-3xl"
+                    />
+                    <div class="absolute inset-0 rounded-3xl" style="box-shadow: inset 0 0 80px 40px #0f172a;"></div>
+                </div>
             </div>
-            <!-- טקסט -->
-            <div>
+            <!-- כותרת מרוכזת -->
+            <div class="text-center py-10">
                 <h2 class="text-3xl md:text-4xl font-black text-white mb-3">
                     נבחרי הציבור המדורגים ביותר
                 </h2>
