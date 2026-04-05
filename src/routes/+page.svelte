@@ -8,10 +8,10 @@
                 <img
                     src="/images/דירוג ציבורי.jpeg"
                     alt="דירוג ציבורי"
-                    class="h-52 w-auto object-contain rounded-2xl"
+                    class="h-72 w-auto object-contain rounded-3xl"
                 />
-                <!-- fade לכל הצדדים -->
-                <div class="absolute inset-0 rounded-2xl" style="box-shadow: inset 0 0 40px 20px #0f172a;"></div>
+                <!-- fade חזק לכל הצדדים -->
+                <div class="absolute inset-0 rounded-3xl" style="box-shadow: inset 0 0 70px 35px #0f172a;"></div>
             </div>
             <!-- טקסט -->
             <div>
