@@ -257,12 +257,20 @@
 				onclick={() => open = false}
 			>
 				<div class="ad-img-wrap">
-					<div class="img-skeleton"></div>
+					<!-- שלב 1: תמונה מפוקסלת מהפרונטאנד — נטענת מיד, מוסתרת מאחורי blur -->
+					<img
+						src={ad.image}
+						alt=""
+						aria-hidden="true"
+						class="ad-img-thumb"
+						decoding="async"
+					/>
+					<!-- שלב 2: תמונה מלאה — מופיעה בהדרגה אחרי טעינה -->
 					<img
 						src={ad.image}
 						alt={ad.title}
 						class="ad-img"
-						loading="lazy"
+						decoding="async"
 						onload={(e) => (e.currentTarget as HTMLImageElement).classList.add('loaded')}
 					/>
 				</div>
@@ -543,37 +551,32 @@
 		background: #1e293b;
 	}
 
-	/* Skeleton shimmer */
-	.img-skeleton {
+	/* שלב 1 — תמונה מפוקסלת (מלאה אבל מטושטשת מאוד) */
+	.ad-img-thumb {
 		position: absolute;
 		inset: 0;
-		background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-		background-size: 200% 100%;
-		animation: shimmer 1.4s infinite;
-		z-index: 1;
-	}
-
-	@keyframes shimmer {
-		0%   { background-position: 200% 0; }
-		100% { background-position: -200% 0; }
-	}
-
-	/* Blur-up: מתחיל מטושטש ומתבהר */
-	.ad-img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		position: relative;
+		z-index: 1;
+		filter: blur(12px);
+		transform: scale(1.12);
+		image-rendering: pixelated;
+	}
+
+	/* שלב 2 — תמונה מלאה, מופיעה על גבי ה-thumb */
+	.ad-img {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 		z-index: 2;
-		filter: blur(8px);
-		transform: scale(1.08);
-		transition: filter 0.45s ease, transform 0.45s ease, opacity 0.3s ease;
 		opacity: 0;
+		transition: opacity 0.5s ease;
 	}
 
 	.ad-img.loaded {
-		filter: blur(0);
-		transform: scale(1);
 		opacity: 1;
 	}
 
