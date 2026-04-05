@@ -366,7 +366,7 @@
 
 	.section-title::after {
 		content: '';
-		display: block;
+		display: none;
 		margin: 0.4rem auto 0;
 		width: 48px;
 		height: 3px;
