@@ -4,12 +4,15 @@
     <section>
         <div class="flex items-center gap-6 mb-8">
             <!-- תמונה בצד ימין -->
-            <img
-                src="/images/דירוג ציבורי.jpeg"
-                alt="דירוג ציבורי"
-                class="h-52 w-auto object-contain rounded-2xl flex-shrink-0 shadow-2xl"
-                style="border: 2px solid rgba(255,255,255,0.15); box-shadow: 0 0 30px rgba(99,102,241,0.25);"
-            />
+            <div class="relative flex-shrink-0">
+                <img
+                    src="/images/דירוג ציבורי.jpeg"
+                    alt="דירוג ציבורי"
+                    class="h-52 w-auto object-contain rounded-2xl"
+                />
+                <!-- fade לכל הצדדים -->
+                <div class="absolute inset-0 rounded-2xl" style="box-shadow: inset 0 0 40px 20px #0f172a;"></div>
+            </div>
             <!-- טקסט -->
             <div>
                 <h2 class="text-3xl md:text-4xl font-black text-white mb-3">
