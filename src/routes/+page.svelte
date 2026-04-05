@@ -1,6 +1,13 @@
-<div class="flex items-center justify-center min-h-[60vh]">
-    <div class="text-center text-white">
-        <h1 class="text-4xl font-black mb-4">דירוג ציבורי</h1>
-        <p class="text-gray-400 text-lg">בקרוב...</p>
-    </div>
+<div class="space-y-12">
+
+    <!-- קומה ראשונה: נבחרי ציבור -->
+    <section class="text-center py-10">
+        <h2 class="text-3xl md:text-4xl font-black text-white mb-3">
+            נבחרי הציבור המדורגים ביותר
+        </h2>
+        <p class="text-amber-400 text-lg font-bold">
+            מיועדים לפרס השנה עבור פעילותם לטובת העם
+        </p>
+    </section>
+
 </div>
