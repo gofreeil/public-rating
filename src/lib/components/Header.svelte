@@ -177,7 +177,7 @@
                             <img
                                 src="/images/דירוג ציבורי  לוגו.png"
                                 alt=""
-                                class="h-10 w-10 object-contain flex-shrink-0 rounded-lg"
+                                class="h-12 w-12 object-cover flex-shrink-0 rounded-lg"
                             />
                             <div
                                 class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-slate-900 animate-pulse"
@@ -268,12 +268,12 @@
                 <div class="relative group">
                     <a
                         href="/"
-                        class="flex h-20 w-20 animate-pulse-slow items-center justify-center rounded-xl shadow-lg transition-transform hover:scale-105"
+                        class="flex h-24 w-24 animate-pulse-slow items-center justify-center rounded-xl shadow-lg transition-transform hover:scale-105 overflow-hidden"
                     >
                         <img
                             src="/images/דירוג ציבורי  לוגו.png"
                             alt=""
-                            class="h-16 w-auto object-contain rounded-xl"
+                            class="h-full w-full object-cover rounded-xl"
                         />
                     </a>
                     <!-- Tooltip - Below Logo -->
