@@ -171,7 +171,7 @@
     <div class="space-y-3">
         {#each displayedAds as ad, index}
             <div
-                class="h-[479px] flex flex-col items-center justify-center rounded-2xl border-2 border-dashed {ad.borderColor} {ad.bgColor} p-3 text-center transition-all {ad.hoverBorder} {ad.hoverBg} group duration-700 relative overflow-hidden"
+                class="h-[478px] flex flex-col items-center justify-center rounded-2xl border-2 border-dashed {ad.borderColor} {ad.bgColor} p-3 text-center transition-all {ad.hoverBorder} {ad.hoverBg} group duration-700 relative overflow-hidden"
                 style="animation: fadeIn 0.7s ease-in-out;"
             >
                 <!-- Ad Numbering -->
