@@ -49,6 +49,37 @@
             </div>
         </a>
 
+        <!-- Ad - הגמח הארצי -->
+        <a
+            href="https://national-gemach.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="הגמ&quot;ח הארצי – אתר את העזרה הדרושה לך (נפתח בחלון חדש)"
+            class="block overflow-hidden rounded-lg shadow-lg transition-transform hover:scale-105 group relative"
+        >
+            <div class="relative overflow-hidden">
+                <img
+                    src="/images/הגמח הארצי.png"
+                    alt="הגמח הארצי"
+                    class="h-auto w-full object-cover transition-opacity duration-1500 group-hover:opacity-0"
+                />
+                <!-- Hover overlay -->
+                <div
+                    class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1500 flex items-center justify-center"
+                    style="background-image: url('/images/הגמח הארצי.png'); background-size: cover; background-position: center;"
+                >
+                    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+                    <div class="relative z-10 text-center px-4">
+                        <h3 class="text-white font-bold text-lg mb-2">הגמ"ח הארצי</h3>
+                        <p class="text-gray-200 text-sm">אתר את העזרה הדרושה לך</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gradient-to-r from-green-700 to-emerald-600 p-3 text-center">
+                <p class="text-white font-bold text-xs leading-tight">הגמ"ח הארצי – כל הגמחים תחת קורת גג אחת</p>
+            </div>
+        </a>
+
         <!-- Ad 1 - ועדי שכונות -->
         <a
             href="https://www.melecshop.com/page/peace-on-earth_VRHH"
@@ -128,26 +159,6 @@
                     הוזל מיד את ההוצאות החודשיות שלך
                     כוחנו באחדותנו
                 </p>
-            </div>
-        </a>
-
-        <!-- Ad 6 - Empty Ad Space -->
-        <a
-            href="/advertise"
-            aria-label="מקום פרסום פנוי – לחץ לפרטים על פרסום"
-            class="block overflow-hidden rounded-lg border-4 border-dashed border-blue-400/50 bg-blue-900/10 backdrop-blur-sm shadow-lg transition-all hover:scale-105 hover:border-blue-500 hover:bg-blue-900/20"
-        >
-            <div
-                class="flex h-48 flex-col items-center justify-center p-4 text-center"
-            >
-                <div class="mb-2 text-4xl">📢</div>
-                <p class="text-sm font-bold text-blue-300">מקום פרסום</p>
-                <p class="text-xs text-blue-400">זה יכול להיות שלך!</p>
-                <div
-                    class="mt-2 rounded bg-blue-500 px-3 py-1 text-xs font-bold text-white"
-                >
-                    לחץ לפרטים
-                </div>
             </div>
         </a>
 
