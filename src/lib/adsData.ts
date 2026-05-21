@@ -10,6 +10,15 @@ export interface Ad {
 
 export const ads: Ad[] = [
     {
+        id: 11,
+        title: "החנות החברתית",
+        description: "מוצרים נבחרים לבריאות טבעית, חקלאות ביתית, טכנולוגיה ועוד",
+        cta: "כנסו לחנות לחיים טובים יותר",
+        href: "https://heirut-shop.vercel.app/",
+        image: "/images/freedom-store.png",
+        color: "from-emerald-600 to-teal-700"
+    },
+    {
         id: 1,
         title: "בתי הפיוס",
         description: "מתנדבים לתת לך עזרה מלאה בדין / פיוס בכל סיכסוך",
