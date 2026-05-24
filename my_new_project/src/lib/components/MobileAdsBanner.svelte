@@ -7,7 +7,7 @@
         {
             title: 'בתי הפיוס',
             summary: 'עזרה בדין ופיוס בסיכסוכים',
-            url: 'https://www.melecshop.com/page/peace-on-earth',
+            url: 'https://chachmim.vercel.app/',
             color: 'from-orange-600 to-red-600'
         },
         {

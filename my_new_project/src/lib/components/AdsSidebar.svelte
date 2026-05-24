@@ -10,7 +10,7 @@
     <div class="space-y-4">
         <!-- Ad 0 - בתי הפיוס (חדש - ראשון) -->
         <a
-            href="https://www.melecshop.com/page/peace-on-earth"
+            href="https://chachmim.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="בתי הפיוס – עזרה בדין ופיוס בסיכסוכים (נפתח בחלון חדש)"
