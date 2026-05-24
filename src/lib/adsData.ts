@@ -10,15 +10,6 @@ export interface Ad {
 
 export const ads: Ad[] = [
     {
-        id: 11,
-        title: "החנות החברתית",
-        description: "מוצרים נבחרים לבריאות טבעית, חקלאות ביתית, טכנולוגיה ועוד",
-        cta: "כנסו לחנות לחיים טובים יותר",
-        href: "https://heirut-shop.vercel.app/",
-        image: "/images/freedom-store.png",
-        color: "from-emerald-600 to-teal-700"
-    },
-    {
         id: 1,
         title: "בתי הפיוס",
         description: "מתנדבים לתת לך עזרה מלאה בדין / פיוס בכל סיכסוך",
@@ -32,7 +23,7 @@ export const ads: Ad[] = [
         title: "ועדי שכונות",
         description: "מהפכת משילות העם על המוסדות",
         cta: "הכר והשתתף במהפכת משילות העם על מוסדותיו",
-        href: "https://www.melecshop.com/page/peace-on-earth_VRHH",
+        href: "https://neighborhoods-il.vercel.app/",
         image: "/images/news/vaadei-shchunot.png",
         color: "from-blue-600 to-cyan-600"
     },
@@ -89,5 +80,14 @@ export const ads: Ad[] = [
         href: "https://www.melecshop.com/page/kids_FNL3",
         image: "/images/support-victims.jpeg",
         color: "from-fuchsia-600 to-pink-600"
+    },
+    {
+        id: 11,
+        title: "החנות החברתית",
+        description: "מוצרים נבחרים לבריאות טבעית, חקלאות ביתית, טכנולוגיה ועוד",
+        cta: "כנסו לחנות לחיים טובים יותר",
+        href: "https://heirut-shop.vercel.app/",
+        image: "/images/freedom-store.png",
+        color: "from-emerald-600 to-teal-700"
     }
 ];

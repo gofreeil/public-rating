@@ -270,15 +270,6 @@
 				</div>
 			</a>
 			{/each}
-
-			<!-- מקום פרסום ריק -->
-			<a href="/advertise" class="ad-card ad-empty" onclick={() => open = false}>
-				<div class="ad-empty-inner">
-					<span class="ad-empty-icon">📌</span>
-					<p class="ad-empty-text">מקום פרסום</p>
-					<p class="ad-empty-sub">לחץ לפרסם כאן</p>
-				</div>
-			</a>
 		</div>
 	</div>
 

@@ -13,7 +13,7 @@
         {
             title: 'ועדי שכונות',
             summary: 'הצטרף לוועד השכונה שלך',
-            url: 'https://www.melecshop.com/page/peace-on-earth_VRHH',
+            url: 'https://neighborhoods-il.vercel.app/',
             color: 'from-blue-600 to-cyan-600'
         },
         {

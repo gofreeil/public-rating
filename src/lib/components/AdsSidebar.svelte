@@ -82,7 +82,7 @@
 
         <!-- Ad 1 - ועדי שכונות -->
         <a
-            href="https://www.melecshop.com/page/peace-on-earth_VRHH"
+            href="https://neighborhoods-il.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="ועדי שכונות – מהפכת משילות העם על המוסדות (נפתח בחלון חדש)"
