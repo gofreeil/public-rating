@@ -43,7 +43,7 @@
         {
             title: 'ביקורת על העיריה',
             summary: 'יש לך תלונה לעיריה?',
-            url: 'https://right-to-live.vercel.app/',
+            url: 'https://criticism.vercel.app/',
             color: 'from-red-600 to-pink-600'
         }
     ];

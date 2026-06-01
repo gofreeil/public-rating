@@ -68,7 +68,7 @@ export const ads: Ad[] = [
         title: "ביקורת על העיריה",
         description: "הזכות לחיות - תלונות לעיריה",
         cta: "יש לך תלונה לעיריה שמזלזלים בה? - לא עוד",
-        href: "https://right-to-live.vercel.app/",
+        href: "https://criticism.vercel.app/",
         image: "/images/ביקורת על העיריה.png",
         color: "from-red-600 to-pink-600"
     },

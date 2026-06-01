@@ -276,7 +276,7 @@
 
         <!-- Ad 5 - ביקורת על העיריה -->
         <a
-            href="https://right-to-live.vercel.app/"
+            href="https://criticism.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="ביקורת על העיריה – ניצחון על הבירוקרטיה (נפתח בחלון חדש)"
