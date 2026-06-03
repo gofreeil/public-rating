@@ -204,10 +204,10 @@
     let modalImagePreview = $state('');
 
     const fieldsByOption: Record<number, { descLabel: string; descPlaceholder: string; locationPlaceholder: string }> = {
-        1: { descLabel: 'תיאור המצב', descPlaceholder: 'פרט את המצב — מה קרה, באיזו עזרה נדרש...', locationPlaceholder: 'רחוב, כניסה, קומה...' },
+        1: { descLabel: 'תיאור המצב', descPlaceholder: 'פרט את המצב - מה קרה, באיזו עזרה נדרש...', locationPlaceholder: 'רחוב, כניסה, קומה...' },
         2: { descLabel: 'פרטי הרכב', descPlaceholder: 'צבע הרכב, דגם, לוחית רישוי...', locationPlaceholder: 'היכן הרכב חונה? רחוב ומספר...' },
         3: { descLabel: 'תיאור הילד', descPlaceholder: 'גיל, לבוש, מאפיינים בולטים, מתי נעלם...', locationPlaceholder: 'איפה נראה לאחרונה? שם המקום, רחוב...' },
-        4: { descLabel: 'תיאור בקשת העזרה', descPlaceholder: 'פרט מה קרה ובמה נדרשת עזרה...', locationPlaceholder: 'מיקום — רחוב, שכונה...' },
+        4: { descLabel: 'תיאור בקשת העזרה', descPlaceholder: 'פרט מה קרה ובמה נדרשת עזרה...', locationPlaceholder: 'מיקום - רחוב, שכונה...' },
         5: { descLabel: 'תיאור הכלב', descPlaceholder: 'גזע, צבע, שם הכלב, מתי ואיפה נעלם...', locationPlaceholder: 'אזור שאבד לאחרונה...' },
     };
 
@@ -246,7 +246,7 @@
             item.description?.toLowerCase().includes(q) ||
             item.category?.toLowerCase().includes(q)
         ).sort((a, b) => {
-            // השכונה שלך — ראשון
+            // השכונה שלך - ראשון
             const aNeigh = a.neighborhood === neighborhoodState.neighborhood ? 0 : 1;
             const bNeigh = b.neighborhood === neighborhoodState.neighborhood ? 0 : 1;
             if (aNeigh !== bNeigh) return aNeigh - bNeigh;
@@ -257,7 +257,7 @@
         });
     });
 
-    // פריטים מהשכונה הנוכחית — ריאקטיבי לשינויי neighborhoodState
+    // פריטים מהשכונה הנוכחית - ריאקטיבי לשינויי neighborhoodState
     let neighborhoodDbItems = $derived(
         dbItems.filter(d =>
             d.neighborhood === neighborhoodState.neighborhood ||
@@ -933,7 +933,7 @@
                         class="absolute bottom-4 left-4 z-20 bg-green-600/90 backdrop-blur-sm text-white text-xs font-black px-3 py-1.5 rounded-full shadow-lg border border-green-400/50 hover:bg-green-500/90 transition-all hover:scale-105"
                         title="עבור לרשימה לצפייה בפריטים החדשים"
                     >
-                        🆕 {neighborhoodDbItems.length} פריטים ב{neighborhoodState.neighborhood} — לחץ לצפייה
+                        🆕 {neighborhoodDbItems.length} פריטים ב{neighborhoodState.neighborhood} - לחץ לצפייה
                     </button>
                 {/if}
             </div>
@@ -977,7 +977,7 @@
                                             </span>
                                         {/if}
                                         {#if hasNationalPage}
-                                            <!-- קישור ארצי — ליד שם הקטגוריה בשורת הכותרת -->
+                                            <!-- קישור ארצי - ליד שם הקטגוריה בשורת הכותרת -->
                                             <span
                                                 role="link"
                                                 tabindex="0"
@@ -1356,7 +1356,7 @@
                 <div class="bg-[#1e293b] border border-white/10 rounded-2xl p-8 shadow-2xl text-center mt-8">
                     <div class="text-6xl mb-4">✅</div>
                     <h2 class="text-xl font-black text-white mb-3">הקריאה נשלחה לקהילה!</h2>
-                    <p class="text-gray-400 text-sm mb-6">אנחנו על זה — הקהילה תעזור בהקדם</p>
+                    <p class="text-gray-400 text-sm mb-6">אנחנו על זה - הקהילה תעזור בהקדם</p>
                     <button
                         onclick={() => showRaiseHandModal = false}
                         class="w-full py-3 rounded-xl font-black text-sm bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white shadow-lg transition-all"

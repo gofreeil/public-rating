@@ -1,5 +1,5 @@
 <script lang="ts">
-	// טיפוס מקומי — לא מייבאים מ-$lib/server (אסור בקומפוננטת client)
+	// טיפוס מקומי - לא מייבאים מ-$lib/server (אסור בקומפוננטת client)
 	interface Item {
 		id: string; label: string; description: string; icon: string;
 		city: string; neighborhood: string; phone: string; contact: string;

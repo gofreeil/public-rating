@@ -12,10 +12,10 @@
 
 	let { data, form } = $props();
 
-	// snapshot ראשוני של נתוני המשתמש לאתחול שדות הטופס (intentional — form manages its own state)
+	// snapshot ראשוני של נתוני המשתמש לאתחול שדות הטופס (intentional - form manages its own state)
 	const _ud = data.user;
 
-	// tFn: פונקציית תרגום reactive — לא משתמשים ב-$t ישירות כי Prettier מוחק אותו
+	// tFn: פונקציית תרגום reactive - לא משתמשים ב-$t ישירות כי Prettier מוחק אותו
 	let _loc = $state(get(locale));
 	$effect(() => locale.subscribe(l => (_loc = l)));
 	const tFn = (k: string) => { void _loc; return get(t)(k); };
@@ -87,7 +87,7 @@
 			if (sub) {
 				await saveSubscription(sub, data.user?.id);
 			} else {
-				// המשתמש סירב להרשאה — החזר toggle
+				// המשתמש סירב להרשאה - החזר toggle
 				notifications = false;
 			}
 		} else {
@@ -157,7 +157,7 @@
 	let cropNatW     = $state(0);
 	let cropNatH     = $state(0);
 
-	// נקה טיוטה ישנה — הנתונים מגיעים מהשרת בלבד
+	// נקה טיוטה ישנה - הנתונים מגיעים מהשרת בלבד
 	onMount(() => {
 		try { localStorage.removeItem(DRAFT_KEY); } catch {}
 	});
@@ -193,7 +193,7 @@
 		(data.user?.name ?? data.user?.email ?? 'U').charAt(0).toUpperCase()
 	);
 
-	// מעגל מילוי פרופיל — דינמי: כל שדה שווה 100/מספר_שדות
+	// מעגל מילוי פרופיל - דינמי: כל שדה שווה 100/מספר_שדות
 	const ringCircumference = 2 * Math.PI * 43; // r=43, SVG 92×92
 
 	// שדות פרופיל שהמשתמש צריך למלא (לא notifications שמגיע כברירת מחדל)
@@ -231,7 +231,7 @@
 		(data.user as any)?.role === 'neighborhood_admin' || (data.user as any)?.role === 'super_admin'
 	);
 
-	// טיפ למעגל — המפתח של השדה הבא שלא מולא
+	// טיפ למעגל - המפתח של השדה הבא שלא מולא
 	const ringTipKeys = [
 		'tip_avatar', 'tip_name', 'tip_email', 'tip_nickname',
 		'tip_phone', 'tip_city', 'tip_neighborhood', 'tip_gender',
@@ -401,7 +401,7 @@
 
 <div class="max-w-3xl mx-auto px-4 py-8" dir="rtl">
 
-	<!-- ===== ברוך הבא — הרשמה חדשה ===== -->
+	<!-- ===== ברוך הבא - הרשמה חדשה ===== -->
 	{#if page.url.searchParams.get('new') === '1'}
 		<div class="mb-6 rounded-2xl bg-gradient-to-r from-blue-600/20 to-purple-600/20 border border-purple-500/30 px-6 py-5 text-center shadow-lg">
 			<p class="text-2xl mb-1">🎉</p>
@@ -472,7 +472,7 @@
 						/>
 					</svg>
 
-					<!-- עיגול הודעות — שמאל מטה -->
+					<!-- עיגול הודעות - שמאל מטה -->
 					<button onclick={(e) => { e.stopPropagation(); scrollToMessages(); }}
 					class="absolute -bottom-1 -left-1 px-2 h-[22px]
 					       bg-orange-500 border-2 border-[#0f172a] rounded-full
@@ -488,7 +488,7 @@
 			</div>
 
 
-			<!-- הארנק שלי — ממורכז -->
+			<!-- הארנק שלי - ממורכז -->
 			<a href="/receipts" class="flex-shrink-0 flex flex-col items-center justify-between cursor-pointer group select-none no-underline">
 				<div class="w-52 group-hover:scale-105 transition-transform duration-200 -mt-8" style="-webkit-mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 20%, transparent 80%); mask-image: radial-gradient(ellipse 60% 60% at 50% 50%, black 20%, transparent 80%);">
 					<img src="/images/wallet.png" alt="המזומן שלי" class="w-full h-auto block" />
@@ -654,7 +654,7 @@
 							class="w-full bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl
 							       px-4 py-3 text-white text-sm transition-colors outline-none" />
 					{:else}
-						<p class="text-white font-medium py-3 px-1">{name || '—'}</p>
+						<p class="text-white font-medium py-3 px-1">{name || '-'}</p>
 					{/if}
 				</div>
 
@@ -667,7 +667,7 @@
 							class="w-full bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl
 							       px-4 py-3 text-white text-sm transition-colors outline-none" />
 					{:else}
-						<p class="text-white font-medium py-3 px-1">{email || '—'}</p>
+						<p class="text-white font-medium py-3 px-1">{email || '-'}</p>
 					{/if}
 				</div>
 
@@ -679,7 +679,7 @@
 							class="w-full bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl
 							       px-4 py-3 text-white text-sm transition-colors outline-none" />
 					{:else}
-						<p class="text-white font-medium py-3 px-1">{nickname || '—'}</p>
+						<p class="text-white font-medium py-3 px-1">{nickname || '-'}</p>
 					{/if}
 				</div>
 
@@ -712,7 +712,7 @@
 						<input type="hidden" name="gender" value={gender} />
 					{:else}
 						<p class="text-white font-medium py-3 px-1">
-							{gender === 'male' ? tFn('male') : gender === 'female' ? tFn('female') : '—'}
+							{gender === 'male' ? tFn('male') : gender === 'female' ? tFn('female') : '-'}
 						</p>
 					{/if}
 				</div>
@@ -725,11 +725,11 @@
 							class="w-full bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl
 							       px-4 py-3 text-white text-sm transition-colors outline-none" />
 					{:else}
-						<p class="text-white font-medium py-3 px-1">{phone || '—'}</p>
+						<p class="text-white font-medium py-3 px-1">{phone || '-'}</p>
 					{/if}
 				</div>
 
-				<!-- עיר + שכונה — תמיד ביחד -->
+				<!-- עיר + שכונה - תמיד ביחד -->
 				<div class="md:col-span-2 grid grid-cols-2 gap-3 rounded-2xl border border-purple-500/20 bg-purple-500/5 p-3">
 					<!-- עיר -->
 					<div>
@@ -746,7 +746,7 @@
 								{/each}
 							</select>
 						{:else}
-							<p class="text-white font-medium py-3 px-1">{city || '—'}</p>
+							<p class="text-white font-medium py-3 px-1">{city || '-'}</p>
 						{/if}
 					</div>
 					<!-- שכונה -->
@@ -765,12 +765,12 @@
 								{/each}
 							</select>
 						{:else}
-							<p class="text-white font-medium py-3 px-1">{neighborhood || '—'}</p>
+							<p class="text-white font-medium py-3 px-1">{neighborhood || '-'}</p>
 						{/if}
 					</div>
 				</div>
 
-				<!-- עסק + סטטוס משפחתי + תאריך לידה — שורה אחת בדסקטופ -->
+				<!-- עסק + סטטוס משפחתי + תאריך לידה - שורה אחת בדסקטופ -->
 				<div class="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-5">
 				<div>
 					<label for="p-business" class="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">{tFn("business_label")}</label>
@@ -778,7 +778,7 @@
 						<input id="p-business" name="business" type="text" bind:value={business} placeholder={tFn("business_placeholder")}
 							class="w-full bg-white/5 border border-white/10 focus:border-purple-500/50 rounded-xl px-4 py-3 text-white text-sm transition-colors outline-none placeholder:text-white/15 hover:placeholder:text-transparent focus:placeholder:text-transparent placeholder:transition-colors placeholder:duration-200" />
 					{:else}
-						<p class="text-white font-medium py-3 px-1">{business || '—'}</p>
+						<p class="text-white font-medium py-3 px-1">{business || '-'}</p>
 					{/if}
 				</div>
 
@@ -798,13 +798,13 @@
 							{family_status === 'single_m' ? tFn('status_single_m')
 							 : family_status === 'single_f' ? tFn('status_single_f')
 							 : family_status === 'family'   ? tFn('status_family')
-							 : '—'}
+							 : '-'}
 						</p>
 					{/if}
 					<p class="text-gray-600 text-xs mt-1 px-1">{tFn("not_shown_public")}</p>
 				</div>
 
-				<!-- תאריך לידה — באותה שורה עם עסק וסטטוס -->
+				<!-- תאריך לידה - באותה שורה עם עסק וסטטוס -->
 				<div>
 					<label for="p-birth-day" class="block text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">{tFn("birth_date_label")}</label>
 					{#if isEditing}
@@ -835,7 +835,7 @@
 							</select>
 						</div>
 					{:else}
-						<p class="text-white font-medium py-3 px-1">{birthDay && birthMonth && birthYear ? `${birthDay} / ${tFn("months_list").split(",")[parseInt(birthMonth)-1]} / ${birthYear}` : '—'}</p>
+						<p class="text-white font-medium py-3 px-1">{birthDay && birthMonth && birthYear ? `${birthDay} / ${tFn("months_list").split(",")[parseInt(birthMonth)-1]} / ${birthYear}` : '-'}</p>
 					{/if}
 					<p class="text-gray-600 text-xs mt-1 px-1">{tFn("not_shown_public")}</p>
 				</div>
@@ -933,11 +933,11 @@
 			<!-- סיכום דרגה נוכחית -->
 			<div class="flex items-center gap-2">
 				{#if isUserAdmin}
-					<span class="text-sm bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-full font-bold">דרגה נוכחית — רכז שכונה</span>
+					<span class="text-sm bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-full font-bold">דרגה נוכחית - רכז שכונה</span>
 				{:else if userLevel >= 2}
-					<span class="text-sm bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-full font-bold">דרגה נוכחית — משתמש</span>
+					<span class="text-sm bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-full font-bold">דרגה נוכחית - משתמש</span>
 				{:else}
-					<span class="text-sm bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-full font-bold">דרגה נוכחית — צופה</span>
+					<span class="text-sm bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-full font-bold">דרגה נוכחית - צופה</span>
 				{/if}
 				<svg class="w-4 h-4 text-yellow-400 transition-transform duration-300 flex-shrink-0 {showLevels ? 'rotate-180' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
 			</div>
@@ -1138,7 +1138,7 @@
 		</div>
 
 		{#if showFeedback}
-		<p class="relative text-gray-400 text-sm mb-5">כתוב לנו כיצד לשפר את האתר עבורך — הצוות של יוצאים לחירות יקרא ויחזור אליך.</p>
+		<p class="relative text-gray-400 text-sm mb-5">כתוב לנו כיצד לשפר את האתר עבורך - הצוות של יוצאים לחירות יקרא ויחזור אליך.</p>
 
 		{#if form?.feedbackSuccess}
 			<div class="relative bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 text-emerald-400 text-sm font-bold text-center">

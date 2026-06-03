@@ -16,7 +16,7 @@
 				totalDistributed = data.totalDistributed ?? 0;
 			}
 		} catch {
-			// אם ה-API לא זמין — נשאר 0
+			// אם ה-API לא זמין - נשאר 0
 		}
 	});
 
@@ -52,7 +52,7 @@
 
 			<!-- תמונת קופת העיר -->
 			<div class="bag-scene">
-				<!-- אנימציית מטבעות — מושהית לשימוש עתידי
+				<!-- אנימציית מטבעות - מושהית לשימוש עתידי
 				<svg class="coins-svg" viewBox="0 0 200 120" xmlns="http://www.w3.org/2000/svg">
 					<defs>
 						<radialGradient id="cg1" cx="35%" cy="30%" r="70%">

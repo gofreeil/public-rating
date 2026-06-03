@@ -50,7 +50,7 @@
     onMount(() => {
         if (!browser) return;
 
-        // Read last neighborhood chosen on the home page — map to its city
+        // Read last neighborhood chosen on the home page - map to its city
         const saved = localStorage.getItem(LS_KEY);
         if (saved) {
             try {
@@ -95,7 +95,7 @@
 
     let neighborhoodLabel = $derived(
         isNational
-            ? "ארצי — כל הארץ"
+            ? "ארצי - כל הארץ"
             : selectedCities.size === 1
                 ? [...selectedCities][0]
                 : `${[...selectedCities][0]} +${selectedCities.size - 1}`
@@ -142,7 +142,7 @@
             const data = await res.json();
             if (data.success) {
                 emailSent = true;
-                // השרת כבר הוסיף את המעשר — מפעיל אנימציה עם הנתונים שחזרו
+                // השרת כבר הוסיף את המעשר - מפעיל אנימציה עם הנתונים שחזרו
                 const tithe = Math.round(totalPayment * 0.1);
                 if (tithe > 0) {
                     coinAnim.trigger(tithe, totalPayment, data.fundTotal ?? tithe);
@@ -151,7 +151,7 @@
                 emailError = data.message || 'שגיאה בשליחת המייל';
             }
         } catch {
-            emailError = 'בעיית תקשורת — נסה שוב';
+            emailError = 'בעיית תקשורת - נסה שוב';
         } finally {
             emailSending = false;
         }
@@ -212,7 +212,7 @@
     let singleItems      = $derived(selectedItems.filter(r => r.plan === 'single'));
     let hasSelection     = $derived(planMap.size > 0);
 
-    // תמונת רקע לכל שכונה — מוצגת בכפתור הבחירה כשבוחרים שכונה בודדת
+    // תמונת רקע לכל שכונה - מוצגת בכפתור הבחירה כשבוחרים שכונה בודדת
     const neighborhoodImages: Record<string, string> = {
         'קרית משה':    '/images/kiryat-moshe-vaad.jfif',
         'רחביה':       '/images/neighborhoods/rehavia.jpg',
@@ -232,7 +232,7 @@
         'בת גלים':     '/images/neighborhoods/bat-galim.jpg',
     };
 
-    // City images — keyed by city name
+    // City images - keyed by city name
     const cityImages: Record<string, string> = {
         'ירושלים':       '/images/kiryat-moshe-vaad.jfif',
         'תל אביב':       '/images/neighborhoods/florentin.jpg',
@@ -249,7 +249,7 @@
     let mailtoBody = $derived(
         `ערים: ${neighborhoodLabel} (×${neighborhoodCount} שכונות)%0A` +
         selectedItems.map(r =>
-            `${r.type} — ${r.plan === 'half' ? `חצי שנה ₪${r.total * neighborhoodCount}` : `חודש בודד ₪${r.single * neighborhoodCount}`}`
+            `${r.type} - ${r.plan === 'half' ? `חצי שנה ₪${r.total * neighborhoodCount}` : `חודש בודד ₪${r.single * neighborhoodCount}`}`
         ).join('%0A') + `%0A%0Aסה״כ: ₪${totalPayment}`
     );
 </script>
@@ -282,7 +282,7 @@
             {pendingItemLabel ? 'שדרג את החשיפה שלך' : 'פרסם באתר הקהילה'}
         </h1>
         <p class="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-            היחשף לתושבי השכונה ישירות — קהל מקומי, ממוקד ומעורב
+            היחשף לתושבי השכונה ישירות - קהל מקומי, ממוקד ומעורב
         </p>
     </div>
 
@@ -367,7 +367,7 @@
             >
                 <span class="text-lg">🌍</span>
                 <div class="flex flex-col items-start">
-                    <span>ארצי — כל הארץ</span>
+                    <span>ארצי - כל הארץ</span>
                     <span class="text-xs font-normal text-gray-500">{totalNeighborhoodsCount} שכונות פעילות</span>
                 </div>
                 {#if isNational}<span class="mr-auto text-purple-400">✓</span>{/if}
@@ -402,7 +402,7 @@
 
     <!-- Pricing Table -->
     <p class="text-gray-200 text-base font-bold text-center mb-6">
-        הזז את המתג לבחירת תוכנית — המחשבון יחשב אוטומטית ↓
+        הזז את המתג לבחירת תוכנית - המחשבון יחשב אוטומטית ↓
     </p>
 
     <div class="mb-6 overflow-x-auto rounded-2xl border border-white/10">
@@ -419,7 +419,7 @@
                     </th>
                     <th class="px-4 py-4 font-black text-amber-400">פריסה</th>
                     <th class="px-4 py-4 font-black text-amber-400">פרטים</th>
-                    <!-- Toggle column header — last = left side in RTL -->
+                    <!-- Toggle column header - last = left side in RTL -->
                     <th class="px-4 py-4 text-center bg-white/8 border-r border-white/10">
                         <div class="flex flex-col items-center gap-1">
                             <span class="text-xs font-bold text-amber-400/80">½שנה</span>
@@ -473,7 +473,7 @@
                         <td class="px-4 py-4 text-gray-300 text-sm">{row.reach}</td>
                         <td class="px-4 py-4 text-gray-400 text-sm">{row.details}</td>
 
-                        <!-- 3-state toggle — last column = left side in RTL -->
+                        <!-- 3-state toggle - last column = left side in RTL -->
                         <td class="px-3 py-3 text-center border-r border-white/10"
                             style="background: {plan === 'half' ? 'rgba(245,158,11,0.12)' : plan === 'single' ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.06)'}">
                             <div class="flex justify-center" role="presentation" onclick={(e) => e.stopPropagation()}>
@@ -670,7 +670,7 @@
                                       style="animation: spin 0.7s linear infinite;"></span>
                                 שולח…
                             {:else}
-                                ✉️ שלח אישור — ₪{totalPayment}
+                                ✉️ שלח אישור - ₪{totalPayment}
                             {/if}
                         </button>
                     </div>
@@ -719,7 +719,7 @@
             🔒 תשלום מאובטח
         </h2>
         <p class="text-gray-400 text-sm text-center mb-6">
-            התשלום מתבצע בצורה מאובטחת דרך חברת הסליקה — פרטי האשראי שלך לא מגיעים אלינו
+            התשלום מתבצע בצורה מאובטחת דרך חברת הסליקה - פרטי האשראי שלך לא מגיעים אלינו
         </p>
 
         <div class="flex flex-wrap justify-center gap-3 mb-6">
@@ -731,17 +731,17 @@
         <div class="rounded-xl border-2 border-dashed border-blue-500/40 bg-blue-900/10 p-6 text-center">
             <div class="text-3xl mb-3">💳</div>
             <h3 class="text-white font-black mb-1">סליקה מאובטחת</h3>
-            <p class="text-gray-400 text-sm mb-4">מחוברים לחברת סליקה מורשית — עסקה מאובטחת ב-SSL</p>
+            <p class="text-gray-400 text-sm mb-4">מחוברים לחברת סליקה מורשית - עסקה מאובטחת ב-SSL</p>
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
                 <a href="https://meshulam.co.il" target="_blank" rel="noopener noreferrer"
                    aria-label="לדף התשלום – משולם (נפתח בחלון חדש)"
                    class="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-black px-6 py-3 rounded-xl text-sm transition-all hover:scale-105">
-                    🔗 לדף התשלום — משולם
+                    🔗 לדף התשלום - משולם
                 </a>
                 <a href="https://grow.co.il" target="_blank" rel="noopener noreferrer"
                    aria-label="לדף התשלום – Grow (נפתח בחלון חדש)"
                    class="inline-flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-black px-6 py-3 rounded-xl text-sm transition-all hover:scale-105">
-                    🔗 לדף התשלום — Grow
+                    🔗 לדף התשלום - Grow
                 </a>
             </div>
             <p class="text-gray-600 text-xs mt-4">* לאחר השלמת הרכישה נצור איתכם קשר לתיאום פרסום תוך 24 שעות</p>

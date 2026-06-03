@@ -7,7 +7,7 @@
     const events = [
         { date: '2026-03-15', title: 'ערב שירה קהילתי', icon: '🎤', time: '20:00', location: 'בית הכנסת הגדול', color: 'green' },
         { date: '2026-03-18', title: 'יום משפחה בפארק', icon: '👨‍👩‍👧', time: '10:00–14:00', location: 'פארק השעשועים', color: 'blue' },
-        { date: '2026-03-22', title: 'הרצאה: מיצוי זכויות', icon: '📚', time: '19:30', location: 'מרכז קהילתי — זום', color: 'purple' },
+        { date: '2026-03-22', title: 'הרצאה: מיצוי זכויות', icon: '📚', time: '19:30', location: 'מרכז קהילתי - זום', color: 'purple' },
         { date: '2026-03-28', title: 'סדנת גינון עירוני', icon: '🌱', time: '09:00', location: 'גינת השכונה', color: 'orange' },
         { date: '2026-04-02', title: 'ניקיון שכונתי', icon: '🧹', time: '08:00', location: 'רחבת הכניסה', color: 'teal' },
         { date: '2026-04-10', title: 'שוק קהילתי', icon: '🛍️', time: '16:00–20:00', location: 'רחוב הראשי', color: 'pink' },
@@ -83,7 +83,7 @@
 </script>
 
 <svelte:head>
-    <title>לוח אירועים — קהילה בשכונה</title>
+    <title>לוח אירועים - קהילה בשכונה</title>
 </svelte:head>
 
 <div class="min-h-screen bg-[#070b14] py-6 md:py-12 px-4">

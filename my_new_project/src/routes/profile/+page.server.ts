@@ -8,7 +8,7 @@ export const load: PageServerLoad = async (event) => {
     try {
         session = await event.locals.auth();
     } catch {
-        // cookie פגום — מפנה להתחברות
+        // cookie פגום - מפנה להתחברות
     }
 
     if (!session?.user?.id) {

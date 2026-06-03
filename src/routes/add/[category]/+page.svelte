@@ -83,10 +83,10 @@
         const err = validate();
         if (err) { errorMsg = err; return; }
 
-        // אם לא מחובר — שמור טיוטא והפנה להרשמה
+        // אם לא מחובר - שמור טיוטא והפנה להרשמה
         if (!userId) {
             saveDraft();
-            redirectingMsg = 'הטיוטה שלך נשמרה ✓\nאתה מועבר להרשמה — הפרסום יושלם מיד לאחריה.';
+            redirectingMsg = 'הטיוטה שלך נשמרה ✓\nאתה מועבר להרשמה - הפרסום יושלם מיד לאחריה.';
             setTimeout(() => {
                 goto(`/login?redirect=/add/${categoryId}`);
             }, 2200);
@@ -149,7 +149,7 @@
             }
 
         } catch {
-            errorMsg = 'בעיית תקשורת — נסה שוב';
+            errorMsg = 'בעיית תקשורת - נסה שוב';
             submitting = false;
         }
     }
@@ -203,7 +203,7 @@
             </div>
         {:else}
             <div class="mt-3 inline-flex items-center gap-1.5 bg-green-500/10 border border-green-500/30 rounded-full px-4 py-1.5 text-xs font-bold text-green-400">
-                ✅ שירות חינמי — ללא תשלום
+                ✅ שירות חינמי - ללא תשלום
             </div>
         {/if}
     </div>

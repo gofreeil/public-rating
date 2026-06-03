@@ -12,7 +12,7 @@
     const fieldsByOption: Record<string, { descLabel: string; descPlaceholder: string; locationPlaceholder: string }> = {
         '1': {
             descLabel:          'תיאור המצב',
-            descPlaceholder:    'פרט את המצב — מה קרה, באיזו עזרה נדרש...',
+            descPlaceholder:    'פרט את המצב - מה קרה, באיזו עזרה נדרש...',
             locationPlaceholder:'רחוב, כניסה, קומה...',
         },
         '2': {
@@ -28,7 +28,7 @@
         '4': {
             descLabel:          'תיאור בקשת העזרה',
             descPlaceholder:    'פרט מה קרה ובמה נדרשת עזרה...',
-            locationPlaceholder:'מיקום — רחוב, שכונה...',
+            locationPlaceholder:'מיקום - רחוב, שכונה...',
         },
         '5': {
             descLabel:          'תיאור הכלב',

@@ -39,7 +39,7 @@
 		};
 		return map[code] ?? map['Default'];
 	}
-	// tFn: תרגום reactive — $t אסור ב-Svelte 5
+	// tFn: תרגום reactive - $t אסור ב-Svelte 5
 	let _loc = $state(get(locale));
 	$effect(() => locale.subscribe(l => (_loc = l)));
 	const tFn = (k: string) => { void _loc; return get(t)(k); };
@@ -162,7 +162,7 @@
 						credError = null;
 						return async ({ result }) => {
 							if (result.type === 'success') {
-								// שרת אישר — עכשיו signIn דרך Auth.js
+								// שרת אישר - עכשיו signIn דרך Auth.js
 								const formEl = document.querySelector('form[action="?/credentials"]') as HTMLFormElement;
 								const email = (formEl?.querySelector('#email') as HTMLInputElement)?.value;
 								const password = (formEl?.querySelector('#password') as HTMLInputElement)?.value;

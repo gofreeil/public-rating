@@ -109,7 +109,7 @@
                 <section class="mb-8">
                     <div class="flex items-center gap-2 mb-4">
                         <span class="text-xl">🏙️</span>
-                        <h2 class="text-white font-black text-lg">בעירך — {data.userCity}</h2>
+                        <h2 class="text-white font-black text-lg">בעירך - {data.userCity}</h2>
                         <span class="bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-bold px-2 py-0.5 rounded-full">
                             {data.results.city.length}
                         </span>

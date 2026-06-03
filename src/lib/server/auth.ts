@@ -1,5 +1,5 @@
 // ============================================================
-// auth.ts — פונקציות הרשאה
+// auth.ts - פונקציות הרשאה
 // ============================================================
 
 import type { Session } from '@auth/core/types';
@@ -17,9 +17,9 @@ export function isNeighborhoodAdmin(session: Session | null, neighborhood?: stri
     if (!session?.user) return false;
     if (session.user.role === 'super_admin') return true;
     if (session.user.role === 'neighborhood_admin') {
-        // אם לא צוינה שכונה — מספיק שהוא אדמין
+        // אם לא צוינה שכונה - מספיק שהוא אדמין
         if (!neighborhood) return true;
-        // אחרת — רק אם השכונה שלו תואמת
+        // אחרת - רק אם השכונה שלו תואמת
         return session.user.neighborhood === neighborhood;
     }
     return false;
@@ -30,14 +30,14 @@ export function isAdmin(session: Session | null): boolean {
     return isNeighborhoodAdmin(session) || isSuperAdmin(session);
 }
 
-/** דרוש הרשאת אדמין — זורק 403 אם אין */
+/** דרוש הרשאת אדמין - זורק 403 אם אין */
 export function requireAdmin(session: Session | null, neighborhood?: string): void {
     if (!isNeighborhoodAdmin(session, neighborhood)) {
         throw error(403, 'אין לך הרשאה לבצע פעולה זו');
     }
 }
 
-/** דרוש סופר-אדמין — זורק 403 אם אין */
+/** דרוש סופר-אדמין - זורק 403 אם אין */
 export function requireSuperAdmin(session: Session | null): void {
     if (!isSuperAdmin(session)) {
         throw error(403, 'נדרשת הרשאת מנהל ראשי');

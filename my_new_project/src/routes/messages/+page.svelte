@@ -54,7 +54,7 @@
         <div class="text-center py-16">
             <div class="text-5xl mb-3">📭</div>
             <p class="font-bold text-lg text-gray-400">אין הודעות עדיין</p>
-            <p class="text-gray-500 text-sm mt-1">כשמישהו ישלח לך הודעה בנוגע למודעה שפרסמת — היא תופיע כאן</p>
+            <p class="text-gray-500 text-sm mt-1">כשמישהו ישלח לך הודעה בנוגע למודעה שפרסמת - היא תופיע כאן</p>
         </div>
     {:else}
         <div class="space-y-3">

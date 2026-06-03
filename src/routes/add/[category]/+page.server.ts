@@ -3,7 +3,7 @@ import { categoryConfig } from '$lib/categoryFields';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
-    // ---- Auth אופציונלי — הטופס נגיש לכולם, ההרשמה נדרשת רק בשליחה ----
+    // ---- Auth אופציונלי - הטופס נגיש לכולם, ההרשמה נדרשת רק בשליחה ----
     const session = await event.locals.auth();
 
     // ---- טעינת קונפיגורציית קטגוריה ----

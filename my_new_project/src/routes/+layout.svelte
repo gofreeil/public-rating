@@ -38,7 +38,7 @@
 <svelte:head>
 	<title>קהילה בשכונה</title>
 	<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-	<!-- tabnav: מושבת לבינתיים — לא רשום על הדומיין הנוכחי -->
+	<!-- tabnav: מושבת לבינתיים - לא רשום על הדומיין הנוכחי -->
 	<!-- <script src="https://widget.tabnav.com/widget.min.js.gz" defer></script> -->
 	<!-- <noscript>נדרש ג'אווה סקריפט כדי ש<a href="https://tabnav.com/he">הנגשת אתרים</a> תעבוד כראוי.</noscript> -->
 </svelte:head>

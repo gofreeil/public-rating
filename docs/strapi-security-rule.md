@@ -40,9 +40,9 @@
 
 | בעיה | סיכון |
 |------|-------|
-| API Token כללי | חושף את כל הדאטה — קריאה / כתיבה / מחיקה |
-| JWT ב־localStorage | חשוף ל־XSS — כל סקריפט יכול לגנוב אותו |
-| **HttpOnly Cookie** ✅ | לא נגיש ל־JavaScript — מצמצם סיכוני XSS |
+| API Token כללי | חושף את כל הדאטה - קריאה / כתיבה / מחיקה |
+| JWT ב־localStorage | חשוף ל־XSS - כל סקריפט יכול לגנוב אותו |
+| **HttpOnly Cookie** ✅ | לא נגיש ל־JavaScript - מצמצם סיכוני XSS |
 
 ---
 
@@ -57,9 +57,9 @@ strapiLogin / strapiRegister → מקבל JWT
       ↓
 cookies.set('strapi_jwt', jwt, { httpOnly: true, secure, sameSite: 'strict' })
       ↓
-hooks.server.ts — מוסיף cookie אוטומטית אם חסר (גם ל-OAuth users)
+hooks.server.ts - מוסיף cookie אוטומטית אם חסר (גם ל-OAuth users)
       ↓
-profile/+page.server.ts — event.cookies.get('strapi_jwt') → שולח ל-Strapi
+profile/+page.server.ts - event.cookies.get('strapi_jwt') → שולח ל-Strapi
 ```
 
 ---
@@ -75,4 +75,4 @@ profile/+page.server.ts — event.cookies.get('strapi_jwt') → שולח ל-Stra
 
 ---
 
-> ⚠️ אם הקוד משתמש ב־API Token כללי או שומר JWT ב־localStorage — **זה באג אבטחה קריטי**.
+> ⚠️ אם הקוד משתמש ב־API Token כללי או שומר JWT ב־localStorage - **זה באג אבטחה קריטי**.

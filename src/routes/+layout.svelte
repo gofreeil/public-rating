@@ -38,7 +38,7 @@
 <svelte:head>
 	<title>דירוג ציבורי</title>
 	<link rel="icon" href="/images/public-rating.jpeg" type="image/jpeg" />
-	<!-- tabnav: מושבת לבינתיים — לא רשום על הדומיין הנוכחי -->
+	<!-- tabnav: מושבת לבינתיים - לא רשום על הדומיין הנוכחי -->
 	<!-- <script src="https://widget.tabnav.com/widget.min.js.gz" defer></script> -->
 	<!-- <noscript>נדרש ג'אווה סקריפט כדי ש<a href="https://tabnav.com/he">הנגשת אתרים</a> תעבוד כראוי.</noscript> -->
 </svelte:head>

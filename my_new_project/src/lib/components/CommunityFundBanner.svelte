@@ -17,7 +17,7 @@
 
     onMount(async () => {
         mounted = true;
-        // אם לא הועבר total מבחוץ — שלוף מה-API
+        // אם לא הועבר total מבחוץ - שלוף מה-API
         if (total === 0) {
             try {
                 const res  = await fetch('/api/community-fund');
@@ -28,7 +28,7 @@
         display.set(total);
     });
 
-    // כשמגיע newAmount חדש (אחרי תשלום) — עדכן
+    // כשמגיע newAmount חדש (אחרי תשלום) - עדכן
     $effect(() => {
         if (animating && newAmount > 0) {
             display.set(total);
@@ -47,7 +47,7 @@
     onkeydown={(e) => e.key === 'Enter' && handleClick()}
     role="link"
     tabindex="0"
-    aria-label="קופת השכונה — לחץ לפרטים"
+    aria-label="קופת השכונה - לחץ לפרטים"
 >
     <!-- רקע גרדיאנט -->
     <div class="absolute inset-0 bg-gradient-to-br from-yellow-500/20 via-amber-600/20 to-green-600/20

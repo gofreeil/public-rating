@@ -1,5 +1,5 @@
 // ============================================================
-// neighborhoodState.svelte.ts — מצב שכונה גלובלי ומשותף
+// neighborhoodState.svelte.ts - מצב שכונה גלובלי ומשותף
 //
 // קורא מ-localStorage, נכתב בכל שינוי.
 // כל הרכיבים שמייבאים את neighborhoodState מקבלים

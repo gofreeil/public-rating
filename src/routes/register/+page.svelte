@@ -7,7 +7,7 @@
 	let isLoading    = $state(false);
 	let showPassword = $state(false);
 	let showConfirm  = $state(false);
-	// tFn: תרגום reactive — $t אסור ב-Svelte 5
+	// tFn: תרגום reactive - $t אסור ב-Svelte 5
 	let _loc = $state(get(locale));
 	$effect(() => locale.subscribe(l => (_loc = l)));
 	const tFn = (k: string) => { void _loc; return get(t)(k); };

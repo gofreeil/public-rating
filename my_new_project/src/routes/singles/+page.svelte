@@ -68,7 +68,7 @@
         <div class="text-center mb-6">
             <span class="text-5xl mb-3 block">💑</span>
             <h1 class="text-3xl font-black text-white mb-2">לוח פנויים ופנויות</h1>
-            <p class="text-gray-400">לוח ארצי — מציאת בן/בת זוג מכל רחבי הארץ</p>
+            <p class="text-gray-400">לוח ארצי - מציאת בן/בת זוג מכל רחבי הארץ</p>
         </div>
 
         <!-- Filter tabs -->

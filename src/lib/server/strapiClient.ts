@@ -56,7 +56,7 @@ export async function strapiPut<T = unknown>(path: string, body: unknown, jwt?: 
 }
 
 // ============================================================
-// ---- Auth (users-permissions plugin — ללא token) ----
+// ---- Auth (users-permissions plugin - ללא token) ----
 // ============================================================
 
 export interface StrapiUser {

@@ -1,5 +1,5 @@
 // ============================================================
-// db.ts — שכבת הנתונים
+// db.ts - שכבת הנתונים
 //
 // פריטים + קופת קהילה + משתמשים → Strapi 5 (async, cloud-persistent)
 // ============================================================
@@ -273,7 +273,7 @@ export async function resolveItem(documentId: string, resolverPhone: string): Pr
     await strapiPut(`/api/items/${documentId}`, {
         data: {
             status1:     'resolved',
-            description: `[הוסר על ידי הפורסם — טלפון מחזיר: ${resolverPhone}]`,
+            description: `[הוסר על ידי הפורסם - טלפון מחזיר: ${resolverPhone}]`,
         },
     });
 }
@@ -292,7 +292,7 @@ export async function getResolvedCount(category: string): Promise<number> {
 // ---- Admin actions ----
 // ============================================================
 
-/** מחיקת פריט (אדמין בלבד) — מעביר לסטטוס deleted */
+/** מחיקת פריט (אדמין בלבד) - מעביר לסטטוס deleted */
 export async function adminDeleteItem(documentId: string, adminId: string): Promise<void> {
     await strapiPut(`/api/items/${documentId}`, {
         data: {
@@ -379,7 +379,7 @@ export async function addFundContribution(neighborhood: string, totalPayment: nu
         data: {
             amount:      tithe,
             source:      'order',
-            note:        `10% מהזמנת פרסום — ${neighborhood}`,
+            note:        `10% מהזמנת פרסום - ${neighborhood}`,
             publishedAt: new Date().toISOString(),
         },
     });
@@ -387,7 +387,7 @@ export async function addFundContribution(neighborhood: string, totalPayment: nu
 }
 
 // ============================================================
-// ---- Users (Strapi — cloud-persistent) ----
+// ---- Users (Strapi - cloud-persistent) ----
 // ============================================================
 
 async function findStrapiUser(externalId: string, jwt?: string): Promise<StrapiCommunityUser | undefined> {

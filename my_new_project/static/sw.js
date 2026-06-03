@@ -1,5 +1,5 @@
 // ============================================================
-// Service Worker — Web Push Notifications
+// Service Worker - Web Push Notifications
 // ============================================================
 
 self.addEventListener('push', (event) => {

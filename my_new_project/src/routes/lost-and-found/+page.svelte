@@ -157,7 +157,7 @@
             </div>
 
             <p class="text-gray-300 text-sm mb-3 leading-relaxed">
-                נודה לך שתדווח גם כשהאבדה שבה — כדי שנשמח יחד ונקדם חברה מתוקנת יותר 🤝
+                נודה לך שתדווח גם כשהאבדה שבה - כדי שנשמח יחד ונקדם חברה מתוקנת יותר 🤝
             </p>
             <p class="text-gray-500 text-sm mb-5">
                 לפני הסרת המודעה <span class="text-white font-bold">"{resolveModal.label}"</span>,

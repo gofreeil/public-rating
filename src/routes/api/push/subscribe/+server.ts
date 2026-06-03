@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { strapiPost, strapiGet } from '$lib/server/strapiClient.js';
 import { env } from '$env/dynamic/private';
 
-// טוקן מצומצם — הרשאות push-subscription בלבד (לא Full Access)
+// טוקן מצומצם - הרשאות push-subscription בלבד (לא Full Access)
 const PUSH_TOKEN = env.STRAPI_PUSH_TOKEN ?? '';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
@@ -20,7 +20,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
         throw error(400, 'נתוני מנוי לא תקינים');
     }
 
-    // user_id מגיע מה-session — לא מה-client
+    // user_id מגיע מה-session - לא מה-client
     const userId = (session.user as { id?: string }).id ?? session.user.email ?? '';
 
     await strapiPost(

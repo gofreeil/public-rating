@@ -44,7 +44,7 @@
             }
         };
 
-        // Focus trap — מניעת יציאה מהחלון עם Tab
+        // Focus trap - מניעת יציאה מהחלון עם Tab
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
                 onClose();

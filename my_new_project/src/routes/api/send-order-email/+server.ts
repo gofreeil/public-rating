@@ -57,7 +57,7 @@ function buildEmailHtml(payload: OrderPayload): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>אישור הזמנת פרסום — קהילה בשכונה</title>
+  <title>אישור הזמנת פרסום - קהילה בשכונה</title>
 </head>
 <body style="margin:0; padding:0; background:#070b14; font-family:'Segoe UI', Arial, sans-serif; direction:rtl;">
 
@@ -88,7 +88,7 @@ function buildEmailHtml(payload: OrderPayload): string {
 
             <p style="margin:0 0 24px; color:#cbd5e1; font-size:16px; line-height:1.7;">
               שלום,<br/>
-              קיבלנו את בקשת הפרסום שלך. להלן סיכום ההזמנה שלך —
+              קיבלנו את בקשת הפרסום שלך. להלן סיכום ההזמנה שלך -
               ניצור איתך קשר תוך <strong style="color:#f59e0b;">24 שעות</strong> לתיאום הסופי.
             </p>
 
@@ -204,7 +204,7 @@ export const POST: RequestHandler = async ({ request }) => {
         const { error } = await resend.emails.send({
             from: `קהילה בשכונה <${fromEmail}>`,
             to: [email],
-            subject: `✅ בקשת הפרסום שלך התקבלה — ₪${payload.totalPayment}`,
+            subject: `✅ בקשת הפרסום שלך התקבלה - ₪${payload.totalPayment}`,
             html: buildEmailHtml(payload),
         });
 

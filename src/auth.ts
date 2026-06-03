@@ -18,14 +18,14 @@ const AUTH_FACEBOOK_SECRET= process.env.AUTH_FACEBOOK_SECRET?? '';
 // ============================================================
 async function getOrCreateStrapiJwt(email: string | null | undefined, stableId: string): Promise<string | null> {
     if (!email) return null;
-    // סיסמה דטרמיניסטית — sha256(stableId + AUTH_SECRET), קבועה לכל login
+    // סיסמה דטרמיניסטית - sha256(stableId + AUTH_SECRET), קבועה לכל login
     const password = createHash('sha256').update(stableId + AUTH_SECRET).digest('hex').slice(0, 32);
     const username = stableId.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 30);
     try {
         const { jwt } = await strapiLogin(email, password);
         return jwt;
     } catch {
-        // משתמש לא קיים — ניצור אותו
+        // משתמש לא קיים - ניצור אותו
         try {
             const { jwt } = await strapiRegister(username, email, password);
             return jwt;
@@ -76,9 +76,9 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 
     callbacks: {
         async signIn({ user, account }) {
-            console.log('[auth] signIn called — provider:', account?.provider, 'email:', user?.email);
+            console.log('[auth] signIn called - provider:', account?.provider, 'email:', user?.email);
             if (!account || !user) {
-                console.warn('[auth] signIn rejected — missing account or user');
+                console.warn('[auth] signIn rejected - missing account or user');
                 return false;
             }
 
@@ -123,7 +123,7 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
                 }, strapiJwt ?? undefined);
             } catch (error) {
                 console.error('[auth] OAuth community-user sync failed:', error);
-                // ממשיכים — ההתחברות לא תיכשל בגלל community-user
+                // ממשיכים - ההתחברות לא תיכשל בגלל community-user
             }
 
             user.id = stableId;
@@ -152,7 +152,7 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
                         token.neighborhood = dbUser.neighborhood;
                         token.banned = dbUser.banned;
                     }
-                } catch { /* ignore — fallback to 'user' */ }
+                } catch { /* ignore - fallback to 'user' */ }
             }
             return token;
         },

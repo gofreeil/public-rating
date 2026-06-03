@@ -12,7 +12,7 @@ export const GET: RequestHandler = async () => {
 
 // ---- POST: create a new item ----
 export const POST: RequestHandler = async (event) => {
-    // קבל את פרטי המשתמש המחובר (אופציונלי — guard נעשה בדף הטופס)
+    // קבל את פרטי המשתמש המחובר (אופציונלי - guard נעשה בדף הטופס)
     const session = await event.locals.auth();
 
     let body: Record<string, unknown>;
@@ -91,7 +91,7 @@ export const POST: RequestHandler = async (event) => {
             </body></html>`,
         });
     } catch (e) {
-        // מייל לאדמין הוא best-effort — לא נכשיל את הבקשה
+        // מייל לאדמין הוא best-effort - לא נכשיל את הבקשה
         console.warn('Admin email failed:', e);
     }
 

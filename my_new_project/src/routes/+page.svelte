@@ -44,7 +44,7 @@
     const mockEvents: (CalEvent & { bgColor: string; textColor: string; subColor: string })[] = [
         { title: '🎤 ערב שירה קהילתי', location: 'בית הכנסת הגדול', date: '2026-03-15', startTime: '20:00', endTime: '21:30', bgColor: 'bg-green-600/20', textColor: 'text-green-400', subColor: 'text-green-300/70' },
         { title: '👨‍👩‍👧 יום משפחה בפארק', location: 'פארק השעשועים', date: '2026-03-18', startTime: '10:00', endTime: '14:00', bgColor: 'bg-blue-600/20', textColor: 'text-blue-400', subColor: 'text-blue-300/70' },
-        { title: '📚 הרצאה: מיצוי זכויות', location: 'מרכז קהילתי — זום', date: '2026-03-22', startTime: '19:30', endTime: '21:00', bgColor: 'bg-purple-600/20', textColor: 'text-purple-400', subColor: 'text-purple-300/70' },
+        { title: '📚 הרצאה: מיצוי זכויות', location: 'מרכז קהילתי - זום', date: '2026-03-22', startTime: '19:30', endTime: '21:00', bgColor: 'bg-purple-600/20', textColor: 'text-purple-400', subColor: 'text-purple-300/70' },
         { title: '🌱 סדנת גינון עירוני', location: 'גינת השכונה', date: '2026-03-28', startTime: '09:00', endTime: '11:00', bgColor: 'bg-orange-600/20', textColor: 'text-orange-400', subColor: 'text-orange-300/70' },
     ];
 

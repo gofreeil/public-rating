@@ -6,7 +6,7 @@ export const load: LayoutServerLoad = async (event) => {
     try {
         session = await event.locals.auth();
     } catch {
-        // session לא תקין — נמשיך כמשתמש אנונימי
+        // session לא תקין - נמשיך כמשתמש אנונימי
     }
 
     // טעינת פרטי משתמש מלאים לתצוגה בדרואר

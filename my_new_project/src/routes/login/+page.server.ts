@@ -21,7 +21,7 @@ export const load: PageServerLoad = async (event) => {
 export const actions: Actions = {
     /**
      * שלב 1: בדיקת אימייל+סיסמה בשרת (validation + Strapi JWT cookie).
-     * אם הכל תקין, מחזיר { success: true } —
+     * אם הכל תקין, מחזיר { success: true } -
      * ואז הקליינט קורא ל-signIn('credentials') של Auth.js.
      */
     credentials: async (event) => {
@@ -57,7 +57,7 @@ export const actions: Actions = {
             return fail(401, { error: 'סיסמה שגויה. נסה שוב.' });
         }
 
-        // הצלחה — הקליינט ימשיך עם signIn של Auth.js
+        // הצלחה - הקליינט ימשיך עם signIn של Auth.js
         return { success: true };
     },
 };

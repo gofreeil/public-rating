@@ -17,7 +17,7 @@ export const load: PageServerLoad = async (event) => {
         console.warn('[receipts] getUserById failed:', e);
     }
 
-    // לדוגמה: תקבולים דמה — בהמשך יבואו מ-Strapi
+    // לדוגמה: תקבולים דמה - בהמשך יבואו מ-Strapi
     const receipts = [
         { id: 1, date: '2025-03-10', description: 'תרומה לקהילה',   amount: -50,  type: 'out' },
         { id: 2, date: '2025-03-08', description: 'פרסום מודעה',     amount: -30,  type: 'out' },

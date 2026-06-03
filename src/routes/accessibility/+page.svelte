@@ -90,7 +90,7 @@
             <ul class="space-y-2 text-gray-300">
                 <li class="flex items-start gap-2">
                     <span class="text-yellow-400 flex-shrink-0" aria-hidden="true">⚠</span>
-                    <span>מפת השכונות האינטראקטיבית מבוססת על Google Maps Embed — ייתכן שחלק מפונקציות המפה אינן נגישות במלואן לקוראי מסך. ניתן לגשת לרשימת הקטגוריות כחלופה מלאה.</span>
+                    <span>מפת השכונות האינטראקטיבית מבוססת על Google Maps Embed - ייתכן שחלק מפונקציות המפה אינן נגישות במלואן לקוראי מסך. ניתן לגשת לרשימת הקטגוריות כחלופה מלאה.</span>
                 </li>
                 <li class="flex items-start gap-2">
                     <span class="text-yellow-400 flex-shrink-0" aria-hidden="true">⚠</span>

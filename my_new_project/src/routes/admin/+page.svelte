@@ -8,7 +8,7 @@
 	let searchQuery = $state('');
 	let roleFilter = $state<'all' | 'user' | 'neighborhood_admin' | 'super_admin'>('all');
 
-	// מינוי אדמין — מודל
+	// מינוי אדמין - מודל
 	let showRoleModal = $state(false);
 	let roleModalUser = $state<{ id: string; name: string | null; role: string; neighborhood: string } | null>(null);
 	let newRole = $state('user');
@@ -159,13 +159,13 @@
 										<span class="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-full">חסום</span>
 									{/if}
 								</div>
-								<div class="text-sm text-gray-400 truncate">{user.email ?? '—'}</div>
+								<div class="text-sm text-gray-400 truncate">{user.email ?? '-'}</div>
 							</div>
 						</div>
 
 						<!-- שכונה -->
 						<div class="text-sm text-gray-400 min-w-[100px]">
-							{user.neighborhood || '—'}
+							{user.neighborhood || '-'}
 						</div>
 
 						<!-- תפקיד -->
@@ -243,7 +243,7 @@
 
 						<!-- שכונה -->
 						<div class="text-sm text-gray-400 min-w-[80px]">
-							{item.neighborhood || '—'}
+							{item.neighborhood || '-'}
 						</div>
 
 						<!-- מחיקה -->

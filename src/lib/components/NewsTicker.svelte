@@ -34,7 +34,7 @@
         {/each}
     </ul>
 
-    <!-- כפתור עצירה/הפעלה — נגיש למקלדת, מוסתר ויזואלית -->
+    <!-- כפתור עצירה/הפעלה - נגיש למקלדת, מוסתר ויזואלית -->
     <button
         onclick={() => (paused = !paused)}
         class="sr-only focus:not-sr-only focus:fixed focus:top-16 focus:right-4 focus:z-50 focus:bg-blue-700 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm"

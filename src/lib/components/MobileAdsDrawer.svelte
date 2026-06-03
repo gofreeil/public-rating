@@ -257,7 +257,7 @@
 				onclick={() => open = false}
 			>
 				<div class="ad-img-wrap">
-					<!-- שלב 1: תמונה מפוקסלת מהפרונטאנד — נטענת מיד, מוסתרת מאחורי blur -->
+					<!-- שלב 1: תמונה מפוקסלת מהפרונטאנד - נטענת מיד, מוסתרת מאחורי blur -->
 					<img
 						src={ad.image}
 						alt=""
@@ -265,7 +265,7 @@
 						class="ad-img-thumb"
 						decoding="async"
 					/>
-					<!-- שלב 2: תמונה מלאה — מופיעה בהדרגה אחרי טעינה -->
+					<!-- שלב 2: תמונה מלאה - מופיעה בהדרגה אחרי טעינה -->
 					<img
 						src={ad.image}
 						alt={ad.title}
@@ -542,7 +542,7 @@
 		background: #1e293b;
 	}
 
-	/* שלב 1 — תמונה מפוקסלת (מלאה אבל מטושטשת מאוד) */
+	/* שלב 1 - תמונה מפוקסלת (מלאה אבל מטושטשת מאוד) */
 	.ad-img-thumb {
 		position: absolute;
 		inset: 0;
@@ -555,7 +555,7 @@
 		image-rendering: pixelated;
 	}
 
-	/* שלב 2 — תמונה מלאה, מופיעה על גבי ה-thumb */
+	/* שלב 2 - תמונה מלאה, מופיעה על גבי ה-thumb */
 	.ad-img {
 		position: absolute;
 		inset: 0;
