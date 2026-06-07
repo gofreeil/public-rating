@@ -77,7 +77,8 @@
 
 	$effect(() => {
 		if (typeof window !== 'undefined' && tabY === 0) {
-			tabY = window.innerHeight / 2;
+			// ברירת מחדל: השליש התחתון של המסך (2/3 מהגובה)
+			tabY = Math.round(window.innerHeight * 2 / 3);
 		}
 	});
 
