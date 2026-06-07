@@ -634,7 +634,9 @@
 		left: 0;
 		/* top + transform מגיעים כ-inline style דינמי */
 		z-index: 1050;
-		background: linear-gradient(180deg, #4f46e5, #7c3aed);
+		background: linear-gradient(180deg, rgba(79, 70, 229, 0.78), rgba(124, 58, 237, 0.78));
+		backdrop-filter: blur(3px);
+		-webkit-backdrop-filter: blur(3px);
 		border: none;
 		border-radius: 0 10px 10px 0;
 		padding: 0.75rem 0.4rem;
@@ -647,6 +649,16 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 0.4rem;
+	}
+
+	.tab::after {
+		content: '';
+		width: 0;
+		height: 0;
+		border-top: 5px solid transparent;
+		border-bottom: 5px solid transparent;
+		border-left: 6px solid rgba(255, 255, 255, 0.9);
+		filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.4));
 	}
 
 	.tab:hover {
