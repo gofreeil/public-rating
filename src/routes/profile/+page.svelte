@@ -1202,7 +1202,7 @@
 			<p class="text-xs text-gray-400 uppercase tracking-widest font-bold">המלצות עבורך</p>
 
 			{#if business}
-			<a href="https://index-chi-sage.vercel.app/" target="_blank" rel="noopener noreferrer"
+			<a href="https://index.gofreeil.com/" target="_blank" rel="noopener noreferrer"
 				aria-label="מועדון בעלי העסקים הכשרים – הצטרף לרשת בעלי העסקים (נפתח בחלון חדש)"
 				class="flex items-center gap-4 bg-amber-500/10 border border-amber-500/30
 				       hover:bg-amber-500/20 hover:border-amber-400/50 transition-all
