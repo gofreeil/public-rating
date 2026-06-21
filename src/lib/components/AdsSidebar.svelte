@@ -8,6 +8,47 @@
         מתקדמים לחברה מתוקנת ועצמאית
     </h4>
     <div class="space-y-4">
+        <!-- Ad - קהילה בשכונה -->
+        <a
+            href="https://community-il.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="קהילה בשכונה – כל יתרונות השכונה תחת קורת גג אחת (נפתח בחלון חדש)"
+            class="block overflow-hidden rounded-lg shadow-lg transition-transform hover:scale-105 group relative"
+        >
+            <div class="relative overflow-hidden">
+                <img
+                    src="/images/community-neighborhood.png"
+                    alt="קהילה בשכונה"
+                    class="h-auto w-full object-cover transition-opacity duration-1500 group-hover:opacity-0"
+                />
+                <!-- Hover overlay -->
+                <div
+                    class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1500 flex items-center justify-center"
+                    style="background-image: url('/images/community-neighborhood.png'); background-size: cover; background-position: center;"
+                >
+                    <div
+                        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                    ></div>
+                    <div class="relative z-10 text-center px-4">
+                        <h3 class="text-white font-bold text-lg mb-2">
+                            קהילה בשכונה
+                        </h3>
+                        <p class="text-gray-200 text-sm">
+                            כל יתרונות השכונה תחת קורת גג אחת
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div
+                class="bg-gradient-to-r from-blue-500 to-purple-600 p-3 text-center"
+            >
+                <p class="text-white font-bold text-xs leading-tight">
+                    תהנה מכל היתרונות של הקהילה בשכונה שלך
+                </p>
+            </div>
+        </a>
+
         <!-- Ad 0 - בתי הפיוס (חדש - ראשון) -->
         <a
             href="https://chachmim.vercel.app/"
@@ -158,47 +199,6 @@
                 <p class="text-white font-bold text-xs leading-tight">
                     הוזל מיד את ההוצאות החודשיות שלך
                     כוחנו באחדותנו
-                </p>
-            </div>
-        </a>
-
-        <!-- Ad 2 - השקעות קבוצתיות -->
-        <a
-            href="https://www.melecshop.com/page/free"
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="השקעות קבוצתיות – הצטרף אל מועדון המשקיעים (נפתח בחלון חדש)"
-            class="block overflow-hidden rounded-lg shadow-lg transition-transform hover:scale-105 group relative"
-        >
-            <div class="relative overflow-hidden">
-                <img
-                    src="/images/partners/investments.png"
-                    alt="השקעות קבוצתיות"
-                    class="h-auto w-full object-cover transition-opacity duration-1500 group-hover:opacity-0"
-                />
-                <!-- Hover overlay -->
-                <div
-                    class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1500 flex items-center justify-center"
-                    style="background-image: url('/images/partners/investments.png'); background-size: cover; background-position: center;"
-                >
-                    <div
-                        class="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                    ></div>
-                    <div class="relative z-10 text-center px-4">
-                        <h3 class="text-white font-bold text-lg mb-2">
-                            השקעות קבוצתיות
-                        </h3>
-                        <p class="text-gray-200 text-sm">
-                            התחבר עם קבוצת המשקיעים
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div
-                class="bg-gradient-to-r from-amber-600 to-orange-600 p-3 text-center"
-            >
-                <p class="text-white font-bold text-xs leading-tight">
-                    הצטרף אל מועדון המשקיעים של מהפכת הכלכלה המבוזרת!
                 </p>
             </div>
         </a>

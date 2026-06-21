@@ -10,6 +10,15 @@ export interface Ad {
 
 export const ads: Ad[] = [
     {
+        id: 12,
+        title: "קהילה בשכונה",
+        description: "כל יתרונות השכונה תחת קורת גג אחת",
+        cta: "תהנה מכל היתרונות של הקהילה בשכונה שלך",
+        href: "https://community-il.vercel.app/",
+        image: "/images/community-neighborhood.png",
+        color: "from-blue-500 to-purple-600"
+    },
+    {
         id: 1,
         title: "בתי הפיוס",
         description: "מתנדבים לתת לך עזרה מלאה בדין / פיוס בכל סיכסוך",
@@ -35,15 +44,6 @@ export const ads: Ad[] = [
         href: "https://purchasing-groups.vercel.app/",
         image: "/images/whatsapp_cta.png",
         color: "from-green-800 to-emerald-900"
-    },
-    {
-        id: 4,
-        title: "מועדון המשקיעים החברתי",
-        description: "התחבר עם קבוצת המשקיעים שלנו",
-        cta: "התחבר עם קבוצת המשקיעים שלנו",
-        href: "https://www.melecshop.com/page/free",
-        image: "/images/partners/investments.png",
-        color: "from-amber-600 to-orange-600"
     },
     {
         id: 5,

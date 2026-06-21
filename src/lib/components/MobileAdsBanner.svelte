@@ -5,6 +5,12 @@
 
     const ads = [
         {
+            title: 'קהילה בשכונה',
+            summary: 'תהנה מכל היתרונות של הקהילה בשכונה שלך',
+            url: 'https://community-il.vercel.app/',
+            color: 'from-blue-500 to-purple-600'
+        },
+        {
             title: 'בתי הפיוס',
             summary: 'עזרה בדין ופיוס בסיכסוכים',
             url: 'https://chachmim.vercel.app/',
@@ -21,12 +27,6 @@
             summary: 'הוזל את ההוצאות החודשיות',
             url: 'https://purchasing-groups.vercel.app/',
             color: 'from-green-600 to-emerald-600'
-        },
-        {
-            title: 'השקעות קבוצתיות',
-            summary: 'הצטרף אל מועדון המשקיעים של מהפכת הכלכלה המבוזרת!',
-            url: 'https://www.melecshop.com/page/free',
-            color: 'from-amber-600 to-orange-600'
         },
         {
             title: 'גידול ביתי',
