@@ -10,7 +10,7 @@
     <div class="space-y-4">
         <!-- Ad - קהילה בשכונה -->
         <a
-            href="https://community-il.vercel.app/"
+            href="https://community.gofreeil.com/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="קהילה בשכונה – כל יתרונות השכונה תחת קורת גג אחת (נפתח בחלון חדש)"
@@ -51,7 +51,7 @@
 
         <!-- Ad 0 - בתי הפיוס (חדש - ראשון) -->
         <a
-            href="https://chachmim.vercel.app/"
+            href="https://chachmim.gofreeil.com/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="בתי הפיוס – עזרה בדין ופיוס בסיכסוכים (נפתח בחלון חדש)"
@@ -92,7 +92,7 @@
 
         <!-- Ad 1 - ועדי שכונות -->
         <a
-            href="https://neighborhoods-il.vercel.app/"
+            href="https://neighborhoods.gofreeil.com/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="ועדי שכונות – מהפכת משילות העם על המוסדות (נפתח בחלון חדש)"
@@ -133,7 +133,7 @@
 
         <!-- WhatsApp CTA -->
         <a
-            href="https://purchasing-groups.vercel.app/"
+            href="https://groups.gofreeil.com/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="קבוצת רכישה – הוזל את ההוצאות החודשיות שלך (נפתח בחלון חדש)"
@@ -236,7 +236,7 @@
 
         <!-- Ad 4 - מחפש בעל מקצוע -->
         <a
-            href="https://index-chi-sage.vercel.app/"
+            href="https://index.gofreeil.com/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="בעלי מקצוע כשירים – מצא בעל מקצוע איכותי באזורך (נפתח בחלון חדש)"
@@ -276,7 +276,7 @@
 
         <!-- Ad 5 - ביקורת על העיריה -->
         <a
-            href="https://criticism.vercel.app/"
+            href="https://criticism.gofreeil.com/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="ביקורת על העיריה – ניצחון על הבירוקרטיה (נפתח בחלון חדש)"
