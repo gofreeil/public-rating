@@ -69,6 +69,40 @@
 	let phone         = $state(_ud?.phone         ?? '');
 	let city          = $state(_ud?.city          ?? '');
 	let neighborhood  = $state(_ud?.neighborhood  ?? '');
+
+	// ===== "השכונה שלי לא ברשימה" =====
+	const MISSING_SENTINEL = '__missing__';
+	let customNeighborhood = $state('');
+	let missingSendState   = $state<'idle' | 'sending' | 'sent' | 'error'>('idle');
+	let missingSendError   = $state('');
+
+	async function submitMissingNeighborhood() {
+		const trimmed = customNeighborhood.trim();
+		if (!trimmed || !city) return;
+		missingSendState = 'sending';
+		missingSendError = '';
+		try {
+			const res = await fetch('/api/missing-neighborhood', {
+				method:  'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body:    JSON.stringify({
+					city,
+					suggested_neighborhood: trimmed,
+					username: nickname || name || '',
+					email,
+				}),
+			});
+			if (!res.ok) {
+				const body = await res.json().catch(() => ({}));
+				throw new Error(body.error || `HTTP ${res.status}`);
+			}
+			missingSendState = 'sent';
+			neighborhood = trimmed; // עדיין נשמור כשכונה זמנית עד שתתווסף לרשימה
+		} catch (e) {
+			missingSendState = 'error';
+			missingSendError = e instanceof Error ? e.message : 'שגיאה בשליחה';
+		}
+	}
 	let business      = $state(_ud?.business      ?? '');
 	let family_status = $state(_ud?.family_status ?? '');
 	let gender        = $state(_ud?.gender        ?? '');
@@ -755,15 +789,67 @@
 							{tFn("neighborhood_label")} <span class="text-red-400">*</span>
 						</label>
 						{#if isEditing}
-							<select id="p-neighborhood" name="neighborhood" bind:value={neighborhood} disabled={!city} required
-								class="w-full bg-[#070b14] border {!neighborhood ? 'border-red-500/50' : 'border-white/10'} focus:border-purple-500/50 rounded-xl
+							{@const isMissing = !!neighborhood && !!city && !availableNeighborhoods.includes(neighborhood)}
+							{@const inMissingMode = !neighborhood || isMissing}
+							<!-- ערך השכונה היחיד שנשלח לטופס (select בלי name) -->
+							<input type="hidden" name="neighborhood"
+								value={inMissingMode ? customNeighborhood.trim() : neighborhood} />
+							<select id="p-neighborhood"
+								value={inMissingMode ? MISSING_SENTINEL : neighborhood}
+								onchange={(e) => {
+									const v = (e.currentTarget as HTMLSelectElement).value;
+									if (v === MISSING_SENTINEL) {
+										customNeighborhood = isMissing ? neighborhood : '';
+										neighborhood = '';
+										missingSendState = 'idle';
+									} else {
+										neighborhood = v;
+										customNeighborhood = '';
+										missingSendState = 'idle';
+									}
+								}}
+								disabled={!city}
+								class="w-full bg-[#070b14] border {inMissingMode && !customNeighborhood ? 'border-red-500/50' : 'border-white/10'} focus:border-purple-500/50 rounded-xl
 								       px-4 py-3 text-white text-sm transition-colors outline-none appearance-none
 								       disabled:opacity-40 disabled:cursor-not-allowed">
 								<option value="">{tFn("choose_neighborhood")}</option>
 								{#each availableNeighborhoods as n}
 									<option value={n}>{n}</option>
 								{/each}
+								<option value={MISSING_SENTINEL}>📝 השכונה שלי לא ברשימה...</option>
 							</select>
+
+							{#if inMissingMode}
+								<div class="mt-3 p-3 rounded-xl border border-purple-500/30 bg-purple-500/5 space-y-2">
+									<p class="text-xs text-purple-300 font-medium">
+										✍️ כתבי את שם השכונה שלך ונוסיף אותה לרשימה:
+									</p>
+									<div class="flex gap-2">
+										<input type="text" bind:value={customNeighborhood}
+											placeholder="לדוגמה: שכונת הגפן"
+											class="flex-1 bg-[#070b14] border border-white/10 focus:border-purple-500/50 rounded-xl
+											       px-3 py-2 text-white text-sm outline-none" />
+										<button type="button"
+											onclick={submitMissingNeighborhood}
+											disabled={!customNeighborhood.trim() || !city || missingSendState === 'sending' || missingSendState === 'sent'}
+											class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500
+											       text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap">
+											{#if missingSendState === 'sending'}
+												שולח...
+											{:else if missingSendState === 'sent'}
+												✓ נשלח
+											{:else}
+												שלח לאדמין
+											{/if}
+										</button>
+									</div>
+									{#if missingSendState === 'sent'}
+										<p class="text-xs text-green-400">✅ ההודעה נשלחה לסופר אדמין. השכונה תתווסף בקרוב!</p>
+									{:else if missingSendState === 'error'}
+										<p class="text-xs text-red-400">❌ {missingSendError}</p>
+									{/if}
+								</div>
+							{/if}
 						{:else}
 							<p class="text-white font-medium py-3 px-1">{neighborhood || '-'}</p>
 						{/if}
