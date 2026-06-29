@@ -430,35 +430,33 @@
             <!-- כותל המשאלות -->
             <a
                 href="/community-fund"
-                class="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 hover:-translate-y-2 flex flex-col cursor-pointer"
+                class="em-card group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 hover:-translate-y-2 flex flex-col cursor-pointer"
             >
                 <!-- Background image -->
                 <div
-                    class="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-110"
+                    class="em-zoom absolute inset-0 bg-cover bg-center transition-transform duration-300"
                     style="background-image: url('/images/2.png');"
                 ></div>
                 <!-- Dark gradient overlay -->
                 <div
-                    class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/30 transition-transform duration-300 group-hover:scale-110"
+                    class="em-zoom absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/30 transition-transform duration-300"
                 ></div>
                 <div
-                    class="relative z-10 p-6 transition-transform duration-300 group-hover:scale-105 flex flex-col flex-grow"
+                    class="relative z-10 p-6 flex flex-col flex-grow"
                 >
                     <div class="text-center text-white flex flex-col flex-grow">
                         <span
-                            class="text-4xl mb-2 block transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12"
+                            class="em-emoji text-4xl mb-2 block transition-transform duration-300"
                             >🙏</span
                         >
                         <h3
-                            class="text-xl font-black mb-2 transition-all duration-300 group-hover:text-yellow-200"
+                            class="em-title text-xl font-black mb-2 transition-colors duration-300"
                         >
-                            <span class="group-hover:hidden">כותל המשאלות</span>
-                            <span class="hidden group-hover:inline"
-                                >עניי עירך קודמין</span
-                            >
+                            <span class="em-label-default">כותל המשאלות</span>
+                            <span class="em-label-hover">עניי עירך קודמין</span>
                         </h3>
                         <div
-                            class="bg-blue-600/50 hover:bg-blue-600/70 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all w-full group-hover:scale-105 group-hover:shadow-lg text-center mt-auto"
+                            class="em-btn bg-blue-600/50 hover:bg-blue-600/70 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all w-full text-center mt-auto"
                         >
                             וקופת השכונה
                         </div>
@@ -468,37 +466,37 @@
 
             <!-- פנה לוועד השכונה -->
             <div
-                class="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 hover:-translate-y-2 flex flex-col"
+                class="em-card group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-purple-500/30 transition-all duration-300 hover:-translate-y-2 flex flex-col"
             >
                 <!-- Background image -->
                 <div
-                    class="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-110"
+                    class="em-zoom absolute inset-0 bg-cover bg-center transition-transform duration-300"
                     style="background-image: url('/images/ועד שכונה.png');"
                 ></div>
                 <!-- Dark gradient overlay -->
                 <div
-                    class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/30 transition-transform duration-300 group-hover:scale-110"
+                    class="em-zoom absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/30 transition-transform duration-300"
                 ></div>
                 <div
-                    class="relative z-10 p-6 transition-transform duration-300 group-hover:scale-105 flex flex-col flex-grow"
+                    class="relative z-10 p-6 flex flex-col flex-grow"
                 >
                     <div class="text-center text-white flex flex-col flex-grow">
                         <span
-                            class="text-4xl mb-2 block transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12"
+                            class="em-emoji text-4xl mb-2 block transition-transform duration-300"
                             >🏛️</span
                         >
                         <h3
-                            class="text-xl font-black mb-2 transition-all duration-300 group-hover:text-yellow-200"
+                            class="em-title text-xl font-black mb-2 transition-colors duration-300"
                         >
                             ועד השכונה
                         </h3>
                         <p
-                            class="text-sm mb-4 text-purple-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex-grow"
+                            class="text-sm mb-4 text-purple-100 transition-opacity duration-300 flex-grow"
                         >
                             יש לך הצעה? רוצה לשפר את השכונה?
                         </p>
                         <button
-                            class="bg-purple-600/50 hover:bg-purple-600/70 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all w-full group-hover:scale-105 group-hover:shadow-xl mt-auto"
+                            class="em-btn bg-purple-600/50 hover:bg-purple-600/70 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all w-full mt-auto"
                         >
                             פנה לועד השכונה
                         </button>
@@ -508,40 +506,38 @@
 
             <!-- כיתת כוננות -->
             <div
-                class="group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-orange-500/30 transition-all duration-300 hover:-translate-y-2 flex flex-col"
+                class="em-card group relative overflow-hidden rounded-2xl shadow-xl hover:shadow-2xl hover:shadow-orange-500/30 transition-all duration-300 hover:-translate-y-2 flex flex-col"
             >
                 <!-- Background image -->
                 <div
-                    class="absolute inset-0 bg-cover bg-center transition-transform duration-300 group-hover:scale-110"
+                    class="em-zoom absolute inset-0 bg-cover bg-center transition-transform duration-300"
                     style="background-image: url('/images/כוננות.png');"
                 ></div>
                 <!-- Dark gradient overlay -->
                 <div
-                    class="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/30 transition-transform duration-300 group-hover:scale-110"
+                    class="em-zoom absolute inset-0 bg-gradient-to-t from-black via-black/80 to-black/30 transition-transform duration-300"
                 ></div>
                 <div
-                    class="relative z-10 p-6 transition-transform duration-300 group-hover:scale-105 flex flex-col flex-grow"
+                    class="relative z-10 p-6 flex flex-col flex-grow"
                 >
                     <div class="text-center text-white flex flex-col flex-grow">
                         <span
-                            class="text-4xl mb-2 block transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12"
+                            class="em-emoji text-4xl mb-2 block transition-transform duration-300"
                             >🚨</span
                         >
                         <h3
-                            class="text-xl font-black mb-2 transition-all duration-300 group-hover:text-yellow-200"
+                            class="em-title text-xl font-black mb-2 transition-colors duration-300"
                         >
-                            <span class="group-hover:hidden">כיתת כוננות</span>
-                            <span class="hidden group-hover:inline"
-                                >חזק את ביטחון השכונה</span
-                            >
+                            <span class="em-label-default">כיתת כוננות</span>
+                            <span class="em-label-hover">חזק את ביטחון השכונה</span>
                         </h3>
                         <p
-                            class="text-xs mb-3 text-yellow-100 transition-colors duration-300 group-hover:text-white group-hover:font-bold"
+                            class="text-xs mb-3 text-yellow-100"
                         >
                             <span class="font-bold">127</span> חברים פעילים
                         </p>
                         <button
-                            class="bg-red-600/50 hover:bg-red-600/70 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all w-full group-hover:scale-105 group-hover:shadow-xl mt-auto"
+                            class="em-btn bg-red-600/50 hover:bg-red-600/70 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all w-full mt-auto"
                         >
                             הצטרף עכשיו
                         </button>
@@ -635,6 +631,16 @@
 
 <style>
     /* Base styles handled in app.css */
+
+    /* ===== כרטיסי "כיתת כוננות / כותל המשאלות / ועד השכונה" — אפקטי hover מפורשים.
+       Tailwind v4 לא מקמפל group-hover:*, לכן ה-hover מוגדר ב-CSS ישיר. ===== */
+    .em-card:hover .em-zoom   { transform: scale(1.1); }
+    .em-card:hover .em-emoji  { transform: scale(1.25) rotate(12deg); }
+    .em-card:hover .em-title  { color: #fef08a; }
+    .em-card:hover .em-btn    { transform: scale(1.05); }
+    .em-label-hover           { display: none; }
+    .em-card:hover .em-label-default { display: none; }
+    .em-card:hover .em-label-hover   { display: inline; }
 
     /* Remove all spacing under title on mobile */
     @media (max-width: 768px) {
