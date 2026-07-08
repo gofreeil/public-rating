@@ -4,7 +4,20 @@ import Facebook from '@auth/sveltekit/providers/facebook';
 import Credentials from '@auth/sveltekit/providers/credentials';
 import { createHash } from 'crypto';
 import { upsertUser, verifyCredentials, getUserByEmail, getUserById } from '$lib/server/db';
-import { strapiLogin, strapiRegister } from '$lib/server/strapiClient';
+import { strapiLogin, strapiRegister, getStrapiMe } from '$lib/server/strapiClient';
+
+/** קריאת ערך עוגייה מתוך כותרת Cookie גולמית (authorize מקבל Request, לא event.cookies) */
+function readCookie(cookieHeader: string | null | undefined, name: string): string | null {
+    if (!cookieHeader) return null;
+    for (const part of cookieHeader.split(';')) {
+        const idx = part.indexOf('=');
+        if (idx === -1) continue;
+        if (part.slice(0, idx).trim() === name) {
+            return decodeURIComponent(part.slice(idx + 1).trim());
+        }
+    }
+    return null;
+}
 
 const AUTH_SECRET         = process.env.AUTH_SECRET         ?? '';
 const AUTH_GOOGLE_ID      = process.env.AUTH_GOOGLE_ID      ?? '';
@@ -48,6 +61,32 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
             clientId:     AUTH_FACEBOOK_ID,
             clientSecret: AUTH_FACEBOOK_SECRET,
         }),
+        // ============================================================
+        // יוצאים לחירות (SSO) - זיהוי מיידי לפי העוגייה המשותפת gofreeil-auth.
+        // אתר אחר תחת gofreeil.com (community/sso) כבר שתל JWT של ה-Strapi המשותף;
+        // כאן מאמתים אותו ומקימים סשן בלי הקלדת פרטים - בדיוק כמו "המשך עם גוגל",
+        // רק שספק הזהות הוא רשימת המשתמשים המאוחדת של gofreeil.
+        // ============================================================
+        Credentials({
+            id:   'gofreeil-sso',
+            name: 'יוצאים לחירות',
+            credentials: {},
+            async authorize(_credentials, request) {
+                const jwt = readCookie(request?.headers?.get('cookie'), 'gofreeil-auth');
+                if (!jwt) return null;
+                const me = await getStrapiMe(jwt);
+                if (!me?.email) return null;
+                const emailLc = me.email.trim().toLowerCase();
+                const communityUser = await getUserByEmail(emailLc, jwt).catch(() => null);
+                const id = communityUser?.id ?? `credentials_${emailLc}`;
+                return {
+                    id,
+                    name:      communityUser?.name  ?? me.username ?? '',
+                    email:     communityUser?.email ?? emailLc,
+                    strapiJwt: jwt,
+                } as { id: string; name: string; email: string; strapiJwt: string };
+            },
+        }),
         Credentials({
             id:   'credentials',
             name: 'Email & Password',
@@ -80,6 +119,21 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
             if (!account || !user) {
                 console.warn('[auth] signIn rejected - missing account or user');
                 return false;
+            }
+
+            // יוצאים לחירות (SSO) - ה-JWT כבר הגיע מ-authorize דרך ה-user object
+            if (account.provider === 'gofreeil-sso') {
+                const strapiJwt = (user as { strapiJwt?: string }).strapiJwt;
+                const stableId  = user.id ?? `credentials_${user.email}`;
+                if (strapiJwt) {
+                    try {
+                        await upsertUser({
+                            id: stableId, name: user.name, email: user.email,
+                            avatar_url: user.image, provider: 'gofreeil-sso',
+                        }, strapiJwt);
+                    } catch (e) { console.warn('[auth] upsert sso user failed:', e); }
+                }
+                return true;
             }
 
             // Credentials provider
@@ -133,7 +187,7 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
         async jwt({ token, user, account }) {
             // user + account מועברים רק ב-sign-in הראשון
             if (user && account) {
-                token.dbUserId = account.provider === 'credentials'
+                token.dbUserId = (account.provider === 'credentials' || account.provider === 'gofreeil-sso')
                     ? user.id
                     : `${account.provider}_${account.providerAccountId}`;
                 token.provider = account.provider;

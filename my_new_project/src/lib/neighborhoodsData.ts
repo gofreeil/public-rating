@@ -9,6 +9,7 @@ export interface CityEntry {
 
 export const citiesData: CityEntry[] = [
     { city: "אופקים",              neighborhoods: ["מרכז העיר", "שכונה א", "שכונה ב"] },
+    { city: "אפרת",                neighborhoods: ["הדגן", "הזית", "הגפן", "הרימון", "התאנה", "התמר", "הדקל", "האלון"] },
     { city: "אור יהודה",           neighborhoods: ["מרכז", "נווה אפריים", "קרית אונו הצעירה"] },
     { city: "אור עקיבא",           neighborhoods: ["מרכז העיר", "שכונת הגפן"] },
     { city: "אילת",                neighborhoods: ["שכונת התמרים", "שכונת הדקלים", "שכונת השחמון", "נאות אילות"] },

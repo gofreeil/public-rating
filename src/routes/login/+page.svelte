@@ -26,6 +26,15 @@
 		}
 	}
 
+	// SSO: מפנים לקהילת "יוצאים לחירות", היא קובעת את העוגייה המשותפת gofreeil-auth
+	// על .gofreeil.com ומחזירה ל-callback שמקים סשן דרך ספק gofreeil-sso.
+	function loginWithCommunity() {
+		isLoading = true;
+		const returnTo = data.redirectTo || '/';
+		const callback = `${window.location.origin}/auth/community-callback?returnTo=${encodeURIComponent(returnTo)}`;
+		window.location.href = `https://community.gofreeil.com/sso?callback=${encodeURIComponent(callback)}`;
+	}
+
 	// תרגום שגיאות OAuth
 	function errorMessage(code: string | null): string {
 		if (!code) return '';
@@ -136,6 +145,23 @@
 						{/if}
 						<span>{tFn("continue_facebook")}</span>
 					</button>
+
+					<!-- יוצאים לחירות (SSO) -->
+					<button
+						type="button"
+						onclick={loginWithCommunity}
+						disabled={isLoading}
+						class="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-pink-600
+						       hover:from-amber-400 hover:to-pink-500 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg
+						       transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl
+						       disabled:opacity-60 disabled:cursor-not-allowed mb-3 cursor-pointer"
+					>
+						<span class="text-xl flex-shrink-0">🕊️</span>
+						<span>התחבר דרך "יוצאים לחירות"</span>
+					</button>
+					<p class="text-center text-xs text-gray-500 mb-6 leading-relaxed">
+						רשום כבר בקהילה, בשכונה או באתר אחר של יוצאים לחירות? המערכת תזהה אותך אוטומטית.
+					</p>
 
 					<!-- מפריד -->
 					<div class="flex items-center gap-3 mb-6">
