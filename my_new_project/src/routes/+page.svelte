@@ -458,7 +458,7 @@
                         <div
                             class="em-btn bg-blue-600/50 hover:bg-blue-600/70 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all w-full text-center mt-auto"
                         >
-                            וקופת השכונה
+                            קופת השכונה
                         </div>
                     </div>
                 </div>
@@ -571,7 +571,7 @@
                         <div
                             class="bg-blue-600/50 text-white px-1 py-1 rounded text-[10px] font-bold text-center w-full"
                         >
-                            וקופת השכונה
+                            קופת השכונה
                         </div>
                     </div>
                 </a>
