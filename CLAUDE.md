@@ -1,137 +1,58 @@
-# CLAUDE.md - הנחיות לפרויקט קהילה בשכונה
+# CLAUDE.md - דירוג ציבורי (rating.gofreeil.com)
 
 ## סקירת הפרויקט
 
-פלטפורמת קהילה שכונתית ישראלית המחברת תושבים לשירותים מקומיים, יתרונות שכונתיים ויוזמות קהילתיות. מתמקד בירושלים (קרית משה) עם תמיכה בעיר נוספות.
+פלטפורמת דירוג ציבורי של "יוצאים לחירות": הציבור מדרג נבחרי ציבור, שופטים ועובדי ציבור לפי 4 מדדים (זמנים ותקנים, תרומה לעם, חזון, שקיפות וקשב). הריפו הוא פורק של אתר הקהילה — חלק מהנתיבים הישנים (אבדות, פנויים, קופת קהילה) עדיין קיימים כשאריות.
 
-## טכנולוגיות ואיך להריץ
+## טכנולוגיות
 
-- **Framework**: SvelteKit 2.x + Svelte 5
-- **Styling**: Tailwind CSS 4.x
-- **שפות**: TypeScript
-- **i18n**: svelte-i18n (עברית, אנגלית, רוסית)
+- **Framework**: SvelteKit 2.x + Svelte 5 (runes בלבד: `$state`, `$derived`, `$props`, `$bindable`)
+- **Styling**: Tailwind CSS 4.x (זהירות: `group-hover` שבור — CSS מפורש; `-translate-*` מתקמפל לתכונת `translate`)
+- **Backend**: Strapi 5 המשותף של gofreeil (`STRAPI_URL`, בפרודקשן api.gofreeil.com) — אין content-type ייעודי; הכל items
+- **Auth**: Auth.js — Google / Facebook / credentials / SSO "יוצאים לחירות" (עוגיית gofreeil-auth)
 
 ```bash
 npm run dev       # שרת פיתוח
 npm run build     # בניית ייצור
 npm run check     # בדיקת TypeScript + Svelte
-npm run preview   # תצוגה מקדימה של build
 ```
 
-## מבנה הפרויקט
+## מודל הנתונים (items ב-Strapi המשותף)
+
+| קטגוריה | תפקיד | שדות |
+|---|---|---|
+| `pr_official` | מדורג | label=שם, description=רקע, extra_fields={group, position, org, approved, suggested_by} |
+| `pr_review` | דירוג משתמש | **label=documentId של המדורג** (לסינון מדויק), description=טקסט, user_id=מדרג, extra_fields={scores, reviewer_name, anonymous, helpful_by} |
+
+- דירוג אחד למשתמש למדורג — upsert ב-`upsertReview`
+- מיון הוגן: שקלול בייסיאני (IMDb, m=3) ב-`aggregate.ts`; סף פרסים = 3 דירוגים
+- כל כתיבה חייבת `invalidateRating()` (קאש 60ש' ב-`src/lib/server/rating.ts`)
+
+## מבנה הקוד החדש
 
 ```
-src/
-├── lib/
-│   ├── components/         # רכיבי UI לשימוש חוזר
-│   │   ├── Header.svelte         # כותרת עליונה עם בחירת שפה
-│   │   ├── Footer.svelte         # כותרת תחתונה
-│   │   ├── AdsSidebar.svelte     # סרגל פרסומות צד ימין (דסקטופ)
-│   │   ├── MobileAdsBanner.svelte # פרסומות נייד
-│   │   ├── MobileTextAds.svelte  # פרסומות טקסט נייד
-│   │   ├── JerusalemMap.svelte   # מפת שכונות אינטראקטיבית
-│   │   ├── LostAndFound.svelte   # מקטע אבידות ומצבי חירום
-│   │   ├── NewsTicker.svelte     # טיקר חדשות
-│   │   ├── FacebookComments.svelte # תגובות פייסבוק
-│   │   ├── FullAdModal.svelte    # מודל פרסומת מלאה
-│   │   └── ReferendumBanner.svelte # באנר קמפיין
-│   ├── adsData.ts            # נתוני פרסומות וטיפוסים
-│   ├── itemsData.ts          # נתוני פריטים/יתרונות קהילתיים
-│   ├── i18n.ts               # הגדרות רב-לשוניות
-│   └── index.ts              # ייצוא רכיבים
-└── routes/
-    ├── +layout.svelte        # Layout ראשי (3 עמודות: פרסומות|תוכן|פרסומות)
-    ├── +page.svelte          # דף הבית
-    ├── community-fund/
-    │   └── +page.svelte      # כותל המשאלות
-    └── items/[id]/
-        └── +page.svelte      # דף פרט פריט דינמי
+src/lib/rating/          criteria.ts (4 המדדים) · types.ts (GROUPS, Official, Review) · aggregate.ts · heSearch.ts
+src/lib/server/rating.ts שכבת הנתונים (קריאה/כתיבה/קאש)
+src/lib/components/rating/  Stars, StarInput, Avatar, OfficialCard, Board, Histogram,
+                             CriteriaBars, RateForm, ReviewCard, Podium, OfficialSearch, NavBar
+src/routes/              / (בית) · /knesset /judges /public-servants (לוחות) · /officials/[id] (פרופיל+דירוג)
+                         /top-rated (מצטיינים) · /about (חזון) · /suggest (הצעת מדורג) · /admin/officials (ניהול)
+scripts/seed-officials.mjs  זריעת מדורגים ראשונים: node scripts/seed-officials.mjs --url https://api.gofreeil.com
 ```
 
 ## עיצוב ו-RTL
 
-- **כיווניות**: RTL (ימין לשמאל) לעברית
-- **גופן**: "Assistant" (גופן ישראלי) משקלים 300-700
-- **ערכת צבעים**: ערכה כהה - `#070b14`, `#0f172a` עם גרדיאנטים כחול-סגול-ורוד
-- **Breakpoints**:
-  - נייד: < 768px
-  - דסקטופ: > 1024px
+- RTL גלובלי, גופן Assistant, ערכה כהה `#0f172a`, כרטיסים `bg-white/5 border-white/10 rounded-2xl`
+- CTA: `btn-premium` (גרדיאנט כחול-סגול); כוכבים amber-400
+- סגנון: מינימליסטי וקומפקטי — אלמנטים זה לצד זה (flex-wrap), כמה שפחות גלילה
+- טקסט UI: עברית ישירה (בלי מפתחות i18n בדפי הדירוג); ברירת מחדל עברית — אסור getLocaleFromNavigator
 
-**חשוב**: תמיד לשמור על תאימות RTL. להשתמש ב-`dir="rtl"` ולהיזהר עם מרווחים ושוליים.
+## כללי עבודה
 
-## i18n - רב-לשוניות
-
-קובץ ההגדרות: `src/lib/i18n.ts`
-
-- שפת ברירת מחדל: **עברית (he)**
-- שפות נתמכות: עברית, אנגלית (`en`), רוסית (`ru`)
-- כל תוכן טקסט חדש חייב להיות מתורגם לשלוש השפות
-
-```typescript
-// דוגמת שימוש ברכיב
-import { _ } from 'svelte-i18n';
-$_('key.name')
-```
-
-## קטגוריות הפלטפורמה
-
-היתרונות השכונתיים מחולקים לקטגוריות:
-- **גמח** - שירותי השאלה חינם
-- **מסירה** - פריטים למסירה חינם
-- **בייבי סיטר** - שמרטפים
-- **יהדות** - מניינים, שיעורים, שבת
-- **חוגים** - חוגים ותחביבים
-- **אירוח לשבת** - הכנסת אורחים
-- **צימרים** - השכרת נופש
-- **חנויות ומסעדות** - עסקים מקומיים
-- **טרמפים** - נסיעות משותפות
-- **עבודות, שידוכים, אירועים**
-
-## נתוני הפרסומות (`adsData.ts`)
-
-הפרסומות מוגדרות כ-array של אובייקטים עם:
-```typescript
-interface Ad {
-  id: number;
-  title: string;
-  description: string;
-  color: string;        // צבע גרדיאנט
-  icon: string;         // אמוג'י
-  fullDescription: string;
-  contact?: string;
-}
-```
-
-## נתוני הפריטים (`itemsData.ts`)
-
-```typescript
-interface Item {
-  id: string;
-  label: string;
-  icon: string;
-  description: string;
-  address?: string;
-  phone?: string;
-}
-```
-
-## כללי עבודה חשובים
-
-1. **שפה**: הפרויקט בעברית - שמות משתנים וקומנטים יכולים להיות באנגלית, אך תוכן UI תמיד דרך i18n
-2. **Svelte 5**: להשתמש בסינטקס החדש - `$state()`, `$derived()`, `$effect()` במקום `writable`/`readable`
-3. **Tailwind 4**: להשתמש בסינטקס החדש של Tailwind 4 (לא להשתמש ב-`@apply` כשאפשר)
-4. **ריספונסיבי**: כל שינוי חייב לתמוך בנייד ודסקטופ
-5. **ביצועים**: לשמור על אנימציות קלילות - `pulse-slow` מוגדר ב-tailwind.config.js (11 שניות)
-
-## פקודות שימושיות
-
-```bash
-# בדיקת שגיאות TypeScript
-npm run check
-
-# בניה + בדיקה לפני commit
-npm run build && npm run check
-```
+1. דפי שרת עמידים: כל קריאת Strapi ב-try/catch → empty state, לא 500
+2. form actions עם use:enhance; כל וריאנטי ה-fail חייבים אותה צורה (למשל תמיד `values`)
+3. אדמין = `session.user.role === 'super_admin'` — לבדוק גם בתוך כל action, לא רק ב-load
+4. `npm run build && npm run check` לפני commit
 
 ## הנחיות לסיום משימה
 

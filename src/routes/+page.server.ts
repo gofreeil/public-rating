@@ -1,34 +1,77 @@
-import { getAllItems, getUserById } from '$lib/server/db';
-import { isAdmin } from '$lib/server/auth';
+// ============================================================
+// דף הבית — נתוני דירוג רזים: מובילים, טעוני שיפור, ביקורות אחרונות
+// ============================================================
+
+import { getRatedOfficials, listAllReviews } from '$lib/server/rating';
+import { GROUPS, type GroupKey } from '$lib/rating/types';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async (event) => {
-    const session = await event.locals.auth();
+function emptyGroupCounts(): Record<GroupKey, number> {
+    const out = {} as Record<GroupKey, number>;
+    for (const g of GROUPS) out[g.key] = 0;
+    return out;
+}
 
-    // קבל עיר ושכונה מהפרופיל של המשתמש המחובר
-    let userNeighborhood: string | null = null;
-    let userCity:         string | null = null;
-
-    if (session?.user?.id) {
-        try {
-            const jwt = event.cookies.get('strapi_jwt');
-            const user = await getUserById(session.user.id, jwt);
-            if (user?.neighborhood) userNeighborhood = user.neighborhood;
-            if (user?.city)         userCity         = user.city;
-        } catch {}
-    }
-
+export const load: PageServerLoad = async () => {
     try {
-        const dbItems = await getAllItems();
+        const [officials, reviews] = await Promise.all([getRatedOfficials(), listAllReviews()]);
+
+        // officials כבר ממוינים בדירוג הוגן (משוקלל יורד, לא-מדורגים בסוף)
+        const rated = officials.filter((o) => o.stats.count > 0);
+        const top5 = rated.slice(0, 5);
+
+        const needImprovement = rated
+            .filter((o) => o.stats.count >= 3)
+            .sort((a, b) => a.stats.weighted - b.stats.weighted)
+            .slice(0, 3);
+
+        const byId = new Map(officials.map((o) => [o.id, o]));
+        const recentReviews = reviews
+            .filter((r) => r.text.trim().length > 0 && byId.has(r.official_id))
+            .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+            .slice(0, 6)
+            .map((r) => {
+                const o = byId.get(r.official_id)!;
+                return {
+                    id: r.id,
+                    text: r.text,
+                    overall: r.overall,
+                    // שם מדרג אנונימי לא עוזב את השרת (הסתרה בתצוגה בלבד אינה מספיקה)
+                    reviewer_name: r.anonymous ? '' : r.reviewer_name,
+                    anonymous: r.anonymous,
+                    created_at: r.created_at,
+                    official: { id: o.id, name: o.name, position: o.position },
+                };
+            });
+
+        const groupCounts = emptyGroupCounts();
+        for (const o of officials) groupCounts[o.group] = (groupCounts[o.group] ?? 0) + 1;
+
+        // אינדקס רזה לחיפוש בצד לקוח — לא שולחים את כל האובייקטים
+        const searchIndex = officials.map((o) => ({
+            id: o.id,
+            name: o.name,
+            position: o.position,
+            org: o.org,
+        }));
+
         return {
-            dbItems,
-            userNeighborhood,
-            userCity,
-            isAdmin: isAdmin(session),
-            userRole: session?.user?.role ?? 'user',
+            stats: { officialCount: officials.length, reviewCount: reviews.length },
+            top5,
+            needImprovement,
+            recentReviews,
+            groupCounts,
+            searchIndex,
         };
     } catch (e) {
-        console.warn('[home] getAllItems failed:', e instanceof Error ? e.message : e);
-        return { dbItems: [], userNeighborhood, userCity, isAdmin: false, userRole: 'user' as const };
+        console.warn('[home] load failed:', e instanceof Error ? e.message : e);
+        return {
+            stats: { officialCount: 0, reviewCount: 0 },
+            top5: [],
+            needImprovement: [],
+            recentReviews: [],
+            groupCounts: emptyGroupCounts(),
+            searchIndex: [],
+        };
     }
 };

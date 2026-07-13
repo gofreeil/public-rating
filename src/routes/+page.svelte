@@ -1,94 +1,208 @@
 <script lang="ts">
-    // labels per section
-    const sections = [
-        { id: 'top-rated',      title: 'נבחרי הציבור המדורגים ביותר', subtitle: 'מיועדים לפרס השנה עבור פעילותם לטובת העם', label: 'נבחר ציבור', href: '/top-rated',      showImage: true,  showMedals: true  },
-        { id: 'knesset',        title: 'דירוג חברי כנסת',              subtitle: '',                                            label: 'חבר כנסת',   href: '/knesset',        showImage: false, showMedals: true  },
-        { id: 'judges',         title: 'דירוג שופטים',                  subtitle: '',                                            label: 'שופט',        href: '/judges',         showImage: false, showMedals: false },
-        { id: 'public-servants',title: 'דירוג עובדי ציבור',             subtitle: '',                                            label: 'עובד ציבור',  href: '/public-servants',showImage: false, showMedals: false },
+    // דף הבית — דירוג ציבורי
+    import { CRITERIA } from '$lib/rating/criteria';
+    import { GROUPS } from '$lib/rating/types';
+    import OfficialCard from '$lib/components/rating/OfficialCard.svelte';
+    import OfficialSearch from '$lib/components/rating/OfficialSearch.svelte';
+    import Stars from '$lib/components/rating/Stars.svelte';
+
+    let { data } = $props();
+
+    const STEPS = [
+        { icon: '🔎', title: 'מאתרים את המדורג', text: 'חיפוש מהיר או גלישה בלוחות — כנסת, שופטים ועובדי ציבור' },
+        { icon: '⭐', title: 'מדרגים ב-4 מדדים', text: 'זמנים ותקנים, תרומה לעם, חזון ושקיפות — עם חוות דעת' },
+        { icon: '📊', title: 'התמונה נחשפת לציבור', text: 'הדירוג המצטבר גלוי לכולם — שקוף, הוגן ובלתי תלוי' },
     ];
+
+    function relDate(iso: string): string {
+        const t = new Date(iso).getTime();
+        if (!Number.isFinite(t)) return '';
+        const days = Math.floor((Date.now() - t) / 86_400_000);
+        if (days <= 0) return 'היום';
+        if (days === 1) return 'אתמול';
+        return `לפני ${days} ימים`;
+    }
 </script>
 
-<div class="space-y-8 md:space-y-16 py-4 md:py-8">
+<svelte:head>
+    <title>הציבור מדרג את משרתיו — דירוג ציבורי</title>
+    <meta
+        name="description"
+        content="דירוג ציבורי — שקיפות, אחריות ודירוג אמיתי של חברי כנסת, שופטים ועובדי ציבור על ידי העם. ארבעה מדדים: זמנים ותקנים, תרומה לעם, חזון ושקיפות."
+    />
+</svelte:head>
 
-    {#each sections as sec}
-    <section>
-        <div class="text-center mb-4 md:mb-8">
-            {#if sec.showImage}
-            <div class="flex justify-center mb-4 md:mb-6">
-                <div class="relative inline-block">
-                    <img
-                        src="/images/public-rating.jpeg"
-                        alt="דירוג ציבורי"
-                        class="h-48 md:h-96 w-auto object-contain rounded-2xl md:rounded-3xl"
-                    />
-                    <div class="absolute inset-0 rounded-2xl md:rounded-3xl" style="box-shadow: inset 0 0 30px 10px #0f172a;"></div>
-                </div>
-            </div>
-            {/if}
-            <h2 class="text-2xl md:text-4xl font-black text-white mb-2 md:mb-3">{sec.title}</h2>
-            {#if sec.subtitle}
-            <p class="text-amber-400 text-sm md:text-lg font-bold">{sec.subtitle}</p>
-            {/if}
+<div class="space-y-8 py-2 md:py-4">
+
+    <!-- a) Hero + חיפוש + צ'יפים -->
+    <section class="text-center">
+        <div class="relative mx-auto inline-block">
+            <img
+                src="/images/public-rating.jpeg"
+                alt="דירוג ציבורי"
+                class="max-h-56 w-auto rounded-2xl object-contain"
+            />
+            <div class="absolute inset-0 rounded-2xl" style="box-shadow: inset 0 0 30px 10px #0f172a;"></div>
+        </div>
+        <h1 class="mt-3 text-3xl font-black text-white md:text-4xl">הציבור מדרג את משרתיו</h1>
+        <p class="mt-2 text-sm text-gray-400 md:text-base">
+            שקיפות, אחריות ודירוג אמיתי של נבחרי ועובדי הציבור — על ידי העם
+        </p>
+
+        <div class="mx-auto mt-4 max-w-xl">
+            <OfficialSearch officials={data.searchIndex} />
         </div>
 
-        <div class="bg-white/5 border border-white/10 rounded-2xl p-3 md:p-6">
-
-            <!-- מובייל: פריסת פודיום -->
-            <div class="flex flex-col items-center gap-4 md:hidden">
-                <!-- שורה עליונה: #2 | #1 (גבוה) | #3 -->
-                <div class="flex justify-center items-end gap-3 w-full">
-                    {#each [2, 1, 3] as rank}
-                        <div class="flex flex-col items-center gap-1.5 w-[30%] transition-transform {rank === 1 ? '-translate-y-4' : ''}">
-                            {#if sec.showMedals}
-                            <span class="font-black {rank === 1 ? 'text-2xl' : 'text-xl'}">
-                                {rank === 1 ? '🥇' : rank === 2 ? '🥈' : '🥉'}
-                            </span>
-                            {/if}
-                            <div class="rounded-full bg-white/10 border-2 border-dashed flex items-center justify-center text-gray-500 text-2xl
-                                        {rank === 1 ? 'w-16 h-16 border-yellow-400/60' : 'w-14 h-14 border-white/20'}">
-                                👤
-                            </div>
-                            <p class="text-gray-400 text-[11px] font-bold text-center leading-tight">{sec.label} #{rank}</p>
-                            <div class="flex gap-0.5 text-amber-400 text-xs">★★★★★</div>
-                            <p class="text-gray-500 text-[9px]">טרם דורג</p>
-                        </div>
-                    {/each}
-                </div>
-                <!-- שורה תחתונה: #4 | #5 ממורכז -->
-                <div class="flex justify-center gap-3 w-full">
-                    {#each [4, 5] as rank}
-                        <div class="flex flex-col items-center gap-1.5 w-[30%]">
-                            <span class="text-[11px] font-black text-gray-500">#{rank}</span>
-                            <div class="w-14 h-14 rounded-full bg-white/10 border-2 border-dashed border-white/20 flex items-center justify-center text-gray-500 text-2xl">
-                                👤
-                            </div>
-                            <p class="text-gray-400 text-[11px] font-bold text-center leading-tight">{sec.label} #{rank}</p>
-                            <div class="flex gap-0.5 text-amber-400 text-xs">★★★★★</div>
-                            <p class="text-gray-500 text-[9px]">טרם דורג</p>
-                        </div>
-                    {/each}
-                </div>
-            </div>
-
-            <!-- דסקטופ: גריד רגיל -->
-            <div class="hidden md:grid md:grid-cols-5 md:gap-6">
-                {#each [1,2,3,4,5] as rank}
-                    <div class="flex flex-col items-center gap-3">
-                        <div class="w-20 h-20 rounded-full bg-white/10 border-2 border-dashed border-white/20 flex items-center justify-center text-gray-500 text-3xl">
-                            👤
-                        </div>
-                        <p class="text-gray-400 text-sm font-bold text-center">{sec.label} #{rank}</p>
-                        <div class="flex gap-0.5 text-amber-400 text-lg">★★★★★</div>
-                        <p class="text-gray-500 text-xs">טרם דורג</p>
-                    </div>
-                {/each}
-            </div>
-        </div>
-
-        <div class="text-center mt-3 md:mt-4">
-            <a href={sec.href} class="text-blue-400 hover:text-blue-300 text-sm font-bold transition-colors">לדף המלא ←</a>
+        <div class="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm">
+            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-bold text-white">
+                🗳️ {data.stats.officialCount} מדורגים
+            </span>
+            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-bold text-white">
+                ⭐ {data.stats.reviewCount} דירוגים
+            </span>
+            {#each GROUPS as g (g.key)}
+                <a href={g.route} class="chip-link rounded-full border border-white/10 bg-white/5 px-3 py-1 text-gray-300 transition-colors">
+                    {g.icon} {g.title}
+                </a>
+            {/each}
         </div>
     </section>
-    {/each}
+
+    <!-- b) כרטיסי קטגוריות -->
+    <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {#each GROUPS as g (g.key)}
+            <a href={g.route} class="cat-card flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/5 p-4 transition-colors">
+                <span class="flex items-center gap-2">
+                    <span class="text-2xl">{g.icon}</span>
+                    <span class="font-black text-white">{g.title}</span>
+                </span>
+                <span class="text-xs leading-relaxed text-gray-400">{g.blurb}</span>
+                <span class="mt-1 flex items-center justify-between text-xs">
+                    <span class="text-gray-500">{data.groupCounts[g.key]} מדורגים</span>
+                    <span class="font-bold text-blue-400">ללוח המלא ←</span>
+                </span>
+            </a>
+        {/each}
+    </section>
+
+    <!-- c) מובילי הדירוג -->
+    <section>
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-lg font-black text-white md:text-xl">🏆 מובילי הדירוג</h2>
+            {#if data.top5.length}
+                <a href="/top-rated" class="text-sm font-bold text-blue-400 hover:text-blue-300">לכל המצטיינים ←</a>
+            {/if}
+        </div>
+        {#if data.top5.length}
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {#each data.top5 as official, i (official.id)}
+                    <OfficialCard {official} rank={i + 1} />
+                {/each}
+            </div>
+        {:else}
+            <div class="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+                <p class="font-bold text-white">עוד לא דורג אף אחד — היו הראשונים!</p>
+                <p class="mt-1 text-sm text-gray-400">בחרו לוח, מצאו את המדורג ושתפו את דעתכם</p>
+                <div class="mt-3 flex flex-wrap justify-center gap-2">
+                    {#each GROUPS as g (g.key)}
+                        <a href={g.route} class="btn-premium rounded-full px-4 py-1.5 text-sm font-bold text-white">
+                            {g.icon} {g.title}
+                        </a>
+                    {/each}
+                </div>
+            </div>
+        {/if}
+    </section>
+
+    <!-- d) טעוני שיפור -->
+    {#if data.needImprovement.length}
+        <section>
+            <h2 class="mb-3 text-lg font-black text-white md:text-xl">📉 טעוני שיפור</h2>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {#each data.needImprovement as official (official.id)}
+                    <OfficialCard {official} compact />
+                {/each}
+            </div>
+        </section>
+    {/if}
+
+    <!-- e) ארבעת המדדים -->
+    <section>
+        <h2 class="mb-3 text-lg font-black text-white md:text-xl">ארבעת המדדים</h2>
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {#each CRITERIA as c (c.key)}
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
+                    <span class="text-2xl" aria-hidden="true">{c.icon}</span>
+                    <p class="mt-1 text-sm font-black text-white">{c.short}</p>
+                    <p class="mt-1 text-xs leading-relaxed text-gray-500">{c.description}</p>
+                </div>
+            {/each}
+        </div>
+    </section>
+
+    <!-- f) איך זה עובד -->
+    <section>
+        <h2 class="mb-3 text-lg font-black text-white md:text-xl">איך זה עובד</h2>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {#each STEPS as step, i (step.title)}
+                <div class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <span
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-l from-blue-600 to-purple-600 text-sm font-black text-white"
+                    >{i + 1}</span>
+                    <span>
+                        <span class="block text-sm font-black text-white">{step.icon} {step.title}</span>
+                        <span class="mt-0.5 block text-xs leading-relaxed text-gray-400">{step.text}</span>
+                    </span>
+                </div>
+            {/each}
+        </div>
+    </section>
+
+    <!-- g) ביקורות אחרונות -->
+    {#if data.recentReviews.length}
+        <section>
+            <h2 class="mb-3 text-lg font-black text-white md:text-xl">ביקורות אחרונות</h2>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {#each data.recentReviews as r (r.id)}
+                    <article class="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-sm font-bold text-white">
+                                {r.anonymous || !r.reviewer_name ? 'אזרח/ית' : r.reviewer_name}
+                            </span>
+                            <Stars value={r.overall} size={14} />
+                        </div>
+                        <p class="line-clamp-3 text-sm leading-relaxed text-gray-300">{r.text}</p>
+                        <div class="mt-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <a href="/officials/{r.official.id}" class="font-bold text-blue-400 hover:text-blue-300">
+                                על {r.official.name}{r.official.position ? ` · ${r.official.position}` : ''}
+                            </a>
+                            <span class="text-gray-500">{relDate(r.created_at)}</span>
+                        </div>
+                    </article>
+                {/each}
+            </div>
+        </section>
+    {/if}
+
+    <!-- h) פס חזון -->
+    <section class="rounded-2xl border border-white/10 bg-gradient-to-l from-blue-600/15 to-purple-600/15 p-4 text-center">
+        <p class="font-black text-white">"חברה אחראית בודקת שהחתול לא שומר על השמנת"</p>
+        <p class="mt-1 text-sm text-gray-400">
+            דירוג ציבורי הוא כלי הביקורת של האזרח על משרתיו —
+            <a href="/about" class="font-bold text-blue-400 hover:text-blue-300">לעמוד החזון ←</a>
+        </p>
+    </section>
 
 </div>
+
+<style>
+    /* Tailwind v4: group-hover שבור — CSS מפורש */
+    .cat-card:hover {
+        background: rgba(255, 255, 255, 0.09);
+        border-color: rgba(96, 165, 250, 0.4);
+    }
+    .chip-link:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+</style>

@@ -1,29 +1,118 @@
-<div class="space-y-10 py-8">
-    <div class="text-center">
-        <h1 class="text-3xl md:text-4xl font-black text-white mb-3">
-            נבחרי הציבור המדורגים ביותר
-        </h1>
-        <p class="text-amber-400 text-lg font-bold">
-            מיועדים לפרס השנה עבור פעילותם לטובת העם
+<script lang="ts">
+    import Podium from '$lib/components/rating/Podium.svelte';
+    import OfficialCard from '$lib/components/rating/OfficialCard.svelte';
+
+    let { data } = $props();
+
+    const MEDALS = ['🥇', '🥈', '🥉'];
+</script>
+
+<svelte:head>
+    <title>מצטייני הציבור — דירוג ציבורי</title>
+    <meta
+        name="description"
+        content="המדורגים הגבוהים ביותר על ידי העם — חברי כנסת, שופטים ועובדי ציבור המועמדים להוקרה ולפרס ביום העצמאות."
+    />
+</svelte:head>
+
+<div class="space-y-8 py-6">
+    <!-- כותרת -->
+    <header class="text-center">
+        <h1 class="text-3xl font-black text-white md:text-4xl">🏆 מצטייני הציבור</h1>
+        <p class="mt-2 font-bold text-amber-400">
+            המדורגים הגבוהים ביותר על ידי העם — מועמדים להוקרה ולפרס ביום העצמאות
         </p>
-    </div>
+    </header>
 
-    <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6">
-            {#each [1,2,3,4,5] as i}
-                <div class="flex flex-col items-center gap-3">
-                    <div class="w-20 h-20 rounded-full bg-white/10 border-2 border-dashed border-white/20 flex items-center justify-center text-gray-500 text-3xl">
-                        👤
-                    </div>
-                    <p class="text-gray-400 text-sm font-bold">נבחר ציבור #{i}</p>
-                    <div class="flex gap-0.5 text-amber-400 text-lg">★★★★★</div>
-                    <p class="text-gray-500 text-xs">טרם דורג</p>
-                </div>
-            {/each}
+    <!-- פודיום / מצב ריק -->
+    {#if data.top3.length}
+        <Podium officials={data.top3} />
+    {:else}
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+            <p class="font-bold text-gray-300">הפודיום עדיין ריק — היו הראשונים לדרג</p>
+            <div class="mt-3 flex flex-wrap justify-center gap-2">
+                {#each data.perGroup as g (g.key)}
+                    <a
+                        href={g.route}
+                        class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10"
+                    >{g.icon} {g.title}</a>
+                {/each}
+            </div>
         </div>
-    </div>
+    {/if}
 
-    <div class="text-center">
-        <a href="/" class="text-blue-400 hover:text-blue-300 text-sm transition-colors">← חזרה לדף הבית</a>
+    <!-- עשרת הגדולים -->
+    {#if data.top10.length}
+        <section>
+            <h2 class="mb-3 text-lg font-black text-white">עשרת הגדולים</h2>
+            <ol class="grid gap-2 sm:grid-cols-2">
+                {#each data.top10 as official, i (official.id)}
+                    <li class="flex items-center gap-2">
+                        <span class="w-8 shrink-0 text-center text-sm font-black text-gray-500 tabular-nums" aria-label="מקום {i + 1}">
+                            {#if i < 3}<span class="text-lg">{MEDALS[i]}</span>{:else}{i + 1}{/if}
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <OfficialCard {official} compact />
+                        </div>
+                    </li>
+                {/each}
+            </ol>
+        </section>
+    {/if}
+
+    <!-- מובילים לפי קטגוריה -->
+    {#if data.top10.length}
+        <section>
+            <h2 class="mb-3 text-lg font-black text-white">מובילים לפי קטגוריה</h2>
+            <div class="grid gap-4 md:grid-cols-3">
+                {#each data.perGroup as g (g.key)}
+                    <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+                        <a href={g.route} class="mb-2 flex items-center gap-1.5 text-sm font-bold text-blue-400 hover:text-blue-300">
+                            <span>{g.icon}</span><span>{g.title}</span>
+                        </a>
+                        {#if g.top.length}
+                            <div class="space-y-3 pt-2">
+                                {#each g.top as official, i (official.id)}
+                                    <OfficialCard {official} rank={i + 1} compact />
+                                {/each}
+                            </div>
+                        {:else}
+                            <p class="py-2 text-center text-xs text-gray-500">
+                                אין עדיין דירוגים — <a href={g.route} class="text-blue-400 hover:text-blue-300">היו הראשונים</a>
+                            </p>
+                        {/if}
+                    </div>
+                {/each}
+            </div>
+        </section>
+    {/if}
+
+    <!-- תחתית הדירוג -->
+    {#if data.bottom3.length}
+        <section class="rounded-2xl border border-red-400/20 bg-white/5 p-4">
+            <h2 class="text-base font-black text-white">📉 בתחתית הדירוג</h2>
+            <p class="mb-3 mt-0.5 text-xs text-gray-400">דורשים שיפור — הציבור מצפה ליותר</p>
+            <div class="grid gap-2 sm:grid-cols-3">
+                {#each data.bottom3 as official (official.id)}
+                    <OfficialCard {official} compact />
+                {/each}
+            </div>
+        </section>
+    {/if}
+
+    <!-- פס הסבר + קריאה לפעולה -->
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <p class="min-w-56 flex-1 text-xs leading-relaxed text-gray-400">
+            בדירוג ההוגן נכללים מדורגים עם {data.minReviews} דירוגים לפחות; הציון משוקלל כך שדירוג בודד לא יקפיץ לצמרת.
+        </p>
+        <span class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold text-gray-300">לדרג עכשיו:</span>
+            {#each data.perGroup as g (g.key)}
+                <a
+                    href={g.route}
+                    class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-white transition-colors hover:bg-white/10"
+                >{g.icon} {g.title}</a>
+            {/each}
+        </span>
     </div>
 </div>

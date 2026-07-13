@@ -3,7 +3,7 @@
 	import "flag-icons/css/flag-icons.min.css";
 	import "$lib/i18n";
 	import Header from "$lib/components/Header.svelte";
-	import NewsTicker from "$lib/components/NewsTicker.svelte";
+	import NavBar from "$lib/components/rating/NavBar.svelte";
 	import RightAdBanner from "$lib/components/RightAdBanner.svelte";
 	import AdsSidebar from "$lib/components/AdsSidebar.svelte";
 	import Footer from "$lib/components/Footer.svelte";
@@ -53,6 +53,8 @@
 		onLogout={handleLogout}
 		onShowAuth={handleShowAuth}
 	/>
+
+	<NavBar />
 
 	<div class="layout-container flex-grow">
 		<RightAdBanner />
