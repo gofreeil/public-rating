@@ -26,7 +26,7 @@
         >{rankBadge ?? `#${rank}`}</span>
     {/if}
 
-    <Avatar name={official.name} size={compact ? 44 : 56} />
+    <Avatar name={official.name} image={official.image} size={compact ? 44 : 56} />
 
     <span class="min-w-0 flex-1">
         <span class="block truncate font-bold text-white {compact ? 'text-sm' : ''}">{official.name}</span>

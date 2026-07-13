@@ -9,6 +9,7 @@
         name: string;
         position: string;
         org: string;
+        image?: string;
     }
 
     let {
@@ -108,7 +109,7 @@
                                 onmousemove={() => (active = i)}
                                 tabindex="-1"
                             >
-                                <Avatar name={o.name} size={32} />
+                                <Avatar name={o.name} image={o.image} size={32} />
                                 <span class="min-w-0">
                                     <span class="block truncate text-sm font-bold text-white">{o.name}</span>
                                     <span class="block truncate text-xs text-gray-400">

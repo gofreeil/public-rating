@@ -69,6 +69,7 @@ function mapOfficial(item: StrapiItem): Official {
         position: typeof x.position === 'string' ? x.position : '',
         org: typeof x.org === 'string' ? x.org : '',
         bio: item.description ?? '',
+        image: typeof x.image === 'string' ? x.image : '',
         approved: x.approved !== false,
         suggested_by: typeof x.suggested_by === 'string' ? x.suggested_by : null,
         created_at: item.createdAt ?? '',
@@ -260,6 +261,7 @@ export interface OfficialInput {
     position: string;
     org: string;
     bio: string;
+    image?: string;
 }
 
 /** יצירת מדורג — אדמין (approved) או הצעת משתמש (ממתינה לאישור) */
@@ -277,6 +279,7 @@ export async function createOfficial(
                 group: input.group,
                 position: input.position,
                 org: input.org,
+                ...(input.image ? { image: input.image } : {}),
                 approved: opts.approved,
                 ...(opts.suggestedBy ? { suggested_by: opts.suggestedBy } : {}),
             },
@@ -304,6 +307,7 @@ export async function updateOfficial(id: string, input: Partial<OfficialInput> &
                 ...(input.group !== undefined ? { group: input.group } : {}),
                 ...(input.position !== undefined ? { position: input.position } : {}),
                 ...(input.org !== undefined ? { org: input.org } : {}),
+                ...(input.image !== undefined ? { image: input.image } : {}),
                 ...(input.approved !== undefined ? { approved: input.approved } : {}),
             },
         },

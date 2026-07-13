@@ -53,6 +53,7 @@ export const load: PageServerLoad = async () => {
             name: o.name,
             position: o.position,
             org: o.org,
+            image: o.image,
         }));
 
         return {

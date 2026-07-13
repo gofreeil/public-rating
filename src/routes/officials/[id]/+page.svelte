@@ -32,7 +32,7 @@
 <div class="flex flex-col gap-4 py-6">
     <!-- כותרת: מי המדורג -->
     <section class="flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-        <Avatar name={official.name} size={72} />
+        <Avatar name={official.name} image={official.image} size={72} />
         <div class="min-w-0 flex-1">
             <h1 class="text-2xl font-black text-white sm:text-3xl">{official.name}</h1>
             <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-400">

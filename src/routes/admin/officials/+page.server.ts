@@ -48,12 +48,13 @@ export const actions: Actions = {
         const position = String(fd.get('position') ?? '').trim();
         const org = String(fd.get('org') ?? '').trim();
         const bio = String(fd.get('bio') ?? '').trim();
+        const image = String(fd.get('image') ?? '').trim();
 
         if (!name) return fail(400, { error: 'חסר שם המדורג' });
         if (!groupByKey(group)) return fail(400, { error: 'קבוצה לא תקינה' });
 
         try {
-            await createOfficial({ name, group: group as GroupKey, position, org, bio }, { approved: true });
+            await createOfficial({ name, group: group as GroupKey, position, org, bio, image }, { approved: true });
             return { success: true, message: `"${name}" נוסף למדורגים` };
         } catch (e) {
             return fail(500, { error: `שגיאה בהוספה: ${e instanceof Error ? e.message : e}` });
@@ -105,12 +106,13 @@ export const actions: Actions = {
         const position = String(fd.get('position') ?? '').trim();
         const org = String(fd.get('org') ?? '').trim();
         const bio = String(fd.get('bio') ?? '').trim();
+        const image = String(fd.get('image') ?? '').trim();
 
         if (!id) return fail(400, { error: 'חסר מזהה מדורג' });
         if (!name) return fail(400, { error: 'חסר שם המדורג' });
 
         try {
-            await updateOfficial(id, { name, position, org, bio });
+            await updateOfficial(id, { name, position, org, bio, image });
             return { success: true, message: `"${name}" עודכן` };
         } catch (e) {
             return fail(500, { error: `שגיאה בעדכון: ${e instanceof Error ? e.message : e}` });

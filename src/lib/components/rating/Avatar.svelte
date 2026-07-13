@@ -1,6 +1,10 @@
 <script lang="ts">
-    // אווטאר ראשי-תיבות עם גרדיאנט דטרמיניסטי לפי השם (אין תמונות פנים בפלטפורמה)
-    let { name = '', size = 56 }: { name?: string; size?: number } = $props();
+    // אווטאר: תמונת פנים אמיתית כשקיימת (extra_fields.image), אחרת ראשי-תיבות עם גרדיאנט דטרמיניסטי
+    let { name = '', size = 56, image = '' }: { name?: string; size?: number; image?: string } = $props();
+
+    // כשל טעינה (קישור מת/חסום) → נופלים לראשי-תיבות; מתאפס כשמגיעה תמונה אחרת
+    let failedSrc = $state('');
+    const showImage = $derived(!!image && failedSrc !== image);
 
     const initials = $derived.by(() => {
         const words = (name || '').trim().split(/\s+/).filter(Boolean);
@@ -17,10 +21,23 @@
     });
 </script>
 
-<span
-    class="inline-flex items-center justify-center rounded-full font-bold text-white select-none shrink-0"
-    style="width:{size}px;height:{size}px;font-size:{size * 0.36}px;
-           background:linear-gradient(135deg, hsl({hue} 65% 42%), hsl({hue + 40} 70% 30%));
-           box-shadow: inset 0 -2px 6px rgba(0,0,0,.35);"
-    aria-hidden="true"
->{initials}</span>
+{#if showImage}
+    <img
+        src={image}
+        alt=""
+        loading="lazy"
+        referrerpolicy="no-referrer"
+        class="rounded-full object-cover object-top select-none shrink-0 border border-white/15 bg-white/10"
+        style="width:{size}px;height:{size}px;"
+        onerror={() => (failedSrc = image)}
+        aria-hidden="true"
+    />
+{:else}
+    <span
+        class="inline-flex items-center justify-center rounded-full font-bold text-white select-none shrink-0"
+        style="width:{size}px;height:{size}px;font-size:{size * 0.36}px;
+               background:linear-gradient(135deg, hsl({hue} 65% 42%), hsl({hue + 40} 70% 30%));
+               box-shadow: inset 0 -2px 6px rgba(0,0,0,.35);"
+        aria-hidden="true"
+    >{initials}</span>
+{/if}

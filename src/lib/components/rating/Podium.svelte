@@ -33,7 +33,7 @@
                 style={first ? 'translate: 0 -10px' : ''}
             >
                 <span class="leading-none {first ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl'}" aria-hidden="true">{MEDALS[rank - 1]}</span>
-                <span class="mt-1.5"><Avatar name={official.name} size={first ? 72 : 56} /></span>
+                <span class="mt-1.5"><Avatar name={official.name} image={official.image} size={first ? 72 : 56} /></span>
                 <span class="podium-name mt-1.5 w-full truncate font-bold text-white {first ? '' : 'text-sm'}">{official.name}</span>
                 <span class="w-full truncate text-xs text-gray-400">{official.position}</span>
                 <span class="mt-1 flex items-center gap-1.5">

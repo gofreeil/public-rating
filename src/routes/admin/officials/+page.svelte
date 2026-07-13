@@ -26,6 +26,7 @@
 	let editPosition = $state('');
 	let editOrg = $state('');
 	let editBio = $state('');
+	let editImage = $state('');
 
 	function startEdit(o: RatedOfficial) {
 		editingId = o.id;
@@ -33,6 +34,7 @@
 		editPosition = o.position;
 		editOrg = o.org;
 		editBio = o.bio;
+		editImage = o.image;
 	}
 </script>
 
@@ -83,6 +85,7 @@
 				<input name="position" list={'positions-' + newGroup} placeholder="תפקיד" class="{inputCls} w-40" />
 				<input name="org" placeholder={groupByKey(newGroup)?.orgLabel ?? 'ארגון'} class="{inputCls} w-40" />
 				<input name="bio" placeholder="רקע קצר" class="{inputCls} flex-1 min-w-[160px]" />
+				<input name="image" type="url" dir="ltr" placeholder="קישור לתמונה (URL)" class="{inputCls} flex-1 min-w-[180px]" />
 				<button
 					type="submit"
 					class="px-5 py-2 text-sm font-bold rounded-xl bg-gradient-to-l from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition-all cursor-pointer"
@@ -145,7 +148,7 @@
 				{#each filteredOfficials as o (o.id)}
 					<div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5">
 						<div class="flex flex-wrap items-center gap-3">
-							<Avatar name={o.name} size={32} />
+							<Avatar name={o.name} image={o.image} size={32} />
 							<span class="font-bold">{o.name}</span>
 							<span title={groupByKey(o.group)?.title}>{groupByKey(o.group)?.icon}</span>
 							<span class="text-xs text-gray-400 flex-1 min-w-[120px] truncate">
@@ -190,6 +193,7 @@
 								<input name="position" bind:value={editPosition} list={'positions-' + o.group} placeholder="תפקיד" class="{inputCls} w-40" />
 								<input name="org" bind:value={editOrg} placeholder={groupByKey(o.group)?.orgLabel ?? 'ארגון'} class="{inputCls} w-40" />
 								<input name="bio" bind:value={editBio} placeholder="רקע קצר" class="{inputCls} flex-1 min-w-[160px]" />
+								<input name="image" type="url" dir="ltr" bind:value={editImage} placeholder="קישור לתמונה (URL)" class="{inputCls} flex-1 min-w-[180px]" />
 								<button
 									type="submit"
 									class="px-4 py-2 text-sm font-bold rounded-xl bg-gradient-to-l from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition-all cursor-pointer"

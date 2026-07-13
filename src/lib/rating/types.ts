@@ -80,6 +80,8 @@ export interface Official {
     org: string;
     /** רקע קצר (אופציונלי) */
     bio: string;
+    /** URL תמונת פנים אמיתית (ויקיפדיה/אתר הכנסת); ריק = אווטאר ראשי-תיבות */
+    image: string;
     /** הצעות משתמשים ממתינות לאישור אדמין (approved=false) */
     approved: boolean;
     suggested_by: string | null;
