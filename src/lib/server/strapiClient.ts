@@ -6,9 +6,12 @@
 const STRAPI_URL   = process.env.STRAPI_URL   ?? 'http://localhost:1337';
 
 function getHeaders(jwt?: string): HeadersInit {
+    // בלי JWT של משתמש — נופלים ל-STRAPI_TOKEN (כמו באתר הקהילה); בפרודקשן
+    // כתיבה אנונימית ל-items חסומה (403), אז בלעדיו דירוגים לא נשמרים
+    const auth = jwt ?? process.env.STRAPI_TOKEN;
     return {
         'Content-Type': 'application/json',
-        ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+        ...(auth ? { Authorization: `Bearer ${auth}` } : {}),
     };
 }
 
