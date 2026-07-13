@@ -10,6 +10,10 @@
     let query = $state('');
     let sort: SortKey = $state('rank');
 
+    // עימוד: עשרה כרטיסים בעמוד; חיפוש/מיון מחזירים לעמוד הראשון
+    const PER_PAGE = 10;
+    let page = $state(1);
+
     const SORTS: { key: SortKey; label: string }[] = [
         { key: 'rank', label: '⭐ הדירוג הגבוה' },
         { key: 'count', label: '🔥 הכי מדורגים' },
@@ -27,6 +31,11 @@
 
     // מדליות רק במיון ברירת המחדל, בלי חיפוש, ורק למי שבאמת דורג
     const showRanks = $derived(sort === 'rank' && !query.trim());
+
+    const totalPages = $derived(Math.max(1, Math.ceil(shown.length / PER_PAGE)));
+    // חיפוש שמצמצם תוצאות לא משאיר אותנו תקועים בעמוד שכבר לא קיים
+    const safePage = $derived(Math.min(page, totalPages));
+    const pageItems = $derived(shown.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE));
 </script>
 
 <section class="space-y-4">
@@ -45,6 +54,7 @@
         <input
             type="search"
             bind:value={query}
+            oninput={() => (page = 1)}
             placeholder="🔍 חיפוש שם, תפקיד או ארגון..."
             aria-label="חיפוש בלוח {group.title}"
             class="min-w-40 flex-1 basis-48 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none"
@@ -52,7 +62,7 @@
         {#each SORTS as s (s.key)}
             <button
                 type="button"
-                onclick={() => (sort = s.key)}
+                onclick={() => { sort = s.key; page = 1; }}
                 aria-pressed={sort === s.key}
                 class="cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors {sort === s.key
                     ? 'border-blue-400/50 bg-blue-500/20 text-blue-300'
@@ -86,12 +96,41 @@
         </div>
     {:else}
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {#each shown as official, i (official.id)}
+            {#each pageItems as official, i (official.id)}
+                {@const globalIdx = (safePage - 1) * PER_PAGE + i}
                 <OfficialCard
                     {official}
-                    rank={showRanks && i < 3 && official.stats.count > 0 ? i + 1 : null}
+                    rank={showRanks && globalIdx < 3 && official.stats.count > 0 ? globalIdx + 1 : null}
                 />
             {/each}
         </div>
+
+        <!-- דפדוף — מופיע רק כשיש יותר מעמוד אחד -->
+        {#if totalPages > 1}
+            <nav class="flex flex-wrap items-center justify-center gap-1.5" aria-label="דפדוף בלוח">
+                <button
+                    type="button"
+                    onclick={() => (page = safePage - 1)}
+                    disabled={safePage === 1}
+                    class="cursor-pointer rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-gray-400 transition-colors hover:text-gray-200 disabled:cursor-default disabled:opacity-40 disabled:hover:text-gray-400"
+                >הקודם</button>
+                {#each Array(totalPages) as _, p (p)}
+                    <button
+                        type="button"
+                        onclick={() => (page = p + 1)}
+                        aria-current={safePage === p + 1 ? 'page' : undefined}
+                        class="cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors {safePage === p + 1
+                            ? 'border-blue-400/50 bg-blue-500/20 text-blue-300'
+                            : 'border-white/10 bg-white/5 text-gray-400 hover:text-gray-200'}"
+                    >{p + 1}</button>
+                {/each}
+                <button
+                    type="button"
+                    onclick={() => (page = safePage + 1)}
+                    disabled={safePage === totalPages}
+                    class="cursor-pointer rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-gray-400 transition-colors hover:text-gray-200 disabled:cursor-default disabled:opacity-40 disabled:hover:text-gray-400"
+                >הבא</button>
+            </nav>
+        {/if}
     {/if}
 </section>
