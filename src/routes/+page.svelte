@@ -10,7 +10,7 @@
 
     const STEPS = [
         { icon: '🔎', title: 'מאתרים את המדורג', text: 'חיפוש מהיר או גלישה בלוחות — כנסת, שופטים ועובדי ציבור' },
-        { icon: '⭐', title: 'מדרגים ב-4 מדדים', text: 'זמנים ותקנים, תרומה לעם, חזון ושקיפות — עם חוות דעת' },
+        { icon: '⭐', title: 'מדרגים ב-5 מדדים', text: 'זמנים ותקנים, תרומה לעם, ראיית המציאות, לגופו של עניין ושקיפות — עם חוות דעת' },
         { icon: '📊', title: 'התמונה נחשפת לציבור', text: 'הדירוג המצטבר גלוי לכולם — שקוף, הוגן ובלתי תלוי' },
     ];
 
@@ -28,7 +28,7 @@
     <title>הציבור מדרג את משרתיו — דירוג ציבורי</title>
     <meta
         name="description"
-        content="דירוג ציבורי — שקיפות, אחריות ודירוג אמיתי של חברי כנסת, שופטים ועובדי ציבור על ידי העם. ארבעה מדדים: זמנים ותקנים, תרומה לעם, חזון ושקיפות."
+        content="דירוג ציבורי — שקיפות, אחריות ודירוג אמיתי של חברי כנסת, שופטים ועובדי ציבור על ידי העם. חמישה מדדים: זמנים ותקנים, תרומה לעם, ראיית המציאות, ניתוח לגופו של עניין ושקיפות."
     />
 </svelte:head>
 
@@ -126,10 +126,10 @@
         </section>
     {/if}
 
-    <!-- e) ארבעת המדדים -->
+    <!-- e) חמשת המדדים -->
     <section>
-        <h2 class="mb-3 text-lg font-black text-white md:text-xl">ארבעת המדדים</h2>
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <h2 class="mb-3 text-lg font-black text-white md:text-xl">חמשת המדדים</h2>
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {#each CRITERIA as c (c.key)}
                 <div class="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
                     <span class="text-2xl" aria-hidden="true">{c.icon}</span>

@@ -1,9 +1,9 @@
 // ============================================================
-// criteria.ts - ארבעת מדדי הדירוג של הפלטפורמה
-// כל דירוג של עובד/נבחר ציבור נבחן בארבעה מדדים (1-5 כוכבים)
+// criteria.ts - חמשת מדדי הדירוג של הפלטפורמה
+// כל דירוג של עובד/נבחר ציבור נבחן בחמישה מדדים (1-5 כוכבים)
 // ============================================================
 
-export type CriterionKey = 'timeliness' | 'contribution' | 'vision' | 'transparency';
+export type CriterionKey = 'timeliness' | 'contribution' | 'vision' | 'merit' | 'transparency';
 
 export interface Criterion {
     key: CriterionKey;
@@ -34,9 +34,16 @@ export const CRITERIA: Criterion[] = [
     {
         key: 'vision',
         icon: '🔭',
-        label: 'חזון נכון של העתיד',
-        short: 'חזון',
+        label: 'ראיית המציאות',
+        short: 'ראיית המציאות',
         description: 'הערכות ותחזיות שהתבררו כנכונות במבחן הזמן',
+    },
+    {
+        key: 'merit',
+        icon: '🎯',
+        label: 'ניתוח סוגיות לגופו של עניין',
+        short: 'לגופו של עניין',
+        description: 'מנתח כל סוגיה לגופו של עניין — ללא משוא פנים ושיקולים זרים',
     },
     {
         key: 'transparency',

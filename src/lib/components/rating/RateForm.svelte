@@ -1,5 +1,5 @@
 <script lang="ts">
-    // טופס דירוג — 4 מדדים + נימוק, עדכון-במקום של הדירוג הקיים (upsert בשרת)
+    // טופס דירוג — כל המדדים + נימוק, עדכון-במקום של הדירוג הקיים (upsert בשרת)
     import { enhance } from '$app/forms';
     import { CRITERIA, type CriterionKey } from '$lib/rating/criteria';
     import type { Review } from '$lib/rating/types';
@@ -7,12 +7,12 @@
 
     let { myReview = null }: { myReview?: Review | null } = $props();
 
-    let values = $state<Record<CriterionKey, number>>({
-        timeliness: myReview?.scores.timeliness ?? 0,
-        contribution: myReview?.scores.contribution ?? 0,
-        vision: myReview?.scores.vision ?? 0,
-        transparency: myReview?.scores.transparency ?? 0,
-    });
+    // נבנה דינמית מ-CRITERIA — הוספת מדד חדש לא דורשת שינוי כאן
+    let values = $state<Record<CriterionKey, number>>(
+        Object.fromEntries(
+            CRITERIA.map((c) => [c.key, myReview?.scores[c.key] ?? 0]),
+        ) as Record<CriterionKey, number>,
+    );
     let submitting = $state(false);
 
     const hasAny = $derived(CRITERIA.some((c) => (values[c.key] ?? 0) > 0));

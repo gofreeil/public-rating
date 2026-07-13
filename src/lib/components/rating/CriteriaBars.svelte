@@ -1,5 +1,5 @@
 <script lang="ts">
-    // פירוט ציון לפי ארבעת המדדים — שורה קומפקטית לכל מדד
+    // פירוט ציון לפי המדדים — שורה קומפקטית לכל מדד
     import { CRITERIA, type CriterionKey } from '$lib/rating/criteria';
     import { fmtScore } from '$lib/rating/aggregate';
 

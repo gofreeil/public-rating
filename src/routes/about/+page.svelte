@@ -31,9 +31,9 @@
         </p>
     </section>
 
-    <!-- ארבעת המדדים -->
+    <!-- חמשת המדדים -->
     <section>
-        <h2 class="mb-3 text-lg font-black text-white">ארבעת המדדים</h2>
+        <h2 class="mb-3 text-lg font-black text-white">חמשת המדדים</h2>
         <div class="grid gap-3 sm:grid-cols-2">
             {#each CRITERIA as c (c.key)}
                 <div class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
