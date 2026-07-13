@@ -189,7 +189,7 @@
         <p class="font-black text-white">"חברה אחראית בודקת שהחתול לא שומר על השמנת"</p>
         <p class="mt-1 text-sm text-gray-400">
             דירוג ציבורי הוא כלי הביקורת של האזרח על משרתיו —
-            <a href="/about" class="font-bold text-blue-400 hover:text-blue-300">לעמוד החזון ←</a>
+            <a href="/about#vision" class="font-bold text-blue-400 hover:text-blue-300">לחזון בעמוד האודות ←</a>
         </p>
     </section>
 

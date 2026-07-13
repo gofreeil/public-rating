@@ -4,7 +4,7 @@
 </script>
 
 <svelte:head>
-    <title>החזון — דירוג ציבורי</title>
+    <title>אודות — דירוג ציבורי</title>
     <meta
         name="description"
         content="פלטפורמה לדירוג ציבורי שבה עובדי ציבור, שופטים וחברי כנסת נבחנים לפי תרומתם לעם — מדורגים ומתוגמלים חברתית, לטובה ולרעה."
@@ -14,12 +14,17 @@
 <div class="mx-auto max-w-3xl space-y-6 py-6">
     <!-- פתיחה -->
     <header class="text-center">
-        <h1 class="text-3xl font-black text-white md:text-4xl">החזון — דירוג ציבורי</h1>
-        <p class="mt-3 text-lg font-bold leading-relaxed text-amber-300">
+        <h1 class="text-3xl font-black text-white md:text-4xl">אודות — דירוג ציבורי</h1>
+    </header>
+
+    <!-- החזון -->
+    <section id="vision" class="rounded-2xl border border-amber-400/25 bg-white/5 p-5 text-center">
+        <h2 class="text-lg font-black text-white">החזון</h2>
+        <p class="mt-2 text-lg font-bold leading-relaxed text-amber-300">
             כיצד יש לעובדי הציבור ולנבחריו אינטרס ליישר קו מהר עם העם?
         </p>
         <p class="mt-1 text-gray-300">חברה אחראית מחויבת לבדוק תמיד שהחתול לא שומר על השמנת.</p>
-    </header>
+    </section>
 
     <!-- מה אנחנו עושים -->
     <section class="rounded-2xl border border-white/10 bg-white/5 p-5">

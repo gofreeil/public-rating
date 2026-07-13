@@ -8,7 +8,6 @@
         { href: '/judges', label: 'שופטים' },
         { href: '/public-servants', label: 'עובדי ציבור' },
         { href: '/top-rated', label: '🏆 המצטיינים' },
-        { href: '/about', label: 'החזון' },
     ];
 
     function isActive(href: string, pathname: string): boolean {
