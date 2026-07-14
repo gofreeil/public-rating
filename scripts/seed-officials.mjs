@@ -46,7 +46,7 @@ for (const o of officials) {
 	try {
 		// בדיקת קיום לפי שם
 		const checkUrl =
-			`${base}/api/items?filters[category][$eq]=pr_official` +
+			`${base}/api/pr-items?filters[category][$eq]=pr_official` +
 			`&filters[label][$eq]=${encodeURIComponent(o.name)}` +
 			`&pagination[limit]=1`;
 		const checkRes = await fetch(checkUrl, { headers });
@@ -68,7 +68,7 @@ for (const o of officials) {
 			continue;
 		}
 
-		const postRes = await fetch(`${base}/api/items`, {
+		const postRes = await fetch(`${base}/api/pr-items`, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify({

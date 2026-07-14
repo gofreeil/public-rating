@@ -223,7 +223,7 @@ const known = new Set(seed.map((o) => norm(o.name)));
 if (strapiUrl) {
 	const base = strapiUrl.replace(/\/+$/, '');
 	const res = await fetch(
-		`${base}/api/items?filters[category][$eq]=pr_official&pagination[limit]=1000&fields[0]=label`,
+		`${base}/api/pr-items?filters[category][$eq]=pr_official&pagination[limit]=1000&fields[0]=label`,
 	);
 	if (!res.ok) {
 		console.error(`✗ שליפת מדורגים מ-Strapi נכשלה: HTTP ${res.status}`);

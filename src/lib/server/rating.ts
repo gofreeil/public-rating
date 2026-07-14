@@ -21,6 +21,12 @@ import {
     type Review,
 } from '$lib/rating/types';
 
+// אוסף מבודד לאתר הדירוג הציבורי.
+// בעבר האתר כתב לאוסף /api/items המשותף עם "קהילה בשכונה" — מה שניפח שם את
+// מונה "פרטים במפה" ל-183. הדירוג הוא מוצר נפרד ולכן קיבל collection משלו.
+// ההעברה בוצעה ע"י scripts/migrate-to-pr-items.mjs
+const ITEMS = '/api/pr-items';
+
 interface StrapiItem {
     id: number;
     documentId: string;
@@ -119,7 +125,7 @@ async function fetchByCategory(category: string): Promise<StrapiItem[]> {
     const PAGE = 1000;
     const all: StrapiItem[] = [];
     for (let start = 0; ; start += PAGE) {
-        const res = await strapiGet<{ data: StrapiItem[] }>('/api/items', {
+        const res = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
             'filters[category][$eq]': category,
             'filters[status1][$eq]': 'active',
             'sort': 'createdAt:desc',
@@ -169,7 +175,7 @@ export async function getRatedOfficials(): Promise<RatedOfficial[]> {
 export async function getOfficial(id: string): Promise<Official | undefined> {
     let res: { data: StrapiItem };
     try {
-        res = await strapiGet<{ data: StrapiItem }>(`/api/items/${encodeURIComponent(id)}`);
+        res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
     } catch (e) {
         if (String(e).includes('→ 404')) return undefined;
         throw e;
@@ -181,7 +187,7 @@ export async function getOfficial(id: string): Promise<Official | undefined> {
 
 /** דירוגים של מדורג בודד — טרי (בלי קאש), חדש למעלה */
 export async function getReviewsFor(officialId: string): Promise<Review[]> {
-    const res = await strapiGet<{ data: StrapiItem[] }>('/api/items', {
+    const res = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
         'filters[category][$eq]': REVIEW_CATEGORY,
         'filters[label][$eq]': officialId,
         'filters[status1][$eq]': 'active',
@@ -193,7 +199,7 @@ export async function getReviewsFor(officialId: string): Promise<Review[]> {
 
 /** כל התגובות בדף מדורג — שליפה אחת (label=המדורג), ישן ראשון בתוך שרשור */
 export async function getCommentsFor(officialId: string): Promise<OfficialComment[]> {
-    const res = await strapiGet<{ data: StrapiItem[] }>('/api/items', {
+    const res = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
         'filters[category][$eq]': COMMENT_CATEGORY,
         'filters[label][$eq]': officialId,
         'filters[status1][$eq]': 'active',
@@ -209,7 +215,7 @@ export async function getCommentsFor(officialId: string): Promise<OfficialCommen
  */
 export async function getOfficialOwnerUserId(officialId: string): Promise<string | null> {
     try {
-        const res = await strapiGet<{ data: StrapiItem }>(`/api/items/${encodeURIComponent(officialId)}`);
+        const res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(officialId)}`);
         if (!res.data || res.data.category !== OFFICIAL_CATEGORY) return null;
         const v = ef(res.data).official_user_id;
         return typeof v === 'string' && v.trim() ? v.trim() : null;
@@ -233,7 +239,7 @@ export interface AddCommentInput {
 
 /** תגובה על דירוג — משתמשים רשומים בלבד (נאכף ב-action) */
 export async function addComment(input: AddCommentInput): Promise<void> {
-    await strapiPost('/api/items', {
+    await strapiPost(ITEMS, {
         data: {
             category: COMMENT_CATEGORY,
             label: input.officialId,
@@ -256,7 +262,7 @@ export async function addComment(input: AddCommentInput): Promise<void> {
 export async function getComment(id: string): Promise<OfficialComment | undefined> {
     let res: { data: StrapiItem };
     try {
-        res = await strapiGet<{ data: StrapiItem }>(`/api/items/${encodeURIComponent(id)}`);
+        res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
     } catch (e) {
         if (String(e).includes('→ 404')) return undefined;
         throw e;
@@ -277,7 +283,7 @@ export interface UpsertReviewInput {
 /** דירוג אחד למשתמש למדורג: קיים → עדכון, אחרת יצירה */
 export async function upsertReview(input: UpsertReviewInput): Promise<void> {
     // רק דירוג פעיל — דירוג שהוסר ע"י אדמין לא "קם לתחייה" בעדכון הבא של המשתמש
-    const existing = await strapiGet<{ data: StrapiItem[] }>('/api/items', {
+    const existing = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
         'filters[category][$eq]': REVIEW_CATEGORY,
         'filters[label][$eq]': input.officialId,
         'filters[user_id][$eq]': input.userId,
@@ -292,11 +298,11 @@ export async function upsertReview(input: UpsertReviewInput): Promise<void> {
         helpful_by: prev ? (ef(prev).helpful_by ?? []) : [],
     };
     if (prev) {
-        await strapiPut(`/api/items/${prev.documentId}`, {
+        await strapiPut(`${ITEMS}/${prev.documentId}`, {
             data: { description: input.text, extra_fields: extra, status1: 'active' },
         });
     } else {
-        await strapiPost('/api/items', {
+        await strapiPost(ITEMS, {
             data: {
                 category: REVIEW_CATEGORY,
                 label: input.officialId,
@@ -315,7 +321,7 @@ export async function upsertReview(input: UpsertReviewInput): Promise<void> {
 
 /** הדירוג הקיים של משתמש עבור מדורג (לעריכה חוזרת בטופס) */
 export async function getMyReview(officialId: string, userId: string): Promise<Review | undefined> {
-    const res = await strapiGet<{ data: StrapiItem[] }>('/api/items', {
+    const res = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
         'filters[category][$eq]': REVIEW_CATEGORY,
         'filters[label][$eq]': officialId,
         'filters[user_id][$eq]': userId,
@@ -328,14 +334,14 @@ export async function getMyReview(officialId: string, userId: string): Promise<R
 
 /** סימון/ביטול "מועיל" על ביקורת */
 export async function toggleHelpful(reviewId: string, userId: string): Promise<void> {
-    const res = await strapiGet<{ data: StrapiItem }>(`/api/items/${reviewId}`);
+    const res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${reviewId}`);
     const item = res.data;
     if (!item || item.category !== REVIEW_CATEGORY) return;
     const x = ef(item);
     const set = new Set(Array.isArray(x.helpful_by) ? (x.helpful_by as string[]) : []);
     if (set.has(userId)) set.delete(userId);
     else set.add(userId);
-    await strapiPut(`/api/items/${reviewId}`, {
+    await strapiPut(`${ITEMS}/${reviewId}`, {
         data: { extra_fields: { ...x, helpful_by: [...set] } },
     });
     invalidateRating();
@@ -355,7 +361,7 @@ export async function createOfficial(
     input: OfficialInput,
     opts: { approved: boolean; suggestedBy?: string },
 ): Promise<string> {
-    const res = await strapiPost<{ data: StrapiItem }>('/api/items', {
+    const res = await strapiPost<{ data: StrapiItem }>(ITEMS, {
         data: {
             category: OFFICIAL_CATEGORY,
             label: input.name,
@@ -383,11 +389,11 @@ export async function updateOfficial(
     id: string,
     input: Partial<OfficialInput> & { approved?: boolean; officialUserId?: string | null },
 ): Promise<void> {
-    const res = await strapiGet<{ data: StrapiItem }>(`/api/items/${id}`);
+    const res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${id}`);
     const item = res.data;
     if (!item || item.category !== OFFICIAL_CATEGORY) throw new Error('מדורג לא נמצא');
     const x = ef(item);
-    await strapiPut(`/api/items/${id}`, {
+    await strapiPut(`${ITEMS}/${id}`, {
         data: {
             ...(input.name !== undefined ? { label: input.name } : {}),
             ...(input.bio !== undefined ? { description: input.bio } : {}),
@@ -410,7 +416,7 @@ export async function updateOfficial(
 
 /** הסרה רכה (status1=deleted) — למדורג או לביקורת */
 export async function softDeleteRatingItem(id: string, byAdmin: string): Promise<void> {
-    await strapiPut(`/api/items/${id}`, {
+    await strapiPut(`${ITEMS}/${id}`, {
         data: { status1: 'deleted', contact: `[הוסר ע"י: ${byAdmin}]` },
     });
     invalidateRating();

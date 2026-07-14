@@ -96,7 +96,7 @@ async function wikiSearchTitle(name) {
 
 // ---- שליפת כל המדורגים ----
 const listUrl =
-	`${base}/api/items?filters[category][$eq]=pr_official` +
+	`${base}/api/pr-items?filters[category][$eq]=pr_official` +
 	`&filters[status1][$eq]=active&pagination[limit]=1000`;
 const listRes = await fetch(listUrl, { headers });
 if (!listRes.ok) {
@@ -142,7 +142,7 @@ for (const item of officials) {
 			continue;
 		}
 
-		const putRes = await fetch(`${base}/api/items/${item.documentId}`, {
+		const putRes = await fetch(`${base}/api/pr-items/${item.documentId}`, {
 			method: 'PUT',
 			headers,
 			body: JSON.stringify({ data: { extra_fields: { ...x, image: hit.image } } }),
