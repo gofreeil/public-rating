@@ -3,7 +3,15 @@
 // ============================================================
 
 import { CRITERIA, type CriterionKey, type Scores } from './criteria';
-import type { Official, OfficialStats, PublicReview, RatedOfficial, Review } from './types';
+import type {
+    Official,
+    OfficialComment,
+    OfficialStats,
+    PublicComment,
+    PublicReview,
+    RatedOfficial,
+    Review,
+} from './types';
 
 /**
  * מינימום דירוגים "וירטואלי" לשקלול בייסיאני (נוסחת IMDb):
@@ -98,6 +106,19 @@ export function toPublicReview(r: Review, meId: string | null): PublicReview {
         markedHelpfulByMe: meId ? r.helpful_by.includes(meId) : false,
         mine: meId ? r.user_id === meId : false,
         created_at: r.created_at,
+    };
+}
+
+/** המרת תגובה גולמית לצורה בטוחה לדפדפן — user_id (שעלול להכיל אימייל) נשאר בשרת */
+export function toPublicComment(c: OfficialComment, meId: string | null): PublicComment {
+    return {
+        id: c.id,
+        review_id: c.review_id,
+        text: c.text,
+        commenter_name: c.commenter_name,
+        official_reply: c.official_reply,
+        mine: meId ? c.user_id === meId : false,
+        created_at: c.created_at,
     };
 }
 

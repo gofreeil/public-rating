@@ -21,8 +21,11 @@ npm run check     # בדיקת TypeScript + Svelte
 
 | קטגוריה | תפקיד | שדות |
 |---|---|---|
-| `pr_official` | מדורג | label=שם, description=רקע, extra_fields={group, position, org, approved, suggested_by} |
+| `pr_official` | מדורג | label=שם, description=רקע, extra_fields={group, position, org, approved, suggested_by, official_user_id} |
 | `pr_review` | דירוג משתמש | **label=documentId של המדורג** (לסינון מדויק), description=טקסט, user_id=מדרג, extra_fields={scores, reviewer_name, anonymous, helpful_by} |
+| `pr_comment` | תגובה על דירוג | **label=documentId של המדורג** (שליפה אחת לדף), description=טקסט, user_id=מגיב, extra_fields={review_id, commenter_name, official_reply} |
+
+- `official_user_id` = חשבון הדמות עצמה (נקבע באדמין) — תגובותיה מסומנות "תגובה רשמית"; **לא נשלח לדפדפן** (עלול להכיל אימייל)
 
 - דירוג אחד למשתמש למדורג — upsert ב-`upsertReview`
 - מיון הוגן: שקלול בייסיאני (IMDb, m=3) ב-`aggregate.ts`; סף פרסים = 3 דירוגים

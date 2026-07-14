@@ -18,12 +18,19 @@ export const load: PageServerLoad = async () => {
 
         // officials כבר ממוינים בדירוג הוגן (משוקלל יורד, לא-מדורגים בסוף)
         const rated = officials.filter((o) => o.stats.count > 0);
-        const top5 = rated.slice(0, 5);
 
-        const needImprovement = rated
-            .filter((o) => o.stats.count >= 3)
-            .sort((a, b) => a.stats.weighted - b.stats.weighted)
-            .slice(0, 3);
+        // שלושת המובילים ושלושת הנמוכים בכל קטגוריה.
+        // תחתית רק מסף 3 דירוגים — לא מכתירים "נמוך ביותר" על סמך כוכב בודד.
+        const showcase = GROUPS.map((g) => {
+            const groupRated = rated.filter((o) => o.group === g.key);
+            const top = groupRated.slice(0, 3);
+            const topIds = new Set(top.map((o) => o.id));
+            const bottom = groupRated
+                .filter((o) => o.stats.count >= 3 && !topIds.has(o.id))
+                .sort((a, b) => a.stats.weighted - b.stats.weighted)
+                .slice(0, 3); // הנמוך ביותר ראשון
+            return { key: g.key, top, bottom };
+        }).filter((s) => s.top.length > 0);
 
         const byId = new Map(officials.map((o) => [o.id, o]));
         const recentReviews = reviews
@@ -58,8 +65,7 @@ export const load: PageServerLoad = async () => {
 
         return {
             stats: { officialCount: officials.length, reviewCount: reviews.length },
-            top5,
-            needImprovement,
+            showcase,
             recentReviews,
             groupCounts,
             searchIndex,
@@ -68,8 +74,7 @@ export const load: PageServerLoad = async () => {
         console.warn('[home] load failed:', e instanceof Error ? e.message : e);
         return {
             stats: { officialCount: 0, reviewCount: 0 },
-            top5: [],
-            needImprovement: [],
+            showcase: [],
             recentReviews: [],
             groupCounts: emptyGroupCounts(),
             searchIndex: [],

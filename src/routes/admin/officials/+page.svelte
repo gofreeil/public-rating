@@ -194,6 +194,13 @@
 								<input name="org" bind:value={editOrg} placeholder={groupByKey(o.group)?.orgLabel ?? 'ארגון'} class="{inputCls} w-40" />
 								<input name="bio" bind:value={editBio} placeholder="רקע קצר" class="{inputCls} flex-1 min-w-[160px]" />
 								<input name="image" type="url" dir="ltr" bind:value={editImage} placeholder="קישור לתמונה (URL)" class="{inputCls} flex-1 min-w-[180px]" />
+								<input
+									name="official_user"
+									dir="ltr"
+									placeholder="חשבון הדמות למענה רשמי (user id) · ריק=ללא שינוי · &quot;-&quot;=ניתוק"
+									title="מזהה המשתמש של הדמות עצמה — תגובותיה בדף יסומנו כמענה רשמי"
+									class="{inputCls} flex-1 min-w-[240px]"
+								/>
 								<button
 									type="submit"
 									class="px-4 py-2 text-sm font-bold rounded-xl bg-gradient-to-l from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition-all cursor-pointer"

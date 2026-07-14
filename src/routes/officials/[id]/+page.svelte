@@ -16,6 +16,17 @@
     const stats = $derived(data.stats);
     const group = $derived(groupByKey(official.group));
 
+    // תגובות מקובצות לפי הדירוג שעליו הגיבו
+    const commentsByReview = $derived.by(() => {
+        const map = new Map<string, typeof data.comments>();
+        for (const c of data.comments) {
+            const list = map.get(c.review_id);
+            if (list) list.push(c);
+            else map.set(c.review_id, [c]);
+        }
+        return map;
+    });
+
     const metaDescription = $derived(
         `${official.name} — ${official.position}${official.org ? ` · ${official.org}` : ''}. ` +
             (stats.count > 0
@@ -99,7 +110,20 @@
 
     <!-- דירוגי הציבור -->
     <section class="flex flex-col gap-2">
-        <h2 class="text-lg font-bold text-white">דירוגי הציבור ({stats.count})</h2>
+        <div class="flex flex-wrap items-baseline gap-3">
+            <h2 class="text-lg font-bold text-white">דירוגי הציבור ({stats.count})</h2>
+            {#if data.isOfficialUser}
+                <span class="rounded-full border border-amber-400/40 bg-amber-500/10 px-2.5 py-0.5 text-xs font-bold text-amber-300">
+                    🎖️ זה הדף שלך — התגובות שתפרסמו יסומנו כמענה רשמי
+                </span>
+            {/if}
+        </div>
+
+        {#if form?.commentError}
+            <p class="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                {form.commentError}
+            </p>
+        {/if}
 
         {#if data.reviews.length}
             {#each data.reviews as review (review.id)}
@@ -108,6 +132,10 @@
                     officialId={official.id}
                     canDelete={data.isAdmin || review.mine}
                     loggedIn={data.me !== null}
+                    comments={commentsByReview.get(review.id) ?? []}
+                    officialName={official.name}
+                    isAdmin={data.isAdmin}
+                    isOfficialUser={data.isOfficialUser}
                 />
             {/each}
         {:else}
@@ -115,6 +143,11 @@
                 אין עדיין דירוגים — היו הראשונים
             </div>
         {/if}
+
+        <p class="text-xs leading-relaxed text-gray-600">
+            הדירוגים והתגובות בעמוד זה הם דעות אישיות של משתמשים ואינם משקפים את עמדת האתר.
+            נתקלתם בתוכן פוגעני? <a href="/legal" class="text-blue-400/80 hover:underline">דווחו לנו</a> ונטפל בהקדם.
+        </p>
     </section>
 
     <div class="text-center">

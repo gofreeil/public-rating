@@ -10,11 +10,13 @@ import { strapiGet, strapiPost, strapiPut } from './strapiClient.js';
 import { sanitizeScores, type Scores } from '$lib/rating/criteria';
 import { overallOf, rankOfficials } from '$lib/rating/aggregate';
 import {
+    COMMENT_CATEGORY,
     OFFICIAL_CATEGORY,
     REVIEW_CATEGORY,
     groupByKey,
     type GroupKey,
     type Official,
+    type OfficialComment,
     type RatedOfficial,
     type Review,
 } from '$lib/rating/types';
@@ -91,6 +93,20 @@ function mapReview(item: StrapiItem): Review {
         helpful_by: Array.isArray(x.helpful_by) ? x.helpful_by.filter((v): v is string => typeof v === 'string') : [],
         created_at: item.createdAt ?? '',
         updated_at: item.updatedAt ?? item.createdAt ?? '',
+    };
+}
+
+function mapComment(item: StrapiItem): OfficialComment {
+    const x = ef(item);
+    return {
+        id: item.documentId,
+        official_id: item.label ?? '',
+        review_id: typeof x.review_id === 'string' ? x.review_id : '',
+        user_id: item.user_id ?? null,
+        text: item.description ?? '',
+        commenter_name: typeof x.commenter_name === 'string' ? x.commenter_name : '',
+        official_reply: x.official_reply === true,
+        created_at: item.createdAt ?? '',
     };
 }
 
@@ -175,9 +191,79 @@ export async function getReviewsFor(officialId: string): Promise<Review[]> {
     return (res.data ?? []).map(mapReview).filter((r) => r.overall > 0);
 }
 
+/** כל התגובות בדף מדורג — שליפה אחת (label=המדורג), ישן ראשון בתוך שרשור */
+export async function getCommentsFor(officialId: string): Promise<OfficialComment[]> {
+    const res = await strapiGet<{ data: StrapiItem[] }>('/api/items', {
+        'filters[category][$eq]': COMMENT_CATEGORY,
+        'filters[label][$eq]': officialId,
+        'filters[status1][$eq]': 'active',
+        'sort': 'createdAt:asc',
+        'pagination[limit]': '1000',
+    });
+    return (res.data ?? []).map(mapComment).filter((c) => c.review_id && c.text);
+}
+
+/**
+ * user_id של חשבון הדמות המדורגת (extra_fields.official_user_id) — שרת בלבד!
+ * לעולם לא נשלח לדפדפן: עלול להכיל אימייל.
+ */
+export async function getOfficialOwnerUserId(officialId: string): Promise<string | null> {
+    try {
+        const res = await strapiGet<{ data: StrapiItem }>(`/api/items/${encodeURIComponent(officialId)}`);
+        if (!res.data || res.data.category !== OFFICIAL_CATEGORY) return null;
+        const v = ef(res.data).official_user_id;
+        return typeof v === 'string' && v.trim() ? v.trim() : null;
+    } catch {
+        return null;
+    }
+}
+
 // ============================================================
 // ---- כתיבה ----
 // ============================================================
+
+export interface AddCommentInput {
+    officialId: string;
+    reviewId: string;
+    userId: string;
+    commenterName: string;
+    text: string;
+    officialReply: boolean;
+}
+
+/** תגובה על דירוג — משתמשים רשומים בלבד (נאכף ב-action) */
+export async function addComment(input: AddCommentInput): Promise<void> {
+    await strapiPost('/api/items', {
+        data: {
+            category: COMMENT_CATEGORY,
+            label: input.officialId,
+            description: input.text,
+            user_id: input.userId,
+            extra_fields: {
+                review_id: input.reviewId,
+                commenter_name: input.commenterName,
+                official_reply: input.officialReply,
+            },
+            icon: '💬',
+            color: 'blue',
+            status1: 'active',
+            publishedAt: new Date().toISOString(),
+        },
+    });
+}
+
+/** תגובה בודדת — לאימות בעלות לפני מחיקה */
+export async function getComment(id: string): Promise<OfficialComment | undefined> {
+    let res: { data: StrapiItem };
+    try {
+        res = await strapiGet<{ data: StrapiItem }>(`/api/items/${encodeURIComponent(id)}`);
+    } catch (e) {
+        if (String(e).includes('→ 404')) return undefined;
+        throw e;
+    }
+    if (!res.data || res.data.category !== COMMENT_CATEGORY || res.data.status1 !== 'active') return undefined;
+    return mapComment(res.data);
+}
 
 export interface UpsertReviewInput {
     officialId: string;
@@ -293,7 +379,10 @@ export async function createOfficial(
     return res.data.documentId;
 }
 
-export async function updateOfficial(id: string, input: Partial<OfficialInput> & { approved?: boolean }): Promise<void> {
+export async function updateOfficial(
+    id: string,
+    input: Partial<OfficialInput> & { approved?: boolean; officialUserId?: string | null },
+): Promise<void> {
     const res = await strapiGet<{ data: StrapiItem }>(`/api/items/${id}`);
     const item = res.data;
     if (!item || item.category !== OFFICIAL_CATEGORY) throw new Error('מדורג לא נמצא');
@@ -309,6 +398,10 @@ export async function updateOfficial(id: string, input: Partial<OfficialInput> &
                 ...(input.org !== undefined ? { org: input.org } : {}),
                 ...(input.image !== undefined ? { image: input.image } : {}),
                 ...(input.approved !== undefined ? { approved: input.approved } : {}),
+                // null = ניתוק חשבון הדמות; undefined = ללא שינוי
+                ...(input.officialUserId !== undefined
+                    ? { official_user_id: input.officialUserId }
+                    : {}),
             },
         },
     });

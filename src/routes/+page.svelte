@@ -1,7 +1,7 @@
 <script lang="ts">
     // דף הבית — דירוג ציבורי
     import { CRITERIA } from '$lib/rating/criteria';
-    import { GROUPS } from '$lib/rating/types';
+    import { GROUPS, groupByKey } from '$lib/rating/types';
     import OfficialCard from '$lib/components/rating/OfficialCard.svelte';
     import OfficialSearch from '$lib/components/rating/OfficialSearch.svelte';
     import Stars from '$lib/components/rating/Stars.svelte';
@@ -85,21 +85,45 @@
         {/each}
     </section>
 
-    <!-- c) מובילי הדירוג -->
-    <section>
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 class="text-lg font-black text-white md:text-xl">🏆 מובילי הדירוג</h2>
-            {#if data.top5.length}
+    <!-- c+d) המובילים והנמוכים בכל קטגוריה -->
+    {#if data.showcase.length}
+        <section class="space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-lg font-black text-white md:text-xl">🏆 המובילים והנמוכים — לפי קטגוריה</h2>
                 <a href="/top-rated" class="text-sm font-bold text-blue-400 hover:text-blue-300">לכל המצטיינים ←</a>
-            {/if}
-        </div>
-        {#if data.top5.length}
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {#each data.top5 as official, i (official.id)}
-                    <OfficialCard {official} rank={i + 1} />
-                {/each}
             </div>
-        {:else}
+            {#each data.showcase as s (s.key)}
+                {@const g = groupByKey(s.key)}
+                <div>
+                    <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+                        <h3 class="font-black text-white">{g?.icon} {g?.title}</h3>
+                        <a href={g?.route} class="text-xs font-bold text-blue-400 hover:text-blue-300">ללוח המלא ←</a>
+                    </div>
+                    <div class="grid grid-cols-1 gap-3 {s.bottom.length ? 'lg:grid-cols-2' : ''}">
+                        <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.04] p-3">
+                            <h4 class="mb-2 text-sm font-bold text-emerald-300">🏆 שלושת המדורגים הגבוה ביותר</h4>
+                            <div class="flex flex-col gap-2">
+                                {#each s.top as official, i (official.id)}
+                                    <OfficialCard {official} rank={i + 1} compact />
+                                {/each}
+                            </div>
+                        </div>
+                        {#if s.bottom.length}
+                            <div class="rounded-2xl border border-red-400/20 bg-red-500/[0.04] p-3">
+                                <h4 class="mb-2 text-sm font-bold text-red-300">📉 שלושת המדורגים הנמוך ביותר</h4>
+                                <div class="flex flex-col gap-2">
+                                    {#each s.bottom as official (official.id)}
+                                        <OfficialCard {official} compact />
+                                    {/each}
+                                </div>
+                            </div>
+                        {/if}
+                    </div>
+                </div>
+            {/each}
+        </section>
+    {:else}
+        <section>
             <div class="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
                 <p class="font-bold text-white">עוד לא דורג אף אחד — היו הראשונים!</p>
                 <p class="mt-1 text-sm text-gray-400">בחרו לוח, מצאו את המדורג ושתפו את דעתכם</p>
@@ -110,18 +134,6 @@
                         </a>
                     {/each}
                 </div>
-            </div>
-        {/if}
-    </section>
-
-    <!-- d) טעוני שיפור -->
-    {#if data.needImprovement.length}
-        <section>
-            <h2 class="mb-3 text-lg font-black text-white md:text-xl">📉 טעוני שיפור</h2>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {#each data.needImprovement as official (official.id)}
-                    <OfficialCard {official} compact />
-                {/each}
             </div>
         </section>
     {/if}

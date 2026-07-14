@@ -1,8 +1,8 @@
 <script lang="ts">
-    // כרטיס ביקורת בודדת — שם/אנונימי, כוכבים, נימוק, צ'יפים למדדים, "מועיל" ומחיקה
+    // כרטיס ביקורת בודדת — שם/אנונימי, כוכבים, נימוק, צ'יפים למדדים, "מועיל", מחיקה ותגובות
     import { enhance } from '$app/forms';
     import { CRITERIA } from '$lib/rating/criteria';
-    import type { PublicReview } from '$lib/rating/types';
+    import type { PublicComment, PublicReview } from '$lib/rating/types';
     import Avatar from './Avatar.svelte';
     import Stars from './Stars.svelte';
 
@@ -11,7 +11,23 @@
         officialId,
         canDelete,
         loggedIn,
-    }: { review: PublicReview; officialId: string; canDelete: boolean; loggedIn: boolean } = $props();
+        comments = [],
+        officialName = '',
+        isAdmin = false,
+        isOfficialUser = false,
+    }: {
+        review: PublicReview;
+        officialId: string;
+        canDelete: boolean;
+        loggedIn: boolean;
+        comments?: PublicComment[];
+        officialName?: string;
+        isAdmin?: boolean;
+        isOfficialUser?: boolean;
+    } = $props();
+
+    let replying = $state(false);
+    let submittingComment = $state(false);
 
     const displayName = $derived(review.anonymous ? 'אזרח/ית' : review.reviewer_name || 'אזרח/ית');
     const helpfulCount = $derived(review.helpfulCount);
@@ -78,6 +94,16 @@
             </button>
         </form>
 
+        <button
+            type="button"
+            disabled={!loggedIn}
+            onclick={() => (replying = !replying)}
+            title={loggedIn ? 'תגובה על הדירוג' : 'רק משתמשים רשומים מגיבים — יש להתחבר'}
+            class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-400 transition-colors duration-150 hover:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+            💬 תגובה{comments.length ? ` (${comments.length})` : ''}
+        </button>
+
         {#if canDelete}
             <form
                 method="POST"
@@ -99,4 +125,83 @@
             </form>
         {/if}
     </div>
+
+    <!-- תגובות על הדירוג — תגובת חשבון הדמות מסומנת כרשמית -->
+    {#if comments.length}
+        <div class="mt-2 flex flex-col gap-1.5 border-r-2 border-white/10 pr-3">
+            {#each comments as c (c.id)}
+                <div class="rounded-xl px-3 py-2 {c.official_reply ? 'border border-amber-400/30 bg-amber-500/10' : 'bg-white/5'}">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-bold text-white">{c.commenter_name || 'אזרח/ית'}</span>
+                        {#if c.official_reply}
+                            <span class="rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                                🎖️ תגובה רשמית{officialName ? ` — ${officialName}` : ''}
+                            </span>
+                        {/if}
+                        <span class="text-[11px] text-gray-500">{relDate(c.created_at)}</span>
+                        {#if c.mine || isAdmin}
+                            <form
+                                method="POST"
+                                action="?/delete_comment"
+                                class="mr-auto"
+                                use:enhance={({ cancel }) => {
+                                    if (!confirm('למחוק את התגובה?')) {
+                                        cancel();
+                                        return;
+                                    }
+                                    return async ({ update }) => {
+                                        await update();
+                                    };
+                                }}
+                            >
+                                <input type="hidden" name="comment_id" value={c.id} />
+                                <button type="submit" class="text-[11px] text-red-400/80 transition-colors duration-150 hover:text-red-300">🗑</button>
+                            </form>
+                        {/if}
+                    </div>
+                    <p class="mt-0.5 whitespace-pre-line text-sm leading-relaxed text-gray-300">{c.text}</p>
+                </div>
+            {/each}
+        </div>
+    {/if}
+
+    <!-- טופס תגובה — משתמשים רשומים בלבד -->
+    {#if replying && loggedIn}
+        <form
+            method="POST"
+            action="?/comment"
+            class="mt-2 flex flex-col gap-2"
+            use:enhance={() => {
+                submittingComment = true;
+                return async ({ result, update }) => {
+                    submittingComment = false;
+                    if (result.type === 'success') replying = false;
+                    await update();
+                };
+            }}
+        >
+            <input type="hidden" name="review_id" value={review.id} />
+            <textarea
+                name="comment_text"
+                rows="2"
+                maxlength="1000"
+                required
+                placeholder={isOfficialUser
+                    ? 'המענה שלכם יסומן כתגובה רשמית…'
+                    : 'תגובה עניינית ומכבדת — בלי לשון הרע…'}
+                class="w-full resize-y rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/50 focus:outline-none"
+            ></textarea>
+            <div class="flex flex-wrap items-center gap-3">
+                <button
+                    type="submit"
+                    disabled={submittingComment}
+                    class="btn-premium rounded-xl px-4 py-1.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >{submittingComment ? 'שולח…' : isOfficialUser ? 'פרסום מענה רשמי' : 'פרסום תגובה'}</button>
+                <button type="button" onclick={() => (replying = false)} class="text-xs text-gray-400 hover:text-gray-200">ביטול</button>
+                <span class="text-[11px] text-gray-500">
+                    בפרסום אתם מאשרים את <a href="/legal" class="text-blue-400 hover:underline">תנאי השימוש</a>
+                </span>
+            </div>
+        </form>
+    {/if}
 </article>

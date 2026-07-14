@@ -4,8 +4,8 @@
 
 import { error, fail } from '@sveltejs/kit';
 import { CRITERIA, sanitizeScores } from '$lib/rating/criteria';
-import { computeStats, toPublicReview } from '$lib/rating/aggregate';
-import type { Review } from '$lib/rating/types';
+import { computeStats, toPublicComment, toPublicReview } from '$lib/rating/aggregate';
+import type { OfficialComment, Review } from '$lib/rating/types';
 import {
     getOfficial,
     getReviewsFor,
@@ -13,6 +13,10 @@ import {
     upsertReview,
     toggleHelpful,
     softDeleteRatingItem,
+    getCommentsFor,
+    getOfficialOwnerUserId,
+    addComment,
+    getComment,
 } from '$lib/server/rating';
 import type { PageServerLoad, Actions } from './$types';
 
@@ -25,6 +29,13 @@ export const load: PageServerLoad = async (event) => {
         reviews = await getReviewsFor(official.id);
     } catch {
         reviews = [];
+    }
+
+    let comments: OfficialComment[] = [];
+    try {
+        comments = await getCommentsFor(official.id);
+    } catch {
+        comments = [];
     }
 
     let session = null;
@@ -40,13 +51,24 @@ export const load: PageServerLoad = async (event) => {
     }
 
     const meId = session?.user?.id ?? null;
+
+    // האם המשתמש המחובר הוא חשבון הדמות עצמה? (ההשוואה בשרת — המזהה לא נחשף)
+    let isOfficialUser = false;
+    if (meId) {
+        try {
+            isOfficialUser = (await getOfficialOwnerUserId(official.id)) === meId;
+        } catch {}
+    }
+
     return {
         official,
         // צורה ציבורית בלבד — user_id (שעלול להכיל אימייל) ושם של מדרג אנונימי לא עוזבים את השרת
         reviews: reviews.map((r) => toPublicReview(r, meId)),
+        comments: comments.map((c) => toPublicComment(c, meId)),
         stats: computeStats(reviews),
         myReview,
         isAdmin: session?.user?.role === 'super_admin',
+        isOfficialUser,
         me: meId ? { id: meId, name: session?.user?.name ?? '' } : null,
     };
 };
@@ -115,6 +137,86 @@ export const actions: Actions = {
         }
 
         return { helpful: true };
+    },
+
+    // תגובה על דירוג — משתמשים רשומים בלבד; תגובת חשבון הדמות מסומנת כרשמית
+    comment: async (event) => {
+        let session = null;
+        try {
+            session = await event.locals.auth();
+        } catch {}
+        if (!session?.user?.id) return fail(401, { commentError: 'יש להתחבר כדי להגיב' });
+
+        const fd = await event.request.formData();
+        const reviewId = fd.get('review_id')?.toString() ?? '';
+        const text = (fd.get('comment_text')?.toString() ?? '').trim().slice(0, 1000);
+        if (!reviewId) return fail(400, { commentError: 'הדירוג לא נמצא' });
+        if (text.length < 2) return fail(400, { commentError: 'תגובה קצרה מדי' });
+
+        // התגובה נקשרת רק לדירוג פעיל של המדורג הזה — לא לשרשורי-רפאים
+        let reviewExists = false;
+        try {
+            reviewExists = (await getReviewsFor(event.params.id)).some((r) => r.id === reviewId);
+        } catch {
+            return fail(503, { commentError: 'המערכת עמוסה כרגע — נסו שוב בעוד רגע' });
+        }
+        if (!reviewExists) return fail(404, { commentError: 'הדירוג לא נמצא או שהוסר' });
+
+        let officialReply = false;
+        try {
+            officialReply = (await getOfficialOwnerUserId(event.params.id)) === session.user.id;
+        } catch {}
+
+        try {
+            await addComment({
+                officialId: event.params.id,
+                reviewId,
+                userId: session.user.id,
+                commenterName: session.user.name ?? 'אזרח/ית',
+                text,
+                officialReply,
+            });
+        } catch (e) {
+            console.error('[rating] addComment failed:', e);
+            return fail(500, { commentError: 'שגיאה בשמירת התגובה — נסו שוב בעוד רגע' });
+        }
+
+        return { commentSuccess: true };
+    },
+
+    // מחיקת תגובה — סופר-אדמין או כותב התגובה בלבד
+    delete_comment: async (event) => {
+        let session = null;
+        try {
+            session = await event.locals.auth();
+        } catch {}
+        if (!session?.user?.id) return fail(401, { commentError: 'יש להתחבר' });
+
+        const fd = await event.request.formData();
+        const commentId = fd.get('comment_id')?.toString() ?? '';
+        if (!commentId) return fail(400, { commentError: 'התגובה לא נמצאה' });
+
+        let comment;
+        try {
+            comment = await getComment(commentId);
+        } catch {}
+        if (!comment || comment.official_id !== event.params.id) {
+            return fail(404, { commentError: 'התגובה לא נמצאה' });
+        }
+
+        const isAdmin = session.user.role === 'super_admin';
+        if (!isAdmin && comment.user_id !== session.user.id) {
+            return fail(403, { commentError: 'אין הרשאה למחוק תגובה זו' });
+        }
+
+        try {
+            await softDeleteRatingItem(commentId, session.user.id);
+        } catch (e) {
+            console.error('[rating] delete comment failed:', e);
+            return fail(500, { commentError: 'שגיאה במחיקה — נסו שוב' });
+        }
+
+        return { commentDeleted: true };
     },
 
     // מחיקה רכה — סופר-אדמין או בעל הדירוג בלבד

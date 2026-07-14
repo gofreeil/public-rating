@@ -10,6 +10,7 @@ import type { CriterionKey, Scores } from './criteria';
 
 export const OFFICIAL_CATEGORY = 'pr_official';
 export const REVIEW_CATEGORY = 'pr_review';
+export const COMMENT_CATEGORY = 'pr_comment';
 
 // ---- קבוצות (לוחות הדירוג) ----
 
@@ -123,6 +124,35 @@ export interface PublicReview {
     helpfulCount: number;
     markedHelpfulByMe: boolean;
     /** הביקורת של המשתמש המחובר (מאפשר מחיקה עצמית) */
+    mine: boolean;
+    created_at: string;
+}
+
+// ---- תגובה על דירוג ----
+
+export interface OfficialComment {
+    /** documentId ב-Strapi */
+    id: string;
+    /** documentId של המדורג (label — שליפה אחת לכל תגובות הדף) */
+    official_id: string;
+    /** documentId של הדירוג שעליו הגיבו */
+    review_id: string;
+    user_id: string | null;
+    text: string;
+    commenter_name: string;
+    /** תגובה של חשבון הדמות המדורגת עצמה (מסומנת כרשמית) */
+    official_reply: boolean;
+    created_at: string;
+}
+
+/** צורת תגובה בטוחה לדפדפן — בלי user_id */
+export interface PublicComment {
+    id: string;
+    review_id: string;
+    text: string;
+    commenter_name: string;
+    official_reply: boolean;
+    /** התגובה של המשתמש המחובר (מאפשרת מחיקה עצמית) */
     mine: boolean;
     created_at: string;
 }
