@@ -38,6 +38,7 @@ src/lib/components/rating/  Stars, StarInput, Avatar, OfficialCard, Board, Histo
 src/routes/              / (בית) · /knesset /judges /public-servants (לוחות) · /officials/[id] (פרופיל+דירוג)
                          /top-rated (מצטיינים) · /about (חזון) · /suggest (הצעת מדורג) · /admin/officials (ניהול)
 scripts/seed-officials.mjs  זריעת מדורגים ראשונים: node scripts/seed-officials.mjs --url https://api.gofreeil.com
+scripts/fetch-knesset-members.mjs  משיכת כל הח"כים/השרים המכהנים מ-OData הכנסת אל seed-officials.json (ואז seed + enrich)
 ```
 
 ## עיצוב ו-RTL

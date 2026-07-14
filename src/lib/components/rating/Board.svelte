@@ -10,9 +10,11 @@
     let query = $state('');
     let sort: SortKey = $state('rank');
 
-    // עימוד: עשרה כרטיסים בעמוד; חיפוש/מיון מחזירים לעמוד הראשון
-    const PER_PAGE = 10;
-    let page = $state(1);
+    // חשיפה הדרגתית: מובחרים → "פתח עוד" → תחתית מכוסה ("המדורגים נמוך ביותר")
+    const FEATURED = 10; // נראים מיד
+    const BOTTOM = 20; // תחתית הרשימה — נפתחת רק בלחיצה על הכותרת
+    let expanded = $state(false);
+    let showBottom = $state(false);
 
     const SORTS: { key: SortKey; label: string }[] = [
         { key: 'rank', label: '⭐ הדירוג הגבוה' },
@@ -32,10 +34,19 @@
     // מדליות רק במיון ברירת המחדל, בלי חיפוש, ורק למי שבאמת דורג
     const showRanks = $derived(sort === 'rank' && !query.trim());
 
-    const totalPages = $derived(Math.max(1, Math.ceil(shown.length / PER_PAGE)));
-    // חיפוש שמצמצם תוצאות לא משאיר אותנו תקועים בעמוד שכבר לא קיים
-    const safePage = $derived(Math.min(page, totalPages));
-    const pageItems = $derived(shown.slice((safePage - 1) * PER_PAGE, safePage * PER_PAGE));
+    // חיפוש מציג את כל התוצאות; שכבת "נמוך ביותר" קיימת רק במיון דירוג וכשהרשימה גדולה
+    const flat = $derived(query.trim().length > 0);
+    const bottomCount = $derived(
+        !flat && sort === 'rank' && shown.length >= FEATURED + BOTTOM + 10 ? BOTTOM : 0,
+    );
+    const middle = $derived(shown.slice(0, shown.length - bottomCount));
+    const visible = $derived(flat || expanded ? middle : middle.slice(0, FEATURED));
+    const bottom = $derived(bottomCount ? shown.slice(shown.length - bottomCount) : []);
+
+    function resetView() {
+        expanded = false;
+        showBottom = false;
+    }
 </script>
 
 <section class="space-y-4">
@@ -54,7 +65,7 @@
         <input
             type="search"
             bind:value={query}
-            oninput={() => (page = 1)}
+            oninput={resetView}
             placeholder="🔍 חיפוש שם, תפקיד או ארגון..."
             aria-label="חיפוש בלוח {group.title}"
             class="min-w-40 flex-1 basis-48 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none"
@@ -62,7 +73,7 @@
         {#each SORTS as s (s.key)}
             <button
                 type="button"
-                onclick={() => { sort = s.key; page = 1; }}
+                onclick={() => { sort = s.key; resetView(); }}
                 aria-pressed={sort === s.key}
                 class="cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors {sort === s.key
                     ? 'border-blue-400/50 bg-blue-500/20 text-blue-300'
@@ -96,41 +107,40 @@
         </div>
     {:else}
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {#each pageItems as official, i (official.id)}
-                {@const globalIdx = (safePage - 1) * PER_PAGE + i}
+            {#each visible as official, i (official.id)}
                 <OfficialCard
                     {official}
-                    rank={showRanks && globalIdx < 3 && official.stats.count > 0 ? globalIdx + 1 : null}
+                    rank={showRanks && i < 3 && official.stats.count > 0 ? i + 1 : null}
                 />
             {/each}
         </div>
 
-        <!-- דפדוף — מופיע רק כשיש יותר מעמוד אחד -->
-        {#if totalPages > 1}
-            <nav class="flex flex-wrap items-center justify-center gap-1.5" aria-label="דפדוף בלוח">
+        <!-- פתח עוד — חושף את המשך הרשימה -->
+        {#if !flat && !expanded && middle.length > FEATURED}
+            <div class="flex justify-center">
                 <button
                     type="button"
-                    onclick={() => (page = safePage - 1)}
-                    disabled={safePage === 1}
-                    class="cursor-pointer rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-gray-400 transition-colors hover:text-gray-200 disabled:cursor-default disabled:opacity-40 disabled:hover:text-gray-400"
-                >הקודם</button>
-                {#each Array(totalPages) as _, p (p)}
-                    <button
-                        type="button"
-                        onclick={() => (page = p + 1)}
-                        aria-current={safePage === p + 1 ? 'page' : undefined}
-                        class="cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors {safePage === p + 1
-                            ? 'border-blue-400/50 bg-blue-500/20 text-blue-300'
-                            : 'border-white/10 bg-white/5 text-gray-400 hover:text-gray-200'}"
-                    >{p + 1}</button>
-                {/each}
-                <button
-                    type="button"
-                    onclick={() => (page = safePage + 1)}
-                    disabled={safePage === totalPages}
-                    class="cursor-pointer rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-gray-400 transition-colors hover:text-gray-200 disabled:cursor-default disabled:opacity-40 disabled:hover:text-gray-400"
-                >הבא</button>
-            </nav>
+                    onclick={() => (expanded = true)}
+                    class="cursor-pointer rounded-full border border-white/10 bg-white/5 px-6 py-2 text-sm font-bold text-blue-300 transition-colors hover:bg-white/10"
+                >פתח עוד ({middle.length - FEATURED}) ⌄</button>
+            </div>
+        {/if}
+
+        <!-- תחתית הרשימה — מכוסה עד לחיצה על הכותרת -->
+        {#if expanded && bottom.length > 0}
+            <button
+                type="button"
+                onclick={() => (showBottom = !showBottom)}
+                aria-expanded={showBottom}
+                class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-bold text-gray-400 transition-colors hover:text-gray-200"
+            >{showBottom ? '🔼' : '🔽'} המדורגים נמוך ביותר ({bottom.length})</button>
+            {#if showBottom}
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {#each bottom as official (official.id)}
+                        <OfficialCard {official} rank={null} />
+                    {/each}
+                </div>
+            {/if}
         {/if}
     {/if}
 </section>
