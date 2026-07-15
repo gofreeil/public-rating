@@ -1,20 +1,40 @@
 <script lang="ts">
-	import { signIn } from '@auth/sveltekit/client';
 	import { onMount } from 'svelte';
 
 	let { data } = $props();
-
 	let phase = $state<'working' | 'not_registered'>('working');
 
-	onMount(() => {
+	onMount(async () => {
 		if (data.error) {
 			phase = 'not_registered';
 			return;
 		}
-		// העוגייה gofreeil-auth כבר נשתלה ע"י community/sso. ספק gofreeil-sso
-		// קורא אותה, מאמת מול ה-Strapi המשותף ומקים סשן. אם אין עוגייה תקפה,
-		// Auth.js יפנה ל-/login (pages.error) ולא ינסה שוב.
-		signIn('gofreeil-sso', { callbackUrl: data.returnTo || '/' });
+		// ה-signIn() של @auth/sveltekit שולח כל provider שה-id שלו אינו "credentials"
+		// אל /auth/signin/<id> — כתובת שרק מציגה מסך התחברות ולעולם לא מריצה authorize().
+		// ה-SSO שלנו נקרא "gofreeil-sso", לכן חייבים לפנות ישירות לכתובת ה-callback,
+		// שהיא היחידה שמריצה authorize() וקוראת את עוגיית gofreeil-auth המשותפת.
+		try {
+			const res = await fetch('/auth/callback/gofreeil-sso', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+					'X-Auth-Return-Redirect': '1'
+				},
+				body: new URLSearchParams({
+					callbackUrl: new URL(data.returnTo || '/', location.origin).href
+				})
+			});
+			const { url } = await res.json();
+			// authorize() נכשל (אין עוגייה משותפת תקינה) → Auth.js מחזיר אותנו למסך
+			// ההתחברות; מתייחסים לזה כ"לא זוהה".
+			if (!url || /\/auth\/(signin|error)|[?&]error=/.test(url)) {
+				phase = 'not_registered';
+				return;
+			}
+			window.location.href = url;
+		} catch {
+			phase = 'not_registered';
+		}
 	});
 </script>
 
