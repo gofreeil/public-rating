@@ -4,7 +4,7 @@ import Facebook from '@auth/sveltekit/providers/facebook';
 import Credentials from '@auth/sveltekit/providers/credentials';
 import { createHash } from 'crypto';
 import { upsertUser, verifyCredentials, getUserByEmail, getUserById } from '$lib/server/db';
-import { strapiLogin, strapiRegister, getStrapiMe } from '$lib/server/strapiClient';
+import { strapiLogin, strapiRegister, getStrapiMe, bestStrapiName, friendlyName } from '$lib/server/strapiClient';
 
 /** קריאת ערך עוגייה מתוך כותרת Cookie גולמית (authorize מקבל Request, לא event.cookies) */
 function readCookie(cookieHeader: string | null | undefined, name: string): string | null {
@@ -81,7 +81,7 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
                 const id = communityUser?.id ?? `credentials_${emailLc}`;
                 return {
                     id,
-                    name:      communityUser?.name  ?? me.username ?? '',
+                    name:      communityUser?.name  ?? bestStrapiName(me),
                     email:     communityUser?.email ?? emailLc,
                     strapiJwt: jwt,
                 } as { id: string; name: string; email: string; strapiJwt: string };
@@ -218,6 +218,11 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
             if (token.email) {
                 session.user.email = token.email as string;
             }
+            // שם תצוגה נקי — לעולם לא מזהה־מכונה כמו google_1164… (מנקה גם עוגיות ישנות)
+            session.user.name = friendlyName(
+                token.name as string | undefined,
+                token.email as string | undefined
+            );
             if (token.provider) {
                 (session.user as { provider?: string }).provider = token.provider as string;
             }
