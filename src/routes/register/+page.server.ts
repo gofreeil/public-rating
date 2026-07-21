@@ -63,6 +63,8 @@ export const actions: Actions = {
             });
         }
 
-        throw redirect(302, '/login?registered=1');
+        // welcome=new מפעיל את מסך "ברוכים המצטרפים" עם רשת האתרים אחרי ההתחברות
+        // הראשונה — נשתל ביעד ה-redirect שעמוד ההתחברות מעביר כ-callbackUrl.
+        throw redirect(302, `/login?registered=1&redirect=${encodeURIComponent('/?welcome=new')}`);
     },
 };
