@@ -170,7 +170,9 @@
     </h4>
     <div class="space-y-3">
         {#each displayedAds as ad, index}
-            <div
+            <a
+                href="/advertise"
+                aria-label="מקום פרסום פנוי — לפרטים על פרסום באתר"
                 class="h-[470px] flex flex-col items-center justify-center rounded-2xl border-2 border-dashed {ad.borderColor} {ad.bgColor} p-3 text-center transition-all {ad.hoverBorder} {ad.hoverBg} group duration-700 relative overflow-hidden"
                 style="animation: fadeIn 0.7s ease-in-out;"
             >
@@ -209,14 +211,13 @@
                         </div>
                     </div>
 
-                    <a
-                        href="/advertise"
+                    <span
                         class="mb-4 z-10 rounded-full {ad.buttonColor} px-5 py-2 text-sm font-bold text-white shadow-xl transition-transform hover:scale-105"
                     >
                         לפרטים
-                    </a>
+                    </span>
                 </div>
-            </div>
+            </a>
         {/each}
     </div>
 </aside>
