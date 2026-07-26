@@ -46,7 +46,7 @@
 
 <a href="#main-content" class="skip-link">דלג לתוכן הראשי</a>
 <!-- מסך פתיחה אחרי הרשמה / זיהוי ראשון — גלובלי, מופעל ע"י ?welcome ב-URL -->
-<WelcomeScreen />
+<WelcomeScreen userName={data.session?.user?.name ?? ''} />
 <CoinAnimation />
 <MobileAdsDrawer currentUser={currentUser} layoutUser={data.layoutUser} />
 <MobileAdPopup />

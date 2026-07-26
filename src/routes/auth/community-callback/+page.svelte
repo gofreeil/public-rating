@@ -15,10 +15,13 @@
 		// שהיא היחידה שמריצה authorize() וקוראת את עוגיית gofreeil-auth המשותפת.
 		try {
 			// פעם ראשונה בדפדפן הזה → welcome=new מפעיל את מסך "ברוכים המצטרפים";
-			// משתמש חוזר לא מקבל שום פרמטר ולא רואה מסך.
+			// משתמש חוזר → welcome=back מפעיל את מסך "ברוכים השבים".
 			const callbackUrl = new URL(data.returnTo || '/', location.origin);
 			try {
-				if (!localStorage.getItem('gofreeil-welcomed')) callbackUrl.searchParams.set('welcome', 'new');
+				callbackUrl.searchParams.set(
+					'welcome',
+					localStorage.getItem('gofreeil-welcomed') ? 'back' : 'new'
+				);
 			} catch {
 				/* localStorage חסום — ממשיכים בלי הברכה */
 			}

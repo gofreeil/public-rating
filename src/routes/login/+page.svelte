@@ -13,12 +13,23 @@
 	let showPassword    = $state(false);
 	let credError       = $state<string | null>(null);
 
+	// מוסיף welcome=back ליעד — מפעיל את מסך "ברוכים השבים" אחרי ההתחברות
+	function withWelcome(dest: string): string {
+		try {
+			const u = new URL(dest, window.location.origin);
+			u.searchParams.set('welcome', 'back');
+			return `${u.pathname}${u.search}${u.hash}`;
+		} catch {
+			return '/?welcome=back';
+		}
+	}
+
 	async function loginWith(provider: 'google' | 'facebook') {
 		isLoading = true;
 		loadingProvider = provider;
 		try {
 			await signIn(provider, {
-				callbackUrl: data.redirectTo || '/',
+				callbackUrl: withWelcome(data.redirectTo || '/'),
 			});
 		} catch {
 			isLoading = false;
@@ -195,7 +206,7 @@
 								await signIn('credentials', {
 									email,
 									password,
-									callbackUrl: data.redirectTo || '/',
+									callbackUrl: withWelcome(data.redirectTo || '/'),
 								});
 							} else if (result.type === 'failure') {
 								credError = (result.data as { error?: string })?.error ?? 'שגיאה לא ידועה';
