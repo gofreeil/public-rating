@@ -146,7 +146,7 @@
     let fading = $state(false);
 
     onMount(() => {
-        let fadeTimer;
+        let fadeTimer: ReturnType<typeof setTimeout> | undefined;
         // דעיכה החוצה → החלפת הקבוצה בזמן שהטור שקוף → דעיכה פנימה.
         // כך אין קפיצה: המשבצות לא מתחלפות מול העין אלא מתוך שקיפות מלאה.
         const interval = setInterval(() => {
