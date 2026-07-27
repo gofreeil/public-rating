@@ -140,17 +140,32 @@
         },
     ];
 
+    const VIEW_MS = 14000;   // כמה זמן כל קבוצה נשארת על המסך (החלפה איטית)
+    const FADE_MS = 900;     // אורך הדעיכה בין קבוצה לקבוצה — חייב להתאים ל-CSS
+
+    let fading = $state(false);
+
     onMount(() => {
+        let fadeTimer;
+        // דעיכה החוצה → החלפת הקבוצה בזמן שהטור שקוף → דעיכה פנימה.
+        // כך אין קפיצה: המשבצות לא מתחלפות מול העין אלא מתוך שקיפות מלאה.
         const interval = setInterval(() => {
             if (totalSwaps < MAX_SWAPS) {
-                currentGroup = (currentGroup + 1) % 3;
-                totalSwaps++;
+                fading = true;
+                fadeTimer = setTimeout(() => {
+                    currentGroup = (currentGroup + 1) % 3;
+                    totalSwaps++;
+                    fading = false;
+                }, FADE_MS);
             } else {
                 clearInterval(interval);
             }
-        }, 6000);
+        }, VIEW_MS);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+            clearTimeout(fadeTimer);
+        };
     });
 
     let displayedAds = $derived(
@@ -168,13 +183,12 @@
     >
         תוכן שיווקי
     </h4>
-    <div class="space-y-3">
+    <div class="space-y-3 ads-track" class:fading>
         {#each displayedAds as ad, index}
             <a
                 href="/advertise"
                 aria-label="מקום פרסום פנוי — לפרטים על פרסום באתר"
                 class="h-[470px] flex flex-col items-center justify-center rounded-2xl border-2 border-dashed {ad.borderColor} {ad.bgColor} p-3 text-center transition-all {ad.hoverBorder} {ad.hoverBg} group duration-700 relative overflow-hidden"
-                style="animation: fadeIn 0.7s ease-in-out;"
             >
                 <!-- Ad Numbering -->
                 <div
@@ -223,14 +237,18 @@
 </aside>
 
 <style>
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateX(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
+    /* דעיכה רכה בין קבוצות המודעות — במקום החלקה קופצנית של כל כרטיס.
+       הערך חייב להתאים ל-FADE_MS שבסקריפט. */
+    .ads-track {
+        opacity: 1;
+        transition: opacity 900ms ease-in-out;
+    }
+    .ads-track.fading {
+        opacity: 0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .ads-track {
+            transition-duration: 1ms;
         }
     }
 </style>
