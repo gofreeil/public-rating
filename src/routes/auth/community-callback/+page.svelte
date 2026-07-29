@@ -76,9 +76,9 @@
 							<span class="text-3xl">🔒</span>
 						</div>
 					</div>
-					<h1 class="text-2xl font-black text-yellow-300 mb-2">עדיין אינך ברשימה</h1>
+					<h1 class="text-2xl font-black text-yellow-300 mb-2">עדיין אין לכם חשבון</h1>
 					<p class="text-gray-400 text-sm mb-6 leading-relaxed">
-						לא זיהינו אותך במערכת של יוצאים לחירות. אפשר להירשם כאן ישירות, או להצטרף דרך אתר הקהילה.
+						לא מצאנו אתכם ברשימת המשתמשים של יוצאים לחירות. ההרשמה לוקחת דקה, ומשם אתם מזוהים בכל אתרי הרשת — בלי להירשם שוב.
 					</p>
 					<div class="flex flex-col gap-2.5">
 						<a
@@ -86,12 +86,6 @@
 							class="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-black hover:opacity-90 transition-opacity"
 						>
 							✨ הרשמה לאתר
-						</a>
-						<a
-							href="https://community.gofreeil.com/"
-							class="w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-emerald-200 font-bold border border-emerald-500/30 transition-colors"
-						>
-							🕊️ הרשמה בקהילת יוצאים לחירות
 						</a>
 						<a href="/login" class="mt-1 text-sm text-gray-400 hover:text-gray-200 underline">
 							חזרה להתחברות
