@@ -1,6 +1,7 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { getUserByEmail } from '$lib/server/db';
 import { strapiLogin } from '$lib/server/strapiClient';
+import { oauthEnabled } from '../../auth';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -12,6 +13,7 @@ export const load: PageServerLoad = async (event) => {
     }
 
     return {
+        oauth: oauthEnabled,
         redirectTo:  event.url.searchParams.get('redirect') ?? '/',
         error:       event.url.searchParams.get('error') ?? null,
         registered:  event.url.searchParams.get('registered') === '1',

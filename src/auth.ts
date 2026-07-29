@@ -49,18 +49,25 @@ async function getOrCreateStrapiJwt(email: string | null | undefined, stableId: 
     }
 }
 
+/**
+ * אילו ספקי OAuth באמת רשומים. דפי ההתחברות/הרשמה קוראים מכאן כדי לא להציג
+ * כפתור לספק שלא הוגדר — לחיצה עליו הייתה מחזירה את המשתמש עם שגיאה סתומה.
+ */
+export const oauthEnabled = {
+    google:   Boolean(AUTH_GOOGLE_ID   && AUTH_GOOGLE_SECRET),
+    facebook: Boolean(AUTH_FACEBOOK_ID && AUTH_FACEBOOK_SECRET),
+};
+
 export const { handle, signIn, signOut } = SvelteKitAuth({
     secret: AUTH_SECRET,
 
     providers: [
-        Google({
-            clientId:     AUTH_GOOGLE_ID,
-            clientSecret: AUTH_GOOGLE_SECRET,
-        }),
-        Facebook({
-            clientId:     AUTH_FACEBOOK_ID,
-            clientSecret: AUTH_FACEBOOK_SECRET,
-        }),
+        ...(oauthEnabled.google
+            ? [Google({ clientId: AUTH_GOOGLE_ID, clientSecret: AUTH_GOOGLE_SECRET })]
+            : []),
+        ...(oauthEnabled.facebook
+            ? [Facebook({ clientId: AUTH_FACEBOOK_ID, clientSecret: AUTH_FACEBOOK_SECRET })]
+            : []),
         // ============================================================
         // יוצאים לחירות (SSO) - זיהוי מיידי לפי העוגייה המשותפת gofreeil-auth.
         // אתר אחר תחת gofreeil.com (community/sso) כבר שתל JWT של ה-Strapi המשותף;

@@ -114,6 +114,7 @@
 				{/if}
 
 				{#if mode === 'oauth'}
+					{#if data.oauth?.google}
 					<!-- כפתור Google -->
 					<button
 						type="button"
@@ -136,7 +137,9 @@
 						{/if}
 						<span>{tFn("continue_google")}</span>
 					</button>
+					{/if}
 
+					{#if data.oauth?.facebook}
 					<!-- כפתור Facebook -->
 					<button
 						type="button"
@@ -156,6 +159,7 @@
 						{/if}
 						<span>{tFn("continue_facebook")}</span>
 					</button>
+					{/if}
 
 					<!-- יוצאים לחירות (SSO) -->
 					<button

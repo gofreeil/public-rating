@@ -1,12 +1,17 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { registerWithCredentials } from '$lib/server/db';
 import { strapiRegister } from '$lib/server/strapiClient';
+import { oauthEnabled } from '../../auth';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
     const session = await event.locals.auth();
     if (session?.user) throw redirect(302, '/');
-    return {};
+    // היעד אחרי הרשמה עם Google/Facebook — כמו בדף ההתחברות
+    return {
+        oauth: oauthEnabled,
+        redirectTo: event.url.searchParams.get('redirect') ?? '/',
+    };
 };
 
 export const actions: Actions = {
