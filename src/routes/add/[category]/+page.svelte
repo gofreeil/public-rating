@@ -38,19 +38,43 @@
             }
         } catch {}
 
-        // שחזר טיוטא אם קיימת
+        // שחזר טיוטא אם קיימת. הטיוטה *לא* נמחקת כאן — היא נמחקת רק אחרי
+        // פרסום מוצלח, כדי שיציאה נוספת מהדף לא תשאיר את המשתמש בלי כלום.
         try {
             const draft = localStorage.getItem(DRAFT_KEY);
             if (draft) {
                 const parsed = JSON.parse(draft);
-                if (parsed.formValues) formValues   = { ...formValues, ...parsed.formValues };
+                if (parsed.formValues) {
+                    formValues = { ...formValues, ...parsed.formValues };
+                    if (Object.values(parsed.formValues).some((v) => String(v ?? '').trim() !== '')) {
+                        draftRestored = true;
+                    }
+                }
                 if (parsed.neighborhood) neighborhood = parsed.neighborhood;
                 if (parsed.city)         city         = parsed.city;
-                // מחק טיוטא אחרי שחזור (תישמר מחדש אם יידרש)
-                localStorage.removeItem(DRAFT_KEY);
             }
         } catch {}
+
+        draftReady = true;   // מכאן והלאה כל הקלדה נשמרת
     });
+
+    // ---- שמירה רציפה ----
+    // עד היום הטיוטה נשמרה רק בלחיצה על "פרסם" בלי חשבון; מי שיצא מהדף באמצע
+    // המילוי איבד הכול. עכשיו כל שינוי נשמר, וגם יציאה או רענון לא מוחקים.
+    let draftReady = $state(false);
+    let draftRestored = $state(false);
+
+    $effect(() => {
+        const snapshot = { formValues: { ...formValues }, neighborhood, city };
+        if (!browser || !draftReady) return;
+        try { localStorage.setItem(DRAFT_KEY, JSON.stringify(snapshot)); } catch {}
+    });
+
+    function discardDraft() {
+        formValues = Object.fromEntries(config.fields.map((f) => [f.key, '']));
+        draftRestored = false;
+        if (browser) { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
+    }
 
     function getFieldValue(key: string): string {
         return formValues[key] ?? '';
@@ -133,6 +157,9 @@
             }
 
             submitted = true;
+            // פורסם — הטיוטה סיימה את תפקידה
+            draftReady = false;
+            if (browser) { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
 
             if (config.priceRow !== null) {
                 if (browser) {
@@ -236,6 +263,16 @@
         </div>
 
     {:else}
+        {#if draftRestored}
+            <div class="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-emerald-500/40 bg-emerald-900/20 px-4 py-3 text-sm text-emerald-100">
+                <span class="font-bold">💾 שחזרנו את מה שמילאת קודם — הטופס ממשיך מהמקום שעצרת.</span>
+                <button type="button" onclick={discardDraft}
+                    class="rounded-full border border-emerald-400/50 bg-emerald-900/50 px-3 py-1 text-xs font-bold hover:bg-emerald-800/60">
+                    התחל מטופס ריק
+                </button>
+            </div>
+        {/if}
+
         <!-- Form -->
         <form
             onsubmit={handleSubmit}
