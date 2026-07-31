@@ -3,6 +3,7 @@
     import type { Group, RatedOfficial } from '$lib/rating/types';
     import { heMatches } from '$lib/rating/heSearch';
     import OfficialCard from './OfficialCard.svelte';
+    import ShareBar from './ShareBar.svelte';
 
     let { group, officials }: { group: Group; officials: RatedOfficial[] } = $props();
 
@@ -57,6 +58,13 @@
         </h1>
         <span class="text-sm text-gray-400">
             {officials.length} מדורגים · {totalReviews} דירוגים
+        </span>
+        <span class="mr-auto">
+            <ShareBar
+                text="לוח הדירוג של {group.title} — {officials.length} מדורגים, {totalReviews} דירוגי אזרחים בדירוג ציבורי"
+                title="{group.title} — דירוג ציבורי"
+                compact
+            />
         </span>
     </div>
 

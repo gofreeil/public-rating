@@ -2,6 +2,7 @@
     import Podium from '$lib/components/rating/Podium.svelte';
     import OfficialCard from '$lib/components/rating/OfficialCard.svelte';
     import Seo from '$lib/components/rating/Seo.svelte';
+    import ShareBar from '$lib/components/rating/ShareBar.svelte';
     import { breadcrumbSchema } from '$lib/rating/schema';
 
     let { data } = $props();
@@ -27,6 +28,13 @@
         <p class="mt-2 font-bold text-amber-400">
             המדורגים הגבוהים ביותר על ידי העם — מועמדים להוקרה ולפרס ביום העצמאות
         </p>
+        <div class="mt-3 flex justify-center">
+            <ShareBar
+                text="מצטייני הציבור — המדורגים הגבוהים ביותר על ידי אזרחי ישראל בדירוג ציבורי"
+                title="מצטייני הציבור — דירוג ציבורי"
+                compact
+            />
+        </div>
     </header>
 
     <!-- פודיום / מצב ריק -->

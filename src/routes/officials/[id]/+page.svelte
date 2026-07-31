@@ -4,6 +4,7 @@
     import { fmtScore } from '$lib/rating/aggregate';
     import { breadcrumbSchema, officialSchema } from '$lib/rating/schema';
     import Seo from '$lib/components/rating/Seo.svelte';
+    import ShareBar from '$lib/components/rating/ShareBar.svelte';
     import Avatar from '$lib/components/rating/Avatar.svelte';
     import Stars from '$lib/components/rating/Stars.svelte';
     import Histogram from '$lib/components/rating/Histogram.svelte';
@@ -40,6 +41,12 @@
         stats.count > 0
             ? `${official.name} — ציון ${fmtScore(stats.average)}/5 (${stats.count} דירוגים)`
             : official.name,
+    );
+
+    const shareText = $derived(
+        stats.count > 0
+            ? `${official.name}${official.position ? ` (${official.position})` : ''} מדורג/ת ${fmtScore(stats.average)} מתוך 5 על ידי ${stats.count} אזרחים בדירוג ציבורי. מה הדירוג שלכם?`
+            : `${official.name}${official.position ? ` (${official.position})` : ''} עדיין לא דורג/ה בדירוג ציבורי — היו הראשונים.`,
     );
 
     const jsonLd = $derived([
@@ -97,6 +104,10 @@
             <div class="min-w-64 flex-1">
                 <CriteriaBars perCriterion={stats.perCriterion} />
             </div>
+        </div>
+
+        <div class="mt-3 border-t border-white/10 pt-3">
+            <ShareBar text={shareText} title="{official.name} — דירוג ציבורי" />
         </div>
     </section>
 
