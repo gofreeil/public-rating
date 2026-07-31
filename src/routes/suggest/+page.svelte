@@ -1,6 +1,7 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
     import { GROUPS, groupByKey } from '$lib/rating/types';
+    import Seo from '$lib/components/rating/Seo.svelte';
     import type { ActionData, PageData } from './$types';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -20,13 +21,10 @@
         'w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none';
 </script>
 
-<svelte:head>
-    <title>הציעו לדירוג — דירוג ציבורי</title>
-    <meta
-        name="description"
-        content="מכירים נבחר ציבור, שופט או עובד ציבור שהציבור צריך לדרג? הציעו להוסיף אותו לפלטפורמת הדירוג הציבורי."
-    />
-</svelte:head>
+<Seo
+    title="הציעו מדורג"
+    description="מכירים נבחר ציבור, שופט או עובד ציבור שהציבור צריך לדרג? הציעו להוסיף אותו לפלטפורמת הדירוג הציבורי."
+/>
 
 <div class="mx-auto max-w-xl space-y-4 py-6">
     {#if form?.success}

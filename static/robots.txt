@@ -1,3 +1,16 @@
-# allow crawling everything by default
+# דירוג ציבורי — rating.gofreeil.com
+# אתר שקיפות אזרחי: התוכן הציבורי פתוח לסריקה במלואו.
+
 User-agent: *
-Disallow:
+Allow: /
+
+# אזורים אישיים / ניהוליים — אין ערך לאינדוקס
+Disallow: /admin
+Disallow: /api/
+Disallow: /profile
+Disallow: /auth/
+Disallow: /login
+Disallow: /register
+Disallow: /banned
+
+Sitemap: https://rating.gofreeil.com/sitemap.xml

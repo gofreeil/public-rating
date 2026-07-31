@@ -1,15 +1,23 @@
 <script lang="ts">
     import { CRITERIA } from '$lib/rating/criteria';
     import { GROUPS } from '$lib/rating/types';
+    import Seo from '$lib/components/rating/Seo.svelte';
+    import { breadcrumbSchema, methodologySchema } from '$lib/rating/schema';
+
+    const jsonLd = [
+        methodologySchema(),
+        breadcrumbSchema([
+            { name: 'דירוג ציבורי', path: '/' },
+            { name: 'אודות', path: '/about' },
+        ]),
+    ];
 </script>
 
-<svelte:head>
-    <title>אודות — דירוג ציבורי</title>
-    <meta
-        name="description"
-        content="פלטפורמה לדירוג ציבורי שבה עובדי ציבור, שופטים וחברי כנסת נבחנים לפי תרומתם לעם — מדורגים ומתוגמלים חברתית, לטובה ולרעה."
-    />
-</svelte:head>
+<Seo
+    title="אודות והמתודולוגיה"
+    description="פלטפורמה לדירוג ציבורי שבה עובדי ציבור, שופטים וחברי כנסת נבחנים לפי תרומתם לעם — מדורגים ומתוגמלים חברתית, לטובה ולרעה."
+    {jsonLd}
+/>
 
 <div class="mx-auto max-w-3xl space-y-6 py-6">
     <!-- פתיחה -->

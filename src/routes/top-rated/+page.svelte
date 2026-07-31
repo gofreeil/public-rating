@@ -1,19 +1,24 @@
 <script lang="ts">
     import Podium from '$lib/components/rating/Podium.svelte';
     import OfficialCard from '$lib/components/rating/OfficialCard.svelte';
+    import Seo from '$lib/components/rating/Seo.svelte';
+    import { breadcrumbSchema } from '$lib/rating/schema';
 
     let { data } = $props();
 
     const MEDALS = ['🥇', '🥈', '🥉'];
+
+    const jsonLd = breadcrumbSchema([
+        { name: 'דירוג ציבורי', path: '/' },
+        { name: 'מצטייני הציבור', path: '/top-rated' },
+    ]);
 </script>
 
-<svelte:head>
-    <title>מצטייני הציבור — דירוג ציבורי</title>
-    <meta
-        name="description"
-        content="המדורגים הגבוהים ביותר על ידי העם — חברי כנסת, שופטים ועובדי ציבור המועמדים להוקרה ולפרס ביום העצמאות."
-    />
-</svelte:head>
+<Seo
+    title="🏆 מצטייני הציבור"
+    description="המדורגים הגבוהים ביותר על ידי העם — חברי כנסת, שופטים ועובדי ציבור המועמדים להוקרה ולפרס ביום העצמאות."
+    {jsonLd}
+/>
 
 <div class="space-y-8 py-6">
     <!-- כותרת -->

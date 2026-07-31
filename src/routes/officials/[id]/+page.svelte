@@ -2,6 +2,8 @@
     // דף פרופיל מדורג — לב האתר: סיכום ציון, טופס דירוג ודירוגי הציבור
     import { groupByKey } from '$lib/rating/types';
     import { fmtScore } from '$lib/rating/aggregate';
+    import { breadcrumbSchema, officialSchema } from '$lib/rating/schema';
+    import Seo from '$lib/components/rating/Seo.svelte';
     import Avatar from '$lib/components/rating/Avatar.svelte';
     import Stars from '$lib/components/rating/Stars.svelte';
     import Histogram from '$lib/components/rating/Histogram.svelte';
@@ -33,12 +35,30 @@
                 ? `ציון ${fmtScore(stats.average)} מתוך 5 על בסיס ${stats.count} דירוגי אזרחים.`
                 : 'טרם דורג — היו הראשונים לדרג.'),
     );
+
+    const seoTitle = $derived(
+        stats.count > 0
+            ? `${official.name} — ציון ${fmtScore(stats.average)}/5 (${stats.count} דירוגים)`
+            : official.name,
+    );
+
+    const jsonLd = $derived([
+        officialSchema(official, stats, data.reviews, group),
+        breadcrumbSchema([
+            { name: 'דירוג ציבורי', path: '/' },
+            ...(group ? [{ name: group.title, path: group.route }] : []),
+            { name: official.name, path: `/officials/${official.id}` },
+        ]),
+    ]);
 </script>
 
-<svelte:head>
-    <title>{official.name} — דירוג ציבורי</title>
-    <meta name="description" content={metaDescription} />
-</svelte:head>
+<Seo
+    title={seoTitle}
+    description={metaDescription}
+    type="profile"
+    image={official.image || undefined}
+    {jsonLd}
+/>
 
 <div class="flex flex-col gap-4 py-6">
     <!-- כותרת: מי המדורג -->

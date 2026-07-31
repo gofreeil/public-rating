@@ -2,6 +2,8 @@
     // דף הבית — דירוג ציבורי
     import { CRITERIA } from '$lib/rating/criteria';
     import { GROUPS, groupByKey } from '$lib/rating/types';
+    import { websiteSchema } from '$lib/rating/schema';
+    import Seo from '$lib/components/rating/Seo.svelte';
     import OfficialCard from '$lib/components/rating/OfficialCard.svelte';
     import OfficialSearch from '$lib/components/rating/OfficialSearch.svelte';
     import Stars from '$lib/components/rating/Stars.svelte';
@@ -24,13 +26,11 @@
     }
 </script>
 
-<svelte:head>
-    <title>הציבור מדרג את משרתיו — דירוג ציבורי</title>
-    <meta
-        name="description"
-        content="דירוג ציבורי — שקיפות, אחריות ודירוג אמיתי של חברי כנסת, שופטים ועובדי ציבור על ידי העם. חמישה מדדים: זמנים ותקנים, תרומה לעם, ראיית המציאות, ניתוח לגופו של עניין ושקיפות."
-    />
-</svelte:head>
+<Seo
+    title="הציבור מדרג את משרתיו"
+    description="שקיפות, אחריות ודירוג אמיתי של חברי כנסת, שופטים ועובדי ציבור על ידי העם. חמישה מדדים: זמנים ותקנים, תרומה לעם, ראיית המציאות, לגופו של עניין ושקיפות."
+    jsonLd={websiteSchema(data.stats.officialCount, data.stats.reviewCount)}
+/>
 
 <div class="space-y-8 py-2 md:py-4">
 
