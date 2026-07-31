@@ -1,0 +1,40 @@
+{
+    "name": "דירוג ציבורי — הציבור מדרג את משרתיו",
+    "short_name": "דירוג ציבורי",
+    "description": "שקיפות, אחריות ודירוג אמיתי של חברי כנסת, שופטים ועובדי ציבור על ידי העם",
+    "lang": "he",
+    "dir": "rtl",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#070b14",
+    "theme_color": "#0f172a",
+    "categories": ["government", "news", "social"],
+    "icons": [
+        {
+            "src": "/images/public-rating-logo.png",
+            "sizes": "1024x1024",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/images/public-rating-logo.png",
+            "sizes": "1024x1024",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        }
+    ],
+    "shortcuts": [
+        { "name": "חברי כנסת ושרים", "url": "/knesset" },
+        { "name": "שופטים", "url": "/judges" },
+        { "name": "עובדי ציבור", "url": "/public-servants" },
+        { "name": "מצטייני הציבור", "url": "/top-rated" }
+    ]
+}

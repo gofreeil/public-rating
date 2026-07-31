@@ -3,6 +3,15 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<!-- צביעת סרגל הדפדפן בנייד בגוון האתר — בלי זה נשארת רצועה בהירה מעל ערכה כהה -->
+		<meta name="theme-color" content="#0f172a" />
+		<meta name="color-scheme" content="dark" />
+		<link rel="manifest" href="/site.webmanifest" />
+		<link rel="apple-touch-icon" href="/images/public-rating-logo.png" />
+		<meta name="apple-mobile-web-app-title" content="דירוג ציבורי" />
+		<!-- הגופן מגיע מ-Google Fonts דרך app.css — preconnect חוסך RTT בטעינה הראשונה -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
