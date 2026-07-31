@@ -3,6 +3,7 @@
     import { enhance } from '$app/forms';
     import { CRITERIA, type CriterionKey } from '$lib/rating/criteria';
     import type { MyReview } from '$lib/rating/types';
+    import BotFields from './BotFields.svelte';
     import StarInput from './StarInput.svelte';
 
     let { myReview = null }: { myReview?: MyReview | null } = $props();
@@ -21,7 +22,7 @@
 <form
     method="POST"
     action="?/rate"
-    class="flex flex-col gap-2"
+    class="relative flex flex-col gap-2"
     use:enhance={() => {
         submitting = true;
         return async ({ update }) => {
@@ -30,6 +31,8 @@
         };
     }}
 >
+    <BotFields />
+
     {#each CRITERIA as c (c.key)}
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
             <span class="min-w-44 flex-1">

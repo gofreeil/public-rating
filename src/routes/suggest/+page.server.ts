@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { createOfficial, listOfficialsFresh, listPendingOfficials } from '$lib/server/rating';
 import { groupByKey } from '$lib/rating/types';
 import { heNormalize } from '$lib/rating/heSearch';
+import { TOO_FAST, TOO_MANY, allowAction, botCheck } from '$lib/server/rateLimit';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -30,6 +31,13 @@ export const actions: Actions = {
 
         const session = await event.locals.auth();
         if (!session?.user) return fail(401, { error: 'יש להתחבר כדי להציע מדורג', values });
+        if (!allowAction(event, 'suggest', session.user.id)) return fail(429, { error: TOO_MANY, values });
+
+        const bot = botCheck(form);
+        // מלכודת: מדווחים "הצלחה" לבוט בלי ליצור מדורג
+        if (bot.trap) return { success: true, group: groupKey };
+        if (bot.tooFast) return fail(400, { error: TOO_FAST, values });
+
         const group = groupByKey(groupKey);
         if (!group) return fail(400, { error: 'יש לבחור קטגוריה', values });
         if (name.length < 2) return fail(400, { error: 'יש להזין שם מלא (לפחות 2 תווים)', values });

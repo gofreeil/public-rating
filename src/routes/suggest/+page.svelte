@@ -2,6 +2,7 @@
     import { enhance } from '$app/forms';
     import { GROUPS, groupByKey } from '$lib/rating/types';
     import Seo from '$lib/components/rating/Seo.svelte';
+    import BotFields from '$lib/components/rating/BotFields.svelte';
     import type { ActionData, PageData } from './$types';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -58,7 +59,7 @@
 
             <form
                 method="POST"
-                class="space-y-3"
+                class="relative space-y-3"
                 use:enhance={() => {
                     submitting = true;
                     return async ({ update }) => {
@@ -67,6 +68,7 @@
                     };
                 }}
             >
+                <BotFields />
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <label class="block">
                         <span class="mb-1 block text-xs font-semibold text-gray-400">קטגוריה *</span>

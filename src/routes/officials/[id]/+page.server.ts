@@ -5,6 +5,7 @@
 import { error, fail } from '@sveltejs/kit';
 import { CRITERIA, sanitizeScores } from '$lib/rating/criteria';
 import { computeStats, toMyReview, toPublicComment, toPublicReview } from '$lib/rating/aggregate';
+import { TOO_FAST, TOO_MANY, allowAction, botCheck } from '$lib/server/rateLimit';
 import type { OfficialComment, Review } from '$lib/rating/types';
 import {
     getOfficial,
@@ -82,8 +83,15 @@ export const actions: Actions = {
             session = await event.locals.auth();
         } catch {}
         if (!session?.user?.id) return fail(401, { error: 'יש להתחבר כדי לדרג' });
+        if (!allowAction(event, 'rate', session.user.id)) return fail(429, { error: TOO_MANY });
 
         const fd = await event.request.formData();
+
+        const bot = botCheck(fd);
+        // מלכודת: מאשרים לבוט "הצלחה" בלי לכתוב — כך הוא לא מנסה שוב אחרת
+        if (bot.trap) return { success: true };
+        if (bot.tooFast) return fail(400, { error: TOO_FAST });
+
         const raw: Record<string, unknown> = {};
         for (const c of CRITERIA) raw[c.key] = fd.get(c.key)?.toString();
         const scores = sanitizeScores(raw);
@@ -125,6 +133,8 @@ export const actions: Actions = {
             session = await event.locals.auth();
         } catch {}
         if (!session?.user?.id) return fail(401, { error: 'יש להתחבר כדי לסמן מועיל' });
+        // כל סימון מנקה את הקאש — בלי תקרה, לולאת סימונים הופכת למחולל עומס
+        if (!allowAction(event, 'helpful', session.user.id)) return fail(429, { error: TOO_MANY });
 
         const fd = await event.request.formData();
         const reviewId = fd.get('review_id')?.toString() ?? '';
@@ -149,8 +159,14 @@ export const actions: Actions = {
             session = await event.locals.auth();
         } catch {}
         if (!session?.user?.id) return fail(401, { commentError: 'יש להתחבר כדי להגיב' });
+        if (!allowAction(event, 'comment', session.user.id)) return fail(429, { commentError: TOO_MANY });
 
         const fd = await event.request.formData();
+
+        const bot = botCheck(fd);
+        if (bot.trap) return { commentSuccess: true };
+        if (bot.tooFast) return fail(400, { commentError: TOO_FAST });
+
         const reviewId = fd.get('review_id')?.toString() ?? '';
         const text = (fd.get('comment_text')?.toString() ?? '').trim().slice(0, 1000);
         if (!reviewId) return fail(400, { commentError: 'הדירוג לא נמצא' });

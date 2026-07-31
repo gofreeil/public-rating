@@ -4,6 +4,7 @@
     import { CRITERIA } from '$lib/rating/criteria';
     import type { PublicComment, PublicReview } from '$lib/rating/types';
     import Avatar from './Avatar.svelte';
+    import BotFields from './BotFields.svelte';
     import Stars from './Stars.svelte';
 
     let {
@@ -188,7 +189,7 @@
         <form
             method="POST"
             action="?/comment"
-            class="mt-2 flex flex-col gap-2"
+            class="relative mt-2 flex flex-col gap-2"
             use:enhance={() => {
                 submittingComment = true;
                 return async ({ result, update }) => {
@@ -198,6 +199,7 @@
                 };
             }}
         >
+            <BotFields />
             <input type="hidden" name="review_id" value={review.id} />
             <textarea
                 name="comment_text"
