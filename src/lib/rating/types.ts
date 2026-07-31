@@ -68,6 +68,9 @@ export function groupByKey(key: string | undefined | null): Group | undefined {
     return GROUPS.find((g) => g.key === key);
 }
 
+/** מקסימום מדורגים בהשוואה (/compare) — מעבר לזה העמודות צרות מדי בנייד */
+export const MAX_COMPARE = 4;
+
 // ---- עובד/נבחר ציבור ----
 
 export interface Official {

@@ -7,6 +7,7 @@
         { href: '/knesset', label: 'חברי כנסת' },
         { href: '/judges', label: 'שופטים' },
         { href: '/public-servants', label: 'עובדי ציבור' },
+        { href: '/compare', label: '⚖️ השוואה' },
         { href: '/top-rated', label: '🏆 המצטיינים' },
     ];
 
