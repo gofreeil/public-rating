@@ -139,6 +139,78 @@ export function toPublicComment(c: OfficialComment, meId: string | null): Public
     };
 }
 
+// ============================================================
+// ---- מדד הסכמה: עד כמה הציבור מאוחד בדעתו על המדורג ----
+// ============================================================
+
+/** מספר הדירוגים שמתחתיו הציון עדיין לא נחשב מבוסס (זהה לסף הפרסים) */
+export const RELIABLE_MIN = 3;
+
+export type ConsensusLevel = 'insufficient' | 'consensus' | 'mixed' | 'polarized';
+
+export interface Consensus {
+    level: ConsensusLevel;
+    /** סטיית תקן של הציונים (0 = כולם נתנו אותו ציון) */
+    sd: number;
+    label: string;
+    detail: string;
+}
+
+/**
+ * מחושב מההתפלגות שכבר קיימת — בלי שליפה נוספת.
+ * ההבחנה החשובה לאזרח: ציון 3 שכולם הסכימו עליו אינו אותו דבר כמו ציון 3
+ * שחציו אחדות וחציו אחדים. הראשון הוא הערכה, השני הוא קיטוב.
+ */
+export function consensusOf(
+    distribution: readonly [number, number, number, number, number],
+    count: number,
+): Consensus {
+    if (count < RELIABLE_MIN) {
+        return {
+            level: 'insufficient',
+            sd: 0,
+            label: 'טרם מבוסס',
+            detail: `נדרשים ${RELIABLE_MIN} דירוגים לפחות כדי שהציון ייחשב מבוסס`,
+        };
+    }
+
+    let sum = 0;
+    for (let i = 0; i < 5; i++) sum += (i + 1) * distribution[i];
+    const mean = sum / count;
+
+    let varSum = 0;
+    for (let i = 0; i < 5; i++) varSum += distribution[i] * (i + 1 - mean) ** 2;
+    const sd = Math.sqrt(varSum / count);
+
+    // דו-קוטבי: משקל ניכר בשני הקצוות בו-זמנית — הסימן המובהק למחלוקת ציבורית
+    const lowShare = distribution[0] / count;
+    const highShare = distribution[4] / count;
+    if (lowShare >= 0.25 && highShare >= 0.25) {
+        return {
+            level: 'polarized',
+            sd,
+            label: 'דעות חלוקות',
+            detail: `${Math.round(lowShare * 100)}% דירגו נמוך מאוד ו-${Math.round(highShare * 100)}% דירגו גבוה מאוד`,
+        };
+    }
+
+    if (sd < 0.85) {
+        return {
+            level: 'consensus',
+            sd,
+            label: 'הסכמה רחבה',
+            detail: 'רוב המדרגים נתנו ציונים קרובים זה לזה',
+        };
+    }
+
+    return {
+        level: 'mixed',
+        sd,
+        label: 'דעות מגוונות',
+        detail: 'הציונים מתפרסים על טווח רחב',
+    };
+}
+
 /** עיצוב ציון לתצוגה: 4.3 / "—" */
 export function fmtScore(v: number | null | undefined): string {
     if (v === null || v === undefined || !Number.isFinite(v) || v <= 0) return '—';

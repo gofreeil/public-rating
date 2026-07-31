@@ -5,6 +5,7 @@
     import { breadcrumbSchema, officialSchema } from '$lib/rating/schema';
     import Seo from '$lib/components/rating/Seo.svelte';
     import ShareBar from '$lib/components/rating/ShareBar.svelte';
+    import TrustPanel from '$lib/components/rating/TrustPanel.svelte';
     import Avatar from '$lib/components/rating/Avatar.svelte';
     import Stars from '$lib/components/rating/Stars.svelte';
     import Histogram from '$lib/components/rating/Histogram.svelte';
@@ -105,6 +106,12 @@
                 <CriteriaBars perCriterion={stats.perCriterion} />
             </div>
         </div>
+
+        {#if stats.count > 0}
+            <div class="mt-3 border-t border-white/10 pt-3">
+                <TrustPanel {stats} reviews={data.reviews} />
+            </div>
+        {/if}
 
         <div class="mt-3 border-t border-white/10 pt-3">
             <ShareBar text={shareText} title="{official.name} — דירוג ציבורי" />
