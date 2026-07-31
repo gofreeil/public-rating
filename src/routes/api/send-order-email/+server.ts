@@ -1,7 +1,28 @@
 import { json } from '@sveltejs/kit';
 import { Resend } from 'resend';
 import { addFundContribution, getFundTotal } from '$lib/server/db';
+import { allowAction } from '$lib/server/rateLimit';
 import type { RequestHandler } from './$types';
+
+/**
+ * הנתונים בגוף הבקשה מגיעים מהדפדפן ומוטמעים ב-HTML של מייל יוצא —
+ * בלי בריחה, כל תוקף יכול לשתול קישורי פישינג במייל ממותג מהדומיין המאומת.
+ */
+function esc(v: unknown): string {
+    return String(v ?? '').replace(
+        /[&<>"']/g,
+        (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
+    );
+}
+
+/** מספר בטוח לתצוגה — חוסם הזרקה דרך שדות מספריים */
+function num(v: unknown): number {
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
+}
+
+/** גבול שפוי על גודל ההזמנה — מונע מייל ענק שנבנה מגוף בקשה מנופח */
+const MAX_ITEMS = 30;
 
 interface OrderItem {
     type: string;
@@ -31,13 +52,13 @@ function buildEmailHtml(payload: OrderPayload): string {
 
     const itemsRows = selectedItems.map(item => {
         const price = item.plan === 'half'
-            ? item.total * neighborhoodCount
-            : item.single * neighborhoodCount;
+            ? num(item.total) * num(neighborhoodCount)
+            : num(item.single) * num(neighborhoodCount);
         const planLabel = item.plan === 'half' ? 'חצי שנה' : 'חודש בודד';
         const color = item.plan === 'half' ? '#f59e0b' : '#3b82f6';
         return `
         <tr>
-          <td style="padding:12px 16px; border-bottom:1px solid #1e2a3a; color:#e2e8f0; font-size:15px;">${item.type}</td>
+          <td style="padding:12px 16px; border-bottom:1px solid #1e2a3a; color:#e2e8f0; font-size:15px;">${esc(item.type)}</td>
           <td style="padding:12px 16px; border-bottom:1px solid #1e2a3a; text-align:center;">
             <span style="background:${color}22; color:${color}; border:1px solid ${color}44;
                          border-radius:20px; padding:3px 10px; font-size:12px; font-weight:700;">${planLabel}</span>
@@ -47,7 +68,7 @@ function buildEmailHtml(payload: OrderPayload): string {
     }).join('');
 
     const summaryLine = halfItems.length > 0 && singleItems.length === 0
-        ? `<p style="margin:0; color:#94a3b8; font-size:13px;">חבילת חצי שנה · ₪${totalMonthly} לחודש</p>`
+        ? `<p style="margin:0; color:#94a3b8; font-size:13px;">חבילת חצי שנה · ₪${num(totalMonthly)} לחודש</p>`
         : halfItems.length === 0 && singleItems.length > 0
         ? `<p style="margin:0; color:#94a3b8; font-size:13px;">${singleItems.length} פרסומות לחודש אחד</p>`
         : `<p style="margin:0; color:#94a3b8; font-size:13px;">${halfItems.length} חצי שנה + ${singleItems.length} חודשים בודדים</p>`;
@@ -117,8 +138,8 @@ function buildEmailHtml(payload: OrderPayload): string {
               <!-- Neighborhood row -->
               <div style="padding:12px 16px; border-top:1px solid #1e2a3a; background:#0f1f35;">
                 <p style="margin:0; color:#94a3b8; font-size:13px;">
-                  📍 שכונות: <strong style="color:#f59e0b;">${neighborhoodLabel}</strong>
-                  ${neighborhoodCount > 1 ? `<span style="color:#64748b;"> (×${neighborhoodCount} שכונות)</span>` : ''}
+                  📍 שכונות: <strong style="color:#f59e0b;">${esc(neighborhoodLabel)}</strong>
+                  ${neighborhoodCount > 1 ? `<span style="color:#64748b;"> (×${num(neighborhoodCount)} שכונות)</span>` : ''}
                 </p>
               </div>
             </div>
@@ -127,8 +148,8 @@ function buildEmailHtml(payload: OrderPayload): string {
             <div style="background:linear-gradient(135deg,#1a2744 0%,#1a1a3e 100%);
                          border:2px solid #334155; border-radius:14px; padding:24px; text-align:center; margin-bottom:28px;">
               <p style="margin:0 0 4px; color:#64748b; font-size:13px; font-weight:700;">סה"כ לתשלום</p>
-              ${neighborhoodCount > 1 ? `<p style="margin:0 0 8px; color:#475569; font-size:12px;">₪${Math.round(totalPayment / neighborhoodCount)} × ${neighborhoodCount} שכונות</p>` : ''}
-              <p style="margin:0 0 6px; color:#ffffff; font-size:48px; font-weight:900; line-height:1;">₪${totalPayment}</p>
+              ${neighborhoodCount > 1 ? `<p style="margin:0 0 8px; color:#475569; font-size:12px;">₪${num(num(totalPayment) / num(neighborhoodCount))} × ${num(neighborhoodCount)} שכונות</p>` : ''}
+              <p style="margin:0 0 6px; color:#ffffff; font-size:48px; font-weight:900; line-height:1;">₪${num(totalPayment)}</p>
               ${summaryLine}
             </div>
 
@@ -178,11 +199,17 @@ function buildEmailHtml(payload: OrderPayload): string {
 </html>`;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async (event) => {
+    // הנקודה הזו שולחת דוא"ל ממותג מהדומיין המאומת אל כתובת שהמבקש בוחר,
+    // בלי אימות — בלי תקרה היא משמשת להפצצת דוא"ל ולשריפת מכסת Resend.
+    if (!allowAction(event, 'orderEmail')) {
+        return json({ success: false, message: 'יותר מדי בקשות — נסו שוב מאוחר יותר' }, { status: 429 });
+    }
+
     let payload: OrderPayload;
 
     try {
-        payload = await request.json();
+        payload = await event.request.json();
     } catch {
         return json({ success: false, message: 'נתונים לא תקינים' }, { status: 400 });
     }
@@ -190,11 +217,14 @@ export const POST: RequestHandler = async ({ request }) => {
     const { email, selectedItems } = payload;
 
     // Basic validation
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!email || typeof email !== 'string' || email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return json({ success: false, message: 'כתובת אימייל לא תקינה' }, { status: 400 });
     }
-    if (!selectedItems || selectedItems.length === 0) {
+    if (!Array.isArray(selectedItems) || selectedItems.length === 0) {
         return json({ success: false, message: 'לא נבחרו פרסומות' }, { status: 400 });
+    }
+    if (selectedItems.length > MAX_ITEMS) {
+        return json({ success: false, message: 'יותר מדי פריטים בהזמנה' }, { status: 400 });
     }
 
     const resend = new Resend(process.env.RESEND_API_KEY);
@@ -204,7 +234,7 @@ export const POST: RequestHandler = async ({ request }) => {
         const { error } = await resend.emails.send({
             from: `קהילה בשכונה <${fromEmail}>`,
             to: [email],
-            subject: `✅ בקשת הפרסום שלך התקבלה - ₪${payload.totalPayment}`,
+            subject: `✅ בקשת הפרסום שלך התקבלה - ₪${num(payload.totalPayment)}`,
             html: buildEmailHtml(payload),
         });
 
@@ -216,7 +246,7 @@ export const POST: RequestHandler = async ({ request }) => {
         // ---- 10% לקופת השכונה ----
         let fundTotal = 0;
         try {
-            fundTotal = await addFundContribution(payload.neighborhoodLabel, payload.totalPayment);
+            fundTotal = await addFundContribution(String(payload.neighborhoodLabel ?? ''), num(payload.totalPayment));
         } catch (fundErr) {
             console.warn('[send-order-email] fund contribution failed:', fundErr);
             try { fundTotal = await getFundTotal(); } catch { fundTotal = 0; }

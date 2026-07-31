@@ -8,6 +8,7 @@
 import { json } from '@sveltejs/kit';
 import { Resend } from 'resend';
 import { strapiPost } from '$lib/server/strapiClient';
+import { allowAction } from '$lib/server/rateLimit';
 import type { RequestHandler } from './$types';
 
 const SUPER_ADMIN_EMAIL = 'yahavanter@gmail.com';
@@ -67,7 +68,13 @@ function escapeHtml(s: string): string {
     return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 }
 
-export const POST: RequestHandler = async ({ request, cookies }) => {
+export const POST: RequestHandler = async (event) => {
+    // שולח דוא"ל לסופר-אדמין בלי אימות — בלי תקרה זה ערוץ הצפה ישיר לתיבה שלו
+    if (!allowAction(event, 'orderEmail')) {
+        return json({ error: 'יותר מדי בקשות — נסו שוב מאוחר יותר' }, { status: 429 });
+    }
+
+    const { request, cookies } = event;
     let payload: Payload;
     try {
         payload = await request.json();

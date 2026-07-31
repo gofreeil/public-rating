@@ -75,6 +75,8 @@ export const LIMITS = {
     helpful: { max: 60, windowMs: HOUR },
     suggest: { max: 5, windowMs: HOUR },
     report: { max: 10, windowMs: HOUR },
+    /** שליחת דוא"ל ליעד שהמבקש בחר — התקרה החשובה ביותר, פתוח לאנונימי */
+    orderEmail: { max: 3, windowMs: HOUR },
 } as const;
 
 export type LimitName = keyof typeof LIMITS;
