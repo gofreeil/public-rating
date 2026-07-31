@@ -52,11 +52,23 @@
     }
 </script>
 
-<article class="rounded-2xl border border-white/10 bg-white/5 p-3" data-official={officialId}>
+<article
+    class="rounded-2xl border p-3 {review.mine
+        ? 'border-blue-400/30 bg-blue-500/[0.06]'
+        : 'border-white/10 bg-white/5'}"
+    data-official={officialId}
+>
     <div class="flex flex-wrap items-center gap-2">
         <Avatar name={displayName} size={36} />
         <span class="min-w-0">
-            <span class="block truncate text-sm font-bold text-white">{displayName}</span>
+            <span class="flex items-center gap-1.5 truncate text-sm font-bold text-white">
+                {displayName}
+                {#if review.mine}
+                    <span class="rounded-full border border-blue-400/40 bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-bold text-blue-300">
+                        הדירוג שלי
+                    </span>
+                {/if}
+            </span>
             <span class="block text-xs text-gray-500">{relDate(review.created_at)}</span>
         </span>
         <span class="mr-auto">

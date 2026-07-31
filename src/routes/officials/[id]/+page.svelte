@@ -10,7 +10,7 @@
     import Histogram from '$lib/components/rating/Histogram.svelte';
     import CriteriaBars from '$lib/components/rating/CriteriaBars.svelte';
     import RateForm from '$lib/components/rating/RateForm.svelte';
-    import ReviewCard from '$lib/components/rating/ReviewCard.svelte';
+    import ReviewList from '$lib/components/rating/ReviewList.svelte';
     import type { PageData, ActionData } from './$types';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -156,24 +156,15 @@
             </p>
         {/if}
 
-        {#if data.reviews.length}
-            {#each data.reviews as review (review.id)}
-                <ReviewCard
-                    {review}
-                    officialId={official.id}
-                    canDelete={data.isAdmin || review.mine}
-                    loggedIn={data.me !== null}
-                    comments={commentsByReview.get(review.id) ?? []}
-                    officialName={official.name}
-                    isAdmin={data.isAdmin}
-                    isOfficialUser={data.isOfficialUser}
-                />
-            {/each}
-        {:else}
-            <div class="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-gray-500">
-                אין עדיין דירוגים — היו הראשונים
-            </div>
-        {/if}
+        <ReviewList
+            reviews={data.reviews}
+            {commentsByReview}
+            officialId={official.id}
+            officialName={official.name}
+            loggedIn={data.me !== null}
+            isAdmin={data.isAdmin}
+            isOfficialUser={data.isOfficialUser}
+        />
 
         <p class="text-xs leading-relaxed text-gray-600">
             הדירוגים והתגובות בעמוד זה הם דעות אישיות של משתמשים ואינם משקפים את עמדת האתר.
