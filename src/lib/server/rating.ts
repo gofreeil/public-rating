@@ -332,19 +332,39 @@ export async function getMyReview(officialId: string, userId: string): Promise<R
     return row ? mapReview(row) : undefined;
 }
 
-/** סימון/ביטול "מועיל" על ביקורת */
-export async function toggleHelpful(reviewId: string, userId: string): Promise<void> {
-    const res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${reviewId}`);
+/**
+ * סימון/ביטול "מועיל" על ביקורת.
+ * הביקורת חייבת להיות פעילה ולהשתייך למדורג שבכתובת — אחרת אפשר היה לנפח
+ * מונה של ביקורת שהוסרה או של מדורג אחר לגמרי בשליחת מזהה שרירותי.
+ * החזרה: האם הפעולה בוצעה.
+ */
+export async function toggleHelpful(
+    reviewId: string,
+    userId: string,
+    officialId: string,
+): Promise<boolean> {
+    let res: { data: StrapiItem };
+    try {
+        res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(reviewId)}`);
+    } catch (e) {
+        if (String(e).includes('→ 404')) return false;
+        throw e;
+    }
     const item = res.data;
-    if (!item || item.category !== REVIEW_CATEGORY) return;
+    if (!item || item.category !== REVIEW_CATEGORY) return false;
+    if (item.status1 !== 'active' || item.label !== officialId) return false;
+    // סימון עצמי אינו אות אמון של הציבור
+    if (item.user_id && item.user_id === userId) return false;
+
     const x = ef(item);
     const set = new Set(Array.isArray(x.helpful_by) ? (x.helpful_by as string[]) : []);
     if (set.has(userId)) set.delete(userId);
     else set.add(userId);
-    await strapiPut(`${ITEMS}/${reviewId}`, {
+    await strapiPut(`${ITEMS}/${item.documentId}`, {
         data: { extra_fields: { ...x, helpful_by: [...set] } },
     });
     invalidateRating();
+    return true;
 }
 
 export interface OfficialInput {

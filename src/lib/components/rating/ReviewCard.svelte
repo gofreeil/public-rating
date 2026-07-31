@@ -96,8 +96,14 @@
             <input type="hidden" name="review_id" value={review.id} />
             <button
                 type="submit"
-                disabled={!loggedIn}
-                title={loggedIn ? (iMarkedHelpful ? 'ביטול הסימון' : 'סימון כמועיל') : 'יש להתחבר כדי לסמן מועיל'}
+                disabled={!loggedIn || review.mine}
+                title={review.mine
+                    ? 'אי אפשר לסמן את הדירוג שלכם כמועיל'
+                    : loggedIn
+                      ? iMarkedHelpful
+                          ? 'ביטול הסימון'
+                          : 'סימון כמועיל'
+                      : 'יש להתחבר כדי לסמן מועיל'}
                 class="rounded-full border px-2.5 py-1 text-xs transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50 {iMarkedHelpful
                     ? 'border-blue-400/50 bg-blue-500/15 text-blue-300'
                     : 'border-white/10 bg-white/5 text-gray-400 hover:text-gray-200'}"

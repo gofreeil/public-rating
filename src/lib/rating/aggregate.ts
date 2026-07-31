@@ -4,6 +4,7 @@
 
 import { CRITERIA, type CriterionKey, type Scores } from './criteria';
 import type {
+    MyReview,
     Official,
     OfficialComment,
     OfficialStats,
@@ -105,6 +106,22 @@ export function toPublicReview(r: Review, meId: string | null): PublicReview {
         helpfulCount: r.helpful_by.length,
         markedHelpfulByMe: meId ? r.helpful_by.includes(meId) : false,
         mine: meId ? r.user_id === meId : false,
+        created_at: r.created_at,
+    };
+}
+
+/**
+ * הדירוג של המשתמש עצמו, לטעינת טופס העריכה.
+ * גם דירוג "שלי" חייב ניקוי: helpful_by מכיל מזהים של מי שסימן אותו כמועיל —
+ * משתמשים אחרים, שמזהה שלהם עלול להיות `credentials_<אימייל>`.
+ */
+export function toMyReview(r: Review): MyReview {
+    return {
+        id: r.id,
+        text: r.text,
+        scores: r.scores,
+        overall: r.overall,
+        anonymous: r.anonymous,
         created_at: r.created_at,
     };
 }

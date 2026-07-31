@@ -4,7 +4,7 @@
 
 import { error, fail } from '@sveltejs/kit';
 import { CRITERIA, sanitizeScores } from '$lib/rating/criteria';
-import { computeStats, toPublicComment, toPublicReview } from '$lib/rating/aggregate';
+import { computeStats, toMyReview, toPublicComment, toPublicReview } from '$lib/rating/aggregate';
 import type { OfficialComment, Review } from '$lib/rating/types';
 import {
     getOfficial,
@@ -66,7 +66,8 @@ export const load: PageServerLoad = async (event) => {
         reviews: reviews.map((r) => toPublicReview(r, meId)),
         comments: comments.map((c) => toPublicComment(c, meId)),
         stats: computeStats(reviews),
-        myReview,
+        // גם הדירוג "שלי" עובר ניקוי — helpful_by שבתוכו הוא רשימת מזהים של אחרים
+        myReview: myReview ? toMyReview(myReview) : null,
         isAdmin: session?.user?.role === 'super_admin',
         isOfficialUser,
         me: meId ? { id: meId, name: session?.user?.name ?? '' } : null,
@@ -129,12 +130,14 @@ export const actions: Actions = {
         const reviewId = fd.get('review_id')?.toString() ?? '';
         if (!reviewId) return fail(400, { error: 'דירוג לא נמצא' });
 
+        let ok = false;
         try {
-            await toggleHelpful(reviewId, session.user.id);
+            ok = await toggleHelpful(reviewId, session.user.id, event.params.id);
         } catch (e) {
             console.error('[rating] toggleHelpful failed:', e);
             return fail(500, { error: 'שגיאה בסימון — נסו שוב' });
         }
+        if (!ok) return fail(400, { error: 'לא ניתן לסמן את הדירוג הזה כמועיל' });
 
         return { helpful: true };
     },

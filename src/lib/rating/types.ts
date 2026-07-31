@@ -148,6 +148,20 @@ export interface OfficialComment {
     created_at: string;
 }
 
+/**
+ * הדירוג של המשתמש המחובר, לטעינת טופס העריכה.
+ * בלי user_id ובעיקר בלי helpful_by — מערך זה מכיל מזהים של משתמשים *אחרים*
+ * (מי שסימן "מועיל"), ומזהה של חשבון סיסמה הוא `credentials_<אימייל>`.
+ */
+export interface MyReview {
+    id: string;
+    text: string;
+    scores: Scores;
+    overall: number;
+    anonymous: boolean;
+    created_at: string;
+}
+
 /** צורת תגובה בטוחה לדפדפן — בלי user_id */
 export interface PublicComment {
     id: string;

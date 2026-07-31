@@ -2,10 +2,10 @@
     // טופס דירוג — כל המדדים + נימוק, עדכון-במקום של הדירוג הקיים (upsert בשרת)
     import { enhance } from '$app/forms';
     import { CRITERIA, type CriterionKey } from '$lib/rating/criteria';
-    import type { Review } from '$lib/rating/types';
+    import type { MyReview } from '$lib/rating/types';
     import StarInput from './StarInput.svelte';
 
-    let { myReview = null }: { myReview?: Review | null } = $props();
+    let { myReview = null }: { myReview?: MyReview | null } = $props();
 
     // נבנה דינמית מ-CRITERIA — הוספת מדד חדש לא דורשת שינוי כאן
     let values = $state<Record<CriterionKey, number>>(
