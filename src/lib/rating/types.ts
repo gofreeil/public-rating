@@ -11,6 +11,7 @@ import type { CriterionKey, Scores } from './criteria';
 export const OFFICIAL_CATEGORY = 'pr_official';
 export const REVIEW_CATEGORY = 'pr_review';
 export const COMMENT_CATEGORY = 'pr_comment';
+export const REPORT_CATEGORY = 'pr_report';
 
 // ---- קבוצות (לוחות הדירוג) ----
 
@@ -171,6 +172,41 @@ export interface PublicComment {
     official_reply: boolean;
     /** התגובה של המשתמש המחובר (מאפשרת מחיקה עצמית) */
     mine: boolean;
+    created_at: string;
+}
+
+// ---- דיווח על תוכן פוגעני ----
+
+export type ReportReason = 'defamation' | 'wrong_person' | 'spam' | 'abusive' | 'other';
+
+export const REPORT_REASONS: { key: ReportReason; label: string }[] = [
+    { key: 'defamation', label: 'לשון הרע או השמצה' },
+    { key: 'wrong_person', label: 'זיהוי שגוי — לא מדובר במדורג' },
+    { key: 'spam', label: 'ספאם או פרסומת' },
+    { key: 'abusive', label: 'שפה פוגענית או הסתה' },
+    { key: 'other', label: 'אחר' },
+];
+
+export function reportReasonLabel(key: string): string {
+    return REPORT_REASONS.find((r) => r.key === key)?.label ?? 'אחר';
+}
+
+export interface ContentReport {
+    /** documentId ב-Strapi */
+    id: string;
+    /** documentId של הפריט המדווח (ביקורת או תגובה) */
+    target_id: string;
+    target_type: 'review' | 'comment';
+    /** המדורג שבדף שלו נמצא התוכן — לניווט מהאדמין */
+    official_id: string;
+    official_name: string;
+    reason: ReportReason;
+    details: string;
+    /** דוא"ל למעקב — אופציונלי, גם אורח יכול לדווח */
+    reporter_contact: string;
+    /** התוכן המדווח כפי שהיה בעת הדיווח — שורד מחיקה של המקור */
+    snapshot: string;
+    status: 'pending' | 'handled';
     created_at: string;
 }
 

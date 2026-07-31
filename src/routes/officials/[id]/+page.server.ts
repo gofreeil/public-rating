@@ -6,8 +6,9 @@ import { error, fail } from '@sveltejs/kit';
 import { CRITERIA, sanitizeScores } from '$lib/rating/criteria';
 import { computeStats, toMyReview, toPublicComment, toPublicReview } from '$lib/rating/aggregate';
 import { TOO_FAST, TOO_MANY, allowAction, botCheck } from '$lib/server/rateLimit';
-import type { OfficialComment, Review } from '$lib/rating/types';
+import { REPORT_REASONS, type OfficialComment, type ReportReason, type Review } from '$lib/rating/types';
 import {
+    createReport,
     getOfficial,
     getReviewsFor,
     getMyReview,
@@ -236,6 +237,74 @@ export const actions: Actions = {
         }
 
         return { commentDeleted: true };
+    },
+
+    // דיווח על תוכן פוגעני — הכתיבה היחידה הפתוחה גם לאורח:
+    // מי שנפגע מתוכן עליו לא בהכרח מחזיק חשבון באתר.
+    report: async (event) => {
+        let session = null;
+        try {
+            session = await event.locals.auth();
+        } catch {}
+        const meId = session?.user?.id ?? null;
+
+        if (!allowAction(event, 'report', meId)) return fail(429, { reportError: TOO_MANY });
+
+        const fd = await event.request.formData();
+        const bot = botCheck(fd);
+        if (bot.trap) return { reportSuccess: true };
+
+        const targetId = fd.get('target_id')?.toString() ?? '';
+        const targetType = fd.get('target_type')?.toString() === 'comment' ? 'comment' : 'review';
+        const reason = (fd.get('reason')?.toString() ?? '') as ReportReason;
+        const details = (fd.get('details')?.toString() ?? '').trim().slice(0, 1000);
+        const contact = (fd.get('contact')?.toString() ?? '').trim().slice(0, 200);
+
+        if (!targetId) return fail(400, { reportError: 'התוכן המדווח לא נמצא' });
+        if (!REPORT_REASONS.some((r) => r.key === reason)) {
+            return fail(400, { reportError: 'יש לבחור סיבת דיווח' });
+        }
+
+        // אימות שהתוכן קיים ושייך למדורג שבכתובת, ושמירת עותק שלו:
+        // הדיווח חייב להישאר מובן גם אם התוכן נמחק לפני הטיפול
+        let snapshot = '';
+        try {
+            if (targetType === 'review') {
+                const r = (await getReviewsFor(event.params.id)).find((x) => x.id === targetId);
+                if (!r) return fail(404, { reportError: 'הדירוג לא נמצא או שכבר הוסר' });
+                snapshot = r.text;
+            } else {
+                const c = (await getCommentsFor(event.params.id)).find((x) => x.id === targetId);
+                if (!c) return fail(404, { reportError: 'התגובה לא נמצאה או שכבר הוסרה' });
+                snapshot = c.text;
+            }
+        } catch {
+            return fail(503, { reportError: 'המערכת עמוסה כרגע — נסו שוב בעוד רגע' });
+        }
+
+        let officialName = '';
+        try {
+            officialName = (await getOfficial(event.params.id))?.name ?? '';
+        } catch {}
+
+        try {
+            await createReport({
+                targetId,
+                targetType,
+                officialId: event.params.id,
+                officialName,
+                reason,
+                details,
+                reporterContact: contact,
+                snapshot,
+                userId: meId,
+            });
+        } catch (e) {
+            console.error('[rating] createReport failed:', e);
+            return fail(500, { reportError: 'שגיאה בשליחת הדיווח — נסו שוב בעוד רגע' });
+        }
+
+        return { reportSuccess: true };
     },
 
     // מחיקה רכה — סופר-אדמין או בעל הדירוג בלבד

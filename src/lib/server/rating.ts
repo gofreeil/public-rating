@@ -12,12 +12,15 @@ import { overallOf, rankOfficials } from '$lib/rating/aggregate';
 import {
     COMMENT_CATEGORY,
     OFFICIAL_CATEGORY,
+    REPORT_CATEGORY,
     REVIEW_CATEGORY,
     groupByKey,
+    type ContentReport,
     type GroupKey,
     type Official,
     type OfficialComment,
     type RatedOfficial,
+    type ReportReason,
     type Review,
 } from '$lib/rating/types';
 
@@ -432,6 +435,82 @@ export async function updateOfficial(
         },
     });
     invalidateRating();
+}
+
+// ============================================================
+// ---- דיווחים על תוכן ----
+// ============================================================
+
+function mapReport(item: StrapiItem): ContentReport {
+    const x = ef(item);
+    return {
+        id: item.documentId,
+        target_id: item.label ?? '',
+        target_type: x.target_type === 'comment' ? 'comment' : 'review',
+        official_id: typeof x.official_id === 'string' ? x.official_id : '',
+        official_name: typeof x.official_name === 'string' ? x.official_name : '',
+        reason: (typeof x.reason === 'string' ? x.reason : 'other') as ReportReason,
+        details: item.description ?? '',
+        reporter_contact: typeof x.reporter_contact === 'string' ? x.reporter_contact : '',
+        snapshot: typeof x.snapshot === 'string' ? x.snapshot : '',
+        status: x.status === 'handled' ? 'handled' : 'pending',
+        created_at: item.createdAt ?? '',
+    };
+}
+
+export interface ReportInput {
+    targetId: string;
+    targetType: 'review' | 'comment';
+    officialId: string;
+    officialName: string;
+    reason: ReportReason;
+    details: string;
+    reporterContact: string;
+    /** התוכן המדווח כפי שהיה — נשמר כדי שהדיווח יישאר מובן גם אחרי מחיקה */
+    snapshot: string;
+    /** מזהה המדווח אם היה מחובר; אורח מדווח בלי מזהה */
+    userId: string | null;
+}
+
+/** דיווח על תוכן פוגעני — פתוח גם לאורחים (זו הכתיבה היחידה שכך) */
+export async function createReport(input: ReportInput): Promise<void> {
+    await strapiPost(ITEMS, {
+        data: {
+            category: REPORT_CATEGORY,
+            label: input.targetId,
+            description: input.details.slice(0, 1000),
+            user_id: input.userId,
+            extra_fields: {
+                target_type: input.targetType,
+                official_id: input.officialId,
+                official_name: input.officialName,
+                reason: input.reason,
+                reporter_contact: input.reporterContact.slice(0, 200),
+                snapshot: input.snapshot.slice(0, 1000),
+                status: 'pending',
+            },
+            icon: '🚩',
+            color: 'red',
+            status1: 'active',
+            publishedAt: new Date().toISOString(),
+        },
+    });
+    // הדיווחים אינם בקאש הציבורי — אין מה לנקות
+}
+
+/** כל הדיווחים (לאדמין) — חדש ראשון */
+export async function listReports(): Promise<ContentReport[]> {
+    return (await fetchByCategory(REPORT_CATEGORY)).map(mapReport);
+}
+
+/** סימון דיווח כטופל — הדיווח נשמר לתיעוד ולא נמחק */
+export async function markReportHandled(id: string): Promise<void> {
+    const res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
+    const item = res.data;
+    if (!item || item.category !== REPORT_CATEGORY) throw new Error('דיווח לא נמצא');
+    await strapiPut(`${ITEMS}/${item.documentId}`, {
+        data: { extra_fields: { ...ef(item), status: 'handled' } },
+    });
 }
 
 /** הסרה רכה (status1=deleted) — למדורג או לביקורת */

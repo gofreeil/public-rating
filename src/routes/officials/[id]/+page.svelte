@@ -168,7 +168,9 @@
 
         <p class="text-xs leading-relaxed text-gray-600">
             הדירוגים והתגובות בעמוד זה הם דעות אישיות של משתמשים ואינם משקפים את עמדת האתר.
-            נתקלתם בתוכן פוגעני? <a href="/legal" class="text-blue-400/80 hover:underline">דווחו לנו</a> ונטפל בהקדם.
+            נתקלתם בתוכן פוגעני, בלשון הרע או בזיהוי שגוי? לחצו על <b class="text-gray-500">🚩 דיווח</b>
+            בכרטיס הרלוונטי — הדיווח נבדק על ידי צוות האתר. פרטים נוספים
+            <a href="/legal" class="text-blue-400/80 hover:underline">בתנאי השימוש</a>.
         </p>
     </section>
 

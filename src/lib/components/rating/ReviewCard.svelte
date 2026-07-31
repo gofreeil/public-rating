@@ -5,6 +5,7 @@
     import type { PublicComment, PublicReview } from '$lib/rating/types';
     import Avatar from './Avatar.svelte';
     import BotFields from './BotFields.svelte';
+    import ReportDialog from './ReportDialog.svelte';
     import Stars from './Stars.svelte';
 
     let {
@@ -142,6 +143,10 @@
                     🗑 מחיקה
                 </button>
             </form>
+        {/if}
+
+        {#if !review.mine}
+            <ReportDialog targetId={review.id} targetType="review" />
         {/if}
     </div>
 
