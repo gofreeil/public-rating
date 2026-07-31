@@ -2,6 +2,8 @@
     // לוח דירוג משותף — חברי כנסת / שופטים / עובדי ציבור
     import type { Group, RatedOfficial } from '$lib/rating/types';
     import { heMatches } from '$lib/rating/heSearch';
+    import { FAQ_COMPACT } from '$lib/rating/faq';
+    import FaqAccordion from './FaqAccordion.svelte';
     import OfficialCard from './OfficialCard.svelte';
     import ShareBar from './ShareBar.svelte';
 
@@ -150,5 +152,17 @@
                 </div>
             {/if}
         {/if}
+    {/if}
+
+    <!-- "למה הסדר לא לפי הממוצע?" — התשובה במקום שבו השאלה נשאלת -->
+    {#if officials.length > 0}
+        <div class="pt-2">
+            <FaqAccordion items={FAQ_COMPACT} title="איך עובד הדירוג?" compact />
+            <p class="mt-2 text-center text-xs text-gray-500">
+                <a href="/about#methodology" class="text-blue-400/80 hover:text-blue-300">
+                    לכל השאלות והתשובות ←
+                </a>
+            </p>
+        </div>
     {/if}
 </section>

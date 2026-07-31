@@ -4,7 +4,7 @@
 // ============================================================
 
 import { DEFAULT_OG_IMAGE, SITE_NAME, SITE_TAGLINE, SITE_URL, absUrl, metaTrim } from '$lib/seo';
-import { CRITERIA } from './criteria';
+import { FAQ_ITEMS } from './faq';
 import type { Group, OfficialStats, PublicReview, RatedOfficial, Official } from './types';
 
 /** WebSite + חיפוש פנימי — מופיע פעם אחת, בדף הבית */
@@ -113,39 +113,20 @@ export function breadcrumbSchema(trail: { name: string; path: string }[]): unkno
     };
 }
 
-/** דף האודות — הסבר המתודולוגיה כשאלות ותשובות */
+/**
+ * דף האודות — שאלות ותשובות.
+ * נבנה מ-FAQ_ITEMS, אותו מקור שממנו נבנית התצוגה הגלויה, כדי שהסכמה
+ * והתוכן על הדף לא יוכלו להיפרד זה מזה.
+ */
 export function methodologySchema(): unknown {
     return {
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
-        mainEntity: [
-            {
-                '@type': 'Question',
-                name: 'לפי אילו מדדים מדרגים באתר דירוג ציבורי?',
-                acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: CRITERIA.map((c) => `${c.label}: ${c.description}`).join('. '),
-                },
-            },
-            {
-                '@type': 'Question',
-                name: 'כיצד מחושב הציון הסופי?',
-                acceptedAnswer: {
-                    '@type': 'Answer',
-                    text:
-                        'הציון המוצג הוא ממוצע חמשת המדדים על פני כל הדירוגים. המיון בלוחות משתמש בשקלול ' +
-                        'בייסיאני (בשיטת IMDb) כדי שמדורג עם דירוג בודד לא יעקוף מדורג עם ממוצע גבוה על עשרות דירוגים.',
-                },
-            },
-            {
-                '@type': 'Question',
-                name: 'מי יכול לדרג?',
-                acceptedAnswer: {
-                    '@type': 'Answer',
-                    text: 'רק משתמשים רשומים ומחוברים, ודירוג אחד לכל משתמש לכל מדורג — כדי לשמור על אמינות הדירוג.',
-                },
-            },
-        ],
+        mainEntity: FAQ_ITEMS.map((f) => ({
+            '@type': 'Question',
+            name: f.q,
+            acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
     };
 }
 

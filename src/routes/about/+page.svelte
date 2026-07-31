@@ -2,6 +2,8 @@
     import { CRITERIA } from '$lib/rating/criteria';
     import { GROUPS } from '$lib/rating/types';
     import Seo from '$lib/components/rating/Seo.svelte';
+    import FaqAccordion from '$lib/components/rating/FaqAccordion.svelte';
+    import { FAQ_ITEMS } from '$lib/rating/faq';
     import { breadcrumbSchema, methodologySchema } from '$lib/rating/schema';
 
     const jsonLd = [
@@ -59,6 +61,11 @@
             {/each}
         </div>
     </section>
+
+    <!-- שאלות ותשובות — מקור אחד עם ה-JSON-LD למעלה -->
+    <div id="methodology">
+        <FaqAccordion items={FAQ_ITEMS} title="שאלות ותשובות על שיטת הדירוג" />
+    </div>
 
     <!-- השלב הבא -->
     <section class="rounded-2xl border border-blue-400/25 bg-white/5 p-5">
