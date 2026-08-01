@@ -21,6 +21,7 @@ const STATIC_ENTRIES: Entry[] = [
     ...GROUPS.map((g) => ({ loc: g.route, changefreq: 'daily' as const, priority: '0.9' })),
     { loc: '/top-rated', changefreq: 'daily', priority: '0.9' },
     { loc: '/compare', changefreq: 'weekly', priority: '0.7' },
+    { loc: '/officials', changefreq: 'daily', priority: '0.8' },
     { loc: '/about', changefreq: 'monthly', priority: '0.6' },
     { loc: '/suggest', changefreq: 'monthly', priority: '0.5' },
     { loc: '/legal', changefreq: 'monthly', priority: '0.3' },
