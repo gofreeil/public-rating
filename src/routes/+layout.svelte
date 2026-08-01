@@ -57,7 +57,7 @@
 		onShowAuth={handleShowAuth}
 	/>
 
-	<NavBar />
+	<NavBar loggedIn={Boolean(data.session?.user)} />
 
 	<div class="layout-container flex-grow">
 		<RightAdBanner />

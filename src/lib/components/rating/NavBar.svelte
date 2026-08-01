@@ -1,15 +1,19 @@
 <script lang="ts">
     // סרגל ניווט אופקי קומפקטי — מתחת ל-Header
     import { page } from '$app/state';
+    import { GROUPS } from '$lib/rating/types';
 
-    const LINKS = [
+    let { loggedIn = false }: { loggedIn?: boolean } = $props();
+
+    // הלוחות נגזרים מ-GROUPS — הוספת קטגוריה מדורגת חדשה לא דורשת עריכה כאן
+    const LINKS = $derived([
         { href: '/', label: 'דף הבית' },
-        { href: '/knesset', label: 'חברי כנסת' },
-        { href: '/judges', label: 'שופטים' },
-        { href: '/public-servants', label: 'עובדי ציבור' },
+        ...GROUPS.map((g) => ({ href: g.route, label: g.title })),
         { href: '/compare', label: '⚖️ השוואה' },
         { href: '/top-rated', label: '🏆 המצטיינים' },
-    ];
+        ...(loggedIn ? [{ href: '/my-ratings', label: '⭐ שלי' }] : []),
+        { href: '/about', label: 'אודות' },
+    ]);
 
     function isActive(href: string, pathname: string): boolean {
         if (href === '/') return pathname === '/';
