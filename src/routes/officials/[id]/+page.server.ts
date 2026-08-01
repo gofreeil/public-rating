@@ -23,7 +23,16 @@ import {
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async (event) => {
-    const official = await getOfficial(event.params.id);
+    // getOfficial מבחין בין 404 אמיתי לבין תקלת באקאנד ומזריק את השנייה הלאה,
+    // כדי לא להפוך נפילה זמנית ל-404 כוזב שגוגל יוריד מהאינדקס. כאן מתרגמים
+    // אותה ל-503 עם הודעה מובנת, במקום מסך שגיאה כללי.
+    let official;
+    try {
+        official = await getOfficial(event.params.id);
+    } catch (e) {
+        console.warn('[officials/id] getOfficial failed:', e instanceof Error ? e.message : e);
+        throw error(503, 'המערכת עמוסה כרגע — נסו לרענן בעוד רגע');
+    }
     if (!official) throw error(404, 'המדורג לא נמצא');
 
     let reviews: Review[] = [];
