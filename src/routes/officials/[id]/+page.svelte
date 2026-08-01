@@ -20,6 +20,16 @@
     const stats = $derived(data.stats);
     const group = $derived(groupByKey(official.group));
 
+    // סינון דירוגים לפי מספר כוכבים — נבחר בלחיצה על ההיסטוגרמה
+    let starFilter = $state<number | null>(null);
+
+    function selectStar(star: number | null) {
+        starFilter = star;
+        if (star !== null) {
+            document.getElementById('public-reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
     // תגובות מקובצות לפי הדירוג שעליו הגיבו
     const commentsByReview = $derived.by(() => {
         const map = new Map<string, typeof data.comments>();
@@ -100,7 +110,12 @@
                 </span>
             </div>
             <div class="min-w-56 flex-1">
-                <Histogram distribution={stats.distribution} count={stats.count} />
+                <Histogram
+                    distribution={stats.distribution}
+                    count={stats.count}
+                    selected={starFilter}
+                    onselect={selectStar}
+                />
             </div>
             <div class="min-w-64 flex-1">
                 <CriteriaBars perCriterion={stats.perCriterion} />
@@ -147,7 +162,7 @@
     </section>
 
     <!-- דירוגי הציבור -->
-    <section class="flex flex-col gap-2">
+    <section id="public-reviews" class="flex scroll-mt-20 flex-col gap-2">
         <div class="flex flex-wrap items-baseline gap-3">
             <h2 class="text-lg font-bold text-white">דירוגי הציבור ({stats.count})</h2>
             {#if data.isOfficialUser}
@@ -171,6 +186,8 @@
             loggedIn={data.me !== null}
             isAdmin={data.isAdmin}
             isOfficialUser={data.isOfficialUser}
+            {starFilter}
+            onclearstar={() => (starFilter = null)}
         />
 
         <p class="text-xs leading-relaxed text-gray-600">

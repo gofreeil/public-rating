@@ -13,6 +13,8 @@
         loggedIn = false,
         isAdmin = false,
         isOfficialUser = false,
+        starFilter = null,
+        onclearstar = undefined,
     }: {
         reviews: PublicReview[];
         commentsByReview: Map<string, PublicComment[]>;
@@ -21,6 +23,9 @@
         loggedIn?: boolean;
         isAdmin?: boolean;
         isOfficialUser?: boolean;
+        /** סינון לפי מספר כוכבים — מגיע מלחיצה על ההיסטוגרמה */
+        starFilter?: number | null;
+        onclearstar?: () => void;
     } = $props();
 
     type SortKey = 'new' | 'helpful' | 'high' | 'low';
@@ -46,7 +51,10 @@
     }
 
     const ordered = $derived.by(() => {
-        const list = withTextOnly ? reviews.filter((r) => r.text?.trim()) : [...reviews];
+        let list = withTextOnly ? reviews.filter((r) => r.text?.trim()) : [...reviews];
+        if (starFilter !== null) {
+            list = list.filter((r) => Math.round(r.overall) === starFilter);
+        }
         switch (sort) {
             case 'helpful':
                 list.sort((a, b) => b.helpfulCount - a.helpfulCount || time(b) - time(a));
@@ -93,6 +101,20 @@
     }
 </script>
 
+{#if starFilter !== null}
+    <div class="flex flex-wrap items-center gap-2 rounded-xl border border-amber-400/25 bg-amber-500/[0.06] px-3 py-1.5 text-xs">
+        <span class="font-bold text-amber-300">מוצגים רק דירוגים של {starFilter} כוכבים</span>
+        <span class="text-gray-500">({ordered.length})</span>
+        {#if onclearstar}
+            <button
+                type="button"
+                onclick={onclearstar}
+                class="mr-auto cursor-pointer text-gray-400 underline transition-colors hover:text-gray-200"
+            >הצגת הכל</button>
+        {/if}
+    </div>
+{/if}
+
 {#if reviews.length > 1}
     <div class="flex flex-wrap items-center gap-1.5">
         {#each SORTS as s (s.key)}
@@ -122,7 +144,13 @@
 
 {#if ordered.length === 0}
     <div class="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-gray-500">
-        {withTextOnly ? 'אף דירוג לא לווה בנימוק כתוב' : 'אין עדיין דירוגים — היו הראשונים'}
+        {#if starFilter !== null}
+            אין דירוגים של {starFilter} כוכבים
+        {:else if withTextOnly}
+            אף דירוג לא לווה בנימוק כתוב
+        {:else}
+            אין עדיין דירוגים — היו הראשונים
+        {/if}
     </div>
 {:else}
     <div class="flex flex-col gap-2">
