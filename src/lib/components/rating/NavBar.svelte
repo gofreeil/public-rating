@@ -21,7 +21,15 @@
     }
 </script>
 
-<nav aria-label="ניווט ראשי" class="border-b border-white/10 bg-white/[0.02]">
+<!--
+  דביק: הלוחות ארוכים, ואחרי גלילה של עשרות כרטיסים המעבר בין קטגוריות
+  דרש חזרה לראש הדף. הרקע אטום למחצה עם טשטוש כדי שהכרטיסים שמתחת
+  לא יבצבצו דרך הסרגל.
+-->
+<nav
+    aria-label="ניווט ראשי"
+    class="nav-sticky sticky top-0 z-30 border-b border-white/10"
+>
     <div class="nav-scroll mx-auto flex max-w-5xl items-center overflow-x-auto whitespace-nowrap px-2 md:justify-center">
         {#each LINKS as link (link.href)}
             <a
@@ -37,6 +45,11 @@
 </nav>
 
 <style>
+    .nav-sticky {
+        background: rgba(15, 23, 42, 0.92);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
     .nav-scroll {
         scrollbar-width: none;
     }
