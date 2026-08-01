@@ -6,6 +6,7 @@
     import Seo from '$lib/components/rating/Seo.svelte';
     import ShareBar from '$lib/components/rating/ShareBar.svelte';
     import TrustPanel from '$lib/components/rating/TrustPanel.svelte';
+    import TrendChart from '$lib/components/rating/TrendChart.svelte';
     import Avatar from '$lib/components/rating/Avatar.svelte';
     import Stars from '$lib/components/rating/Stars.svelte';
     import Histogram from '$lib/components/rating/Histogram.svelte';
@@ -132,6 +133,9 @@
             <ShareBar text={shareText} title="{official.name} — דירוג ציבורי" />
         </div>
     </section>
+
+    <!-- מגמה לאורך זמן — מוצגת רק כשיש מספיק דירוגים לאורך יותר מחודש אחד -->
+    <TrendChart reviews={data.reviews} />
 
     <!-- דרגו בעצמכם -->
     <section class="rounded-2xl border border-white/10 bg-white/5 p-4">

@@ -211,6 +211,89 @@ export function consensusOf(
     };
 }
 
+// ============================================================
+// ---- מגמה לאורך זמן ----
+// ============================================================
+
+export interface TrendPoint {
+    /** תחילת החודש, ISO — למפתח יציב ול-<time> */
+    iso: string;
+    /** תווית קצרה לציר: "8/26" */
+    label: string;
+    avg: number;
+    count: number;
+}
+
+export interface Trend {
+    points: TrendPoint[];
+    /** ההפרש בין ממוצע המחצית המאוחרת לממוצע המוקדמת */
+    delta: number;
+    direction: 'up' | 'down' | 'flat';
+}
+
+/** מתחת לזה כל "מגמה" היא רעש, לא אות */
+const TREND_MIN_REVIEWS = 5;
+/** שינוי קטן מזה נחשב יציבות */
+const TREND_EPSILON = 0.25;
+
+/**
+ * ממוצע חודשי + כיוון. עד היום created_at של דירוג לא שימש לשום חישוב:
+ * דירוג משנתיים אחורה נספר בדיוק כמו דירוג של היום, ולא הייתה שום דרך
+ * לראות אם מדורג משתפר או מידרדר.
+ */
+export function ratingTrend(
+    reviews: readonly { created_at: string; overall: number }[],
+    maxMonths = 12,
+): Trend {
+    const valid = reviews
+        .map((r) => ({ t: new Date(r.created_at).getTime(), overall: r.overall }))
+        .filter((r) => Number.isFinite(r.t) && r.overall > 0)
+        .sort((a, b) => a.t - b.t);
+
+    if (valid.length < TREND_MIN_REVIEWS) return { points: [], delta: 0, direction: 'flat' };
+
+    const buckets = new Map<string, { sum: number; count: number; t: number }>();
+    for (const r of valid) {
+        const d = new Date(r.t);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const b = buckets.get(key);
+        if (b) {
+            b.sum += r.overall;
+            b.count++;
+        } else {
+            buckets.set(key, { sum: r.overall, count: 1, t: Date.UTC(d.getFullYear(), d.getMonth(), 1) });
+        }
+    }
+
+    const points: TrendPoint[] = [...buckets.entries()]
+        .sort((a, b) => a[1].t - b[1].t)
+        .slice(-maxMonths)
+        .map(([key, b]) => {
+            const [year, month] = key.split('-');
+            return {
+                iso: new Date(b.t).toISOString(),
+                label: `${Number(month)}/${year.slice(2)}`,
+                avg: b.sum / b.count,
+                count: b.count,
+            };
+        });
+
+    if (points.length < 2) return { points: [], delta: 0, direction: 'flat' };
+
+    // מחצית מוקדמת מול מאוחרת — עמיד יותר מהשוואת נקודת קצה אחת לשנייה
+    const mid = Math.floor(valid.length / 2);
+    const early = valid.slice(0, mid);
+    const late = valid.slice(valid.length - mid);
+    const avgOf = (xs: typeof valid) => xs.reduce((s, r) => s + r.overall, 0) / xs.length;
+    const delta = avgOf(late) - avgOf(early);
+
+    return {
+        points,
+        delta,
+        direction: delta > TREND_EPSILON ? 'up' : delta < -TREND_EPSILON ? 'down' : 'flat',
+    };
+}
+
 /** עיצוב ציון לתצוגה: 4.3 / "—" */
 export function fmtScore(v: number | null | undefined): string {
     if (v === null || v === undefined || !Number.isFinite(v) || v <= 0) return '—';
