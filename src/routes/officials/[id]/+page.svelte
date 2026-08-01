@@ -132,7 +132,7 @@
                     {form.error}
                 </p>
             {/if}
-            <RateForm myReview={data.myReview} />
+            <RateForm myReview={data.myReview} officialId={official.id} />
         {:else}
             <div class="flex flex-wrap items-center gap-3">
                 <p class="flex-1 text-sm text-gray-400" style="min-width: 14rem">
