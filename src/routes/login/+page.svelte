@@ -4,6 +4,7 @@
 	import { t, locale } from 'svelte-i18n';
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
+	import InAppBrowserNotice from '$lib/components/rating/InAppBrowserNotice.svelte';
 
 	let { data, form } = $props();
 
@@ -112,6 +113,8 @@
 						<p class="text-green-400 text-sm font-medium">{tFn("registered_success")}</p>
 					</div>
 				{/if}
+
+				<InAppBrowserNotice />
 
 				{#if mode === 'oauth'}
 					{#if data.oauth?.google}

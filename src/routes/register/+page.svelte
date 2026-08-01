@@ -3,6 +3,7 @@
 	import { signIn } from '@auth/sveltekit/client';
 	import { get } from 'svelte/store';
 	import { t, locale } from 'svelte-i18n';
+	import InAppBrowserNotice from '$lib/components/rating/InAppBrowserNotice.svelte';
 
 	let { data, form } = $props();
 	let isLoading       = $state(false);
@@ -77,6 +78,8 @@
 				{/if}
 
 				{#if data.oauth?.google}
+				<InAppBrowserNotice />
+
 				<!-- כפתור Google -->
 				<button
 					type="button"
