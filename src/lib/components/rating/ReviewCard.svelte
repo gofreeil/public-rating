@@ -3,6 +3,7 @@
     import { enhance } from '$app/forms';
     import { CRITERIA } from '$lib/rating/criteria';
     import type { PublicComment, PublicReview } from '$lib/rating/types';
+    import { absDate, isoDate, relDate } from '$lib/rating/time';
     import Avatar from './Avatar.svelte';
     import BotFields from './BotFields.svelte';
     import ReportDialog from './ReportDialog.svelte';
@@ -36,26 +37,32 @@
     const iMarkedHelpful = $derived(review.markedHelpfulByMe);
     const ratedCriteria = $derived(CRITERIA.filter((c) => typeof review.scores[c.key] === 'number'));
 
-    function relDate(iso: string): string {
-        const d = new Date(iso);
-        if (isNaN(d.getTime())) return '';
-        const mins = Math.floor((Date.now() - d.getTime()) / 60_000);
-        if (mins < 1) return 'עכשיו';
-        if (mins < 60) return `לפני ${mins} דק׳`;
-        const hours = Math.floor(mins / 60);
-        if (hours < 24) return hours === 1 ? 'לפני שעה' : `לפני ${hours} שעות`;
-        const days = Math.floor(hours / 24);
-        if (days === 1) return 'אתמול';
-        if (days < 30) return `לפני ${days} ימים`;
-        const months = Math.floor(days / 30);
-        if (months < 12) return months === 1 ? 'לפני חודש' : `לפני ${months} חודשים`;
-        const years = Math.floor(months / 12);
-        return years === 1 ? 'לפני שנה' : `לפני ${years} שנים`;
+    // נקודת זמן אחת לכל הכרטיס — קריאה ל-Date.now() בתוך הרינדור עלולה
+    // לתת ערך שונה בשרת ובהידרציה ("לפני 59 דק׳" מול "לפני שעה")
+    const now = Date.now();
+
+    /** עוגן לקישור ישיר לדירוג בודד */
+    const anchor = $derived(`review-${review.id}`);
+
+    let linkCopied = $state(false);
+    let copyTimer: ReturnType<typeof setTimeout>;
+
+    async function copyLink() {
+        const url = `${location.origin}${location.pathname}#${anchor}`;
+        try {
+            await navigator.clipboard.writeText(url);
+        } catch {
+            return;
+        }
+        linkCopied = true;
+        clearTimeout(copyTimer);
+        copyTimer = setTimeout(() => (linkCopied = false), 2000);
     }
 </script>
 
 <article
-    class="rounded-2xl border p-3 {review.mine
+    id={anchor}
+    class="review-card scroll-mt-24 rounded-2xl border p-3 {review.mine
         ? 'border-blue-400/30 bg-blue-500/[0.06]'
         : 'border-white/10 bg-white/5'}"
     data-official={officialId}
@@ -71,7 +78,9 @@
                     </span>
                 {/if}
             </span>
-            <span class="block text-xs text-gray-500">{relDate(review.created_at)}</span>
+            <time datetime={isoDate(review.created_at)} title={absDate(review.created_at)} class="block text-xs text-gray-500">
+                {relDate(review.created_at, now)}
+            </time>
         </span>
         <span class="mr-auto">
             <Stars value={review.overall} size={14} showValue />
@@ -145,6 +154,17 @@
             </form>
         {/if}
 
+        <!-- קישור ישיר: מאפשר להפנות לדירוג בודד, לא רק לדף המדורג -->
+        <button
+            type="button"
+            onclick={copyLink}
+            aria-label={linkCopied ? 'הקישור לדירוג הועתק' : 'העתקת קישור ישיר לדירוג'}
+            title="קישור ישיר לדירוג הזה"
+            class="permalink-btn cursor-pointer text-xs transition-colors {linkCopied
+                ? 'text-emerald-300'
+                : 'text-gray-500'}"
+        >{linkCopied ? '✓ הועתק' : '🔗'}</button>
+
         {#if !review.mine}
             <ReportDialog targetId={review.id} targetType="review" />
         {/if}
@@ -162,7 +182,9 @@
                                 🎖️ תגובה רשמית{officialName ? ` — ${officialName}` : ''}
                             </span>
                         {/if}
-                        <span class="text-[11px] text-gray-500">{relDate(c.created_at)}</span>
+                        <time datetime={isoDate(c.created_at)} title={absDate(c.created_at)} class="text-[11px] text-gray-500">
+                            {relDate(c.created_at, now)}
+                        </time>
                         {#if c.mine || isAdmin}
                             <form
                                 method="POST"
@@ -230,3 +252,24 @@
         </form>
     {/if}
 </article>
+
+<style>
+    /* Tailwind v4: group-hover שבור — CSS מפורש */
+    .permalink-btn:hover {
+        color: #93c5fd;
+    }
+    /* הגעה מקישור ישיר — הבהוב קצר שמסמן איזה דירוג נפתח */
+    .review-card:target {
+        border-color: rgba(96, 165, 250, 0.6);
+        animation: target-flash 1.6s ease-out;
+    }
+    @keyframes target-flash {
+        0%,
+        40% {
+            background: rgba(96, 165, 250, 0.14);
+        }
+        100% {
+            background: rgba(255, 255, 255, 0.05);
+        }
+    }
+</style>

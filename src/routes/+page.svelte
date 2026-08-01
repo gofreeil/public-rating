@@ -3,6 +3,7 @@
     import { CRITERIA } from '$lib/rating/criteria';
     import { GROUPS, groupByKey } from '$lib/rating/types';
     import { websiteSchema } from '$lib/rating/schema';
+    import { absDate, isoDate, relDate } from '$lib/rating/time';
     import Seo from '$lib/components/rating/Seo.svelte';
     import OfficialCard from '$lib/components/rating/OfficialCard.svelte';
     import OfficialSearch from '$lib/components/rating/OfficialSearch.svelte';
@@ -16,14 +17,8 @@
         { icon: '📊', title: 'התמונה נחשפת לציבור', text: 'הדירוג המצטבר גלוי לכולם — שקוף, הוגן ובלתי תלוי' },
     ];
 
-    function relDate(iso: string): string {
-        const t = new Date(iso).getTime();
-        if (!Number.isFinite(t)) return '';
-        const days = Math.floor((Date.now() - t) / 86_400_000);
-        if (days <= 0) return 'היום';
-        if (days === 1) return 'אתמול';
-        return `לפני ${days} ימים`;
-    }
+    // נקודת זמן אחת לכל הדף — לא Date.now() בתוך הרינדור
+    const now = Date.now();
 </script>
 
 <Seo
@@ -191,7 +186,9 @@
                             <a href="/officials/{r.official.id}" class="font-bold text-blue-400 hover:text-blue-300">
                                 על {r.official.name}{r.official.position ? ` · ${r.official.position}` : ''}
                             </a>
-                            <span class="text-gray-500">{relDate(r.created_at)}</span>
+                            <time datetime={isoDate(r.created_at)} title={absDate(r.created_at)} class="text-gray-500">
+                                {relDate(r.created_at, now)}
+                            </time>
                         </div>
                     </article>
                 {/each}

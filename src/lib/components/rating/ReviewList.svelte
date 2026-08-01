@@ -1,6 +1,7 @@
 <script lang="ts">
     // רשימת דירוגי הציבור — מיון, סינון, חשיפה הדרגתית והצמדת הדירוג שלי למעלה.
     // בלי זה, מדורג עם עשרות דירוגים הופך לקיר טקסט בסדר כרונולוגי בלבד.
+    import { onMount, tick } from 'svelte';
     import type { PublicComment, PublicReview } from '$lib/rating/types';
     import ReviewCard from './ReviewCard.svelte';
 
@@ -67,6 +68,19 @@
 
     const visible = $derived(ordered.slice(0, shownCount));
     const remaining = $derived(Math.max(0, ordered.length - visible.length));
+
+    // הגעה מקישור ישיר לדירוג: אם הוא מעבר לחיתוך הדף — פורסים עד אליו,
+    // אחרת העוגן מצביע על אלמנט שלא קיים ולא קורה כלום
+    onMount(async () => {
+        const hash = location.hash;
+        if (!hash.startsWith('#review-')) return;
+        const id = decodeURIComponent(hash.slice('#review-'.length));
+        const idx = ordered.findIndex((r) => r.id === id);
+        if (idx < 0) return;
+        if (idx >= shownCount) shownCount = idx + 1;
+        await tick();
+        document.getElementById(`review-${id}`)?.scrollIntoView({ block: 'center' });
+    });
 
     function setSort(key: SortKey) {
         sort = key;

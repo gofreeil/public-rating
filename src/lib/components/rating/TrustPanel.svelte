@@ -2,6 +2,7 @@
     // פאנל אמון — הקשר לציון: כמה מדרגים, עד כמה הם מסכימים, כמה נימקו ומתי.
     // הכל מחושב מנתונים שכבר נמצאים בדף — בלי שליפה נוספת.
     import { RELIABLE_MIN, consensusOf } from '$lib/rating/aggregate';
+    import { absDate, isoDate, relDate } from '$lib/rating/time';
     import type { OfficialStats, PublicReview } from '$lib/rating/types';
 
     let { stats, reviews }: { stats: OfficialStats; reviews: PublicReview[] } = $props();
@@ -11,22 +12,21 @@
     const withText = $derived(reviews.filter((r) => r.text?.trim()).length);
     const textShare = $derived(stats.count > 0 ? Math.round((withText / stats.count) * 100) : 0);
 
-    const lastRated = $derived.by(() => {
-        let newest = 0;
+    const now = Date.now();
+
+    const lastRatedIso = $derived.by(() => {
+        let newest = '';
+        let newestT = 0;
         for (const r of reviews) {
             const t = new Date(r.created_at).getTime();
-            if (Number.isFinite(t) && t > newest) newest = t;
+            if (Number.isFinite(t) && t > newestT) {
+                newestT = t;
+                newest = r.created_at;
+            }
         }
-        if (!newest) return '';
-        const days = Math.floor((Date.now() - newest) / 86_400_000);
-        if (days <= 0) return 'היום';
-        if (days === 1) return 'אתמול';
-        if (days < 30) return `לפני ${days} ימים`;
-        const months = Math.floor(days / 30);
-        if (months < 12) return months === 1 ? 'לפני חודש' : `לפני ${months} חודשים`;
-        const years = Math.floor(months / 12);
-        return years === 1 ? 'לפני שנה' : `לפני ${years} שנים`;
+        return newest;
     });
+    const lastRated = $derived(lastRatedIso ? relDate(lastRatedIso, now) : '');
 
     const TONE: Record<string, string> = {
         insufficient: 'border-white/10 bg-white/5 text-gray-400',
@@ -65,9 +65,11 @@
     {/if}
 
     {#if lastRated}
-        <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-gray-400">
-            🕒 דורג לאחרונה {lastRated}
-        </span>
+        <time
+            datetime={isoDate(lastRatedIso)}
+            title={absDate(lastRatedIso)}
+            class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-gray-400"
+        >🕒 דורג לאחרונה {lastRated}</time>
     {/if}
 </div>
 
