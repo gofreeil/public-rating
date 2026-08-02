@@ -18,6 +18,15 @@ export function websiteSchema(officialCount: number, reviewCount: number): unkno
             url: SITE_URL,
             inLanguage: 'he-IL',
             description: `${officialCount} נבחרי ועובדי ציבור, ${reviewCount} דירוגי אזרחים`,
+            // תיבת החיפוש בתוצאות גוגל — מצביעה על /search שמסנן מדורגים בשרת
+            potentialAction: {
+                '@type': 'SearchAction',
+                target: {
+                    '@type': 'EntryPoint',
+                    urlTemplate: `${SITE_URL}/search?q={search_term_string}`,
+                },
+                'query-input': 'required name=search_term_string',
+            },
         },
         {
             '@context': 'https://schema.org',

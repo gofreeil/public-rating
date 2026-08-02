@@ -1,213 +1,122 @@
 <script lang="ts">
+    // תוצאות חיפוש מדורגים — היעד של תיבת החיפוש שבכותרת
     import { goto } from '$app/navigation';
+    import { fmtScore } from '$lib/rating/aggregate';
+    import { GROUPS } from '$lib/rating/types';
+    import Avatar from '$lib/components/rating/Avatar.svelte';
+    import Seo from '$lib/components/rating/Seo.svelte';
+    import Stars from '$lib/components/rating/Stars.svelte';
+    import type { PageData } from './$types';
 
-    let { data } = $props();
+    let { data }: { data: PageData } = $props();
 
-    let query = $state(data.query);
+    // svelte-ignore state_referenced_locally
+    let query = $state(data.q);
 
-    function doSearch() {
+    function submit(e: SubmitEvent) {
+        e.preventDefault();
         const q = query.trim();
-        if (!q) return;
-        goto(`/search?q=${encodeURIComponent(q)}`);
+        goto(q ? `/search?q=${encodeURIComponent(q)}` : '/search', { keepFocus: true });
     }
-
-    function handleKey(e: KeyboardEvent) {
-        if (e.key === 'Enter') doSearch();
-    }
-
-    const totalResults = $derived(
-        data.results.neighborhood.length +
-        data.results.city.length +
-        data.results.nearby.length +
-        data.results.other.length
-    );
 </script>
 
-<svelte:head>
-    <title>חיפוש: {data.query}</title>
-</svelte:head>
+<!-- דפי תוצאות חיפוש אינם נכנסים לאינדקס — תוכן דליל ואינסופי -->
+<Seo
+    title={data.q ? `חיפוש: ${data.q}` : 'חיפוש מדורגים'}
+    description="חיפוש חברי כנסת, שרים, שופטים ועובדי ציבור בדירוג הציבורי."
+    noindex
+/>
 
-<div class="min-h-screen" style="background: #070b14;">
-    <div class="max-w-3xl mx-auto px-4 py-8">
-
-        <!-- שדה חיפוש -->
-        <div class="mb-8">
-            <div class="flex gap-2">
-                <input
-                    bind:value={query}
-                    onkeydown={handleKey}
-                    type="text"
-                    placeholder="חפש חוג, שירות, עסק..."
-                    class="flex-1 bg-[#0f172a] border border-white/15 rounded-2xl px-5 py-3
-                           text-white placeholder:text-gray-500 focus:outline-none
-                           focus:border-purple-500/60 text-base transition-colors"
-                    dir="rtl"
-                />
-                <button
-                    onclick={doSearch}
-                    class="bg-gradient-to-l from-purple-600 to-blue-600 hover:from-purple-500
-                           hover:to-blue-500 text-white font-bold px-6 py-3 rounded-2xl
-                           transition-all cursor-pointer shadow-lg"
-                >
-                    🔍 חפש
-                </button>
-            </div>
-            {#if data.query}
-                <p class="text-gray-400 text-sm mt-3 text-right">
-                    נמצאו <span class="text-white font-bold">{totalResults}</span> תוצאות עבור "<span class="text-purple-300">{data.query}</span>"
-                </p>
-            {/if}
-        </div>
-
-        {#if !data.query}
-            <!-- מצב ריק -->
-            <div class="text-center py-20">
-                <div class="text-6xl mb-4">🔍</div>
-                <p class="text-gray-400 text-lg">הקלד מה אתה מחפש</p>
-                <p class="text-gray-600 text-sm mt-2">חוג, גמח, שמרטפ, מניין, עסק...</p>
-            </div>
-
-        {:else if totalResults === 0}
-            <!-- אין תוצאות -->
-            <div class="text-center py-20">
-                <div class="text-6xl mb-4">😕</div>
-                <p class="text-gray-300 text-lg font-bold">לא נמצאו תוצאות</p>
-                <p class="text-gray-500 text-sm mt-2">נסה מילה אחרת או בדוק את האיות</p>
-            </div>
-
-        {:else}
-            <!-- תוצאות השכונה -->
-            {#if data.results.neighborhood.length > 0}
-                <section class="mb-8">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="text-xl">🏘️</span>
-                        <h2 class="text-white font-black text-lg">השכונה שלך</h2>
-                        <span class="bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold px-2 py-0.5 rounded-full">
-                            {data.results.neighborhood.length}
-                        </span>
-                    </div>
-                    <div class="flex flex-col gap-3">
-                        {#each data.results.neighborhood as item}
-                            <a href="/items/{item.id}" class="result-card border-purple-500/30 hover:border-purple-400/60">
-                                <span class="text-2xl flex-shrink-0">{item.icon ?? '📌'}</span>
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-white font-bold text-sm">{item.label}</p>
-                                    {#if item.description}
-                                        <p class="text-gray-400 text-xs mt-0.5 line-clamp-2">{item.description}</p>
-                                    {/if}
-                                    <p class="text-purple-400/70 text-xs mt-1">📍 {item.neighborhood}</p>
-                                </div>
-                                <span class="text-xs bg-white/5 text-gray-400 px-2 py-1 rounded-lg flex-shrink-0">{item.category}</span>
-                            </a>
-                        {/each}
-                    </div>
-                </section>
-            {/if}
-
-            <!-- תוצאות העיר -->
-            {#if data.results.city.length > 0}
-                <section class="mb-8">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="text-xl">🏙️</span>
-                        <h2 class="text-white font-black text-lg">בעירך - {data.userCity}</h2>
-                        <span class="bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-bold px-2 py-0.5 rounded-full">
-                            {data.results.city.length}
-                        </span>
-                    </div>
-                    <div class="flex flex-col gap-3">
-                        {#each data.results.city as item}
-                            <a href="/items/{item.id}" class="result-card border-blue-500/20 hover:border-blue-400/50">
-                                <span class="text-2xl flex-shrink-0">{item.icon ?? '📌'}</span>
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-white font-bold text-sm">{item.label}</p>
-                                    {#if item.description}
-                                        <p class="text-gray-400 text-xs mt-0.5 line-clamp-2">{item.description}</p>
-                                    {/if}
-                                    <p class="text-blue-400/70 text-xs mt-1">📍 {item.neighborhood}, {item.city}</p>
-                                </div>
-                                <span class="text-xs bg-white/5 text-gray-400 px-2 py-1 rounded-lg flex-shrink-0">{item.category}</span>
-                            </a>
-                        {/each}
-                    </div>
-                </section>
-            {/if}
-
-            <!-- ערים קרובות -->
-            {#if data.results.nearby.length > 0}
-                <section class="mb-8">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="text-xl">🗺️</span>
-                        <h2 class="text-white font-black text-lg">ערים קרובות</h2>
-                        <span class="bg-green-500/20 text-green-300 border border-green-500/30 text-xs font-bold px-2 py-0.5 rounded-full">
-                            {data.results.nearby.length}
-                        </span>
-                    </div>
-                    <div class="flex flex-col gap-3">
-                        {#each data.results.nearby as item}
-                            <a href="/items/{item.id}" class="result-card border-green-500/20 hover:border-green-400/50">
-                                <span class="text-2xl flex-shrink-0">{item.icon ?? '📌'}</span>
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-white font-bold text-sm">{item.label}</p>
-                                    {#if item.description}
-                                        <p class="text-gray-400 text-xs mt-0.5 line-clamp-2">{item.description}</p>
-                                    {/if}
-                                    <p class="text-green-400/70 text-xs mt-1">📍 {item.neighborhood}, {item.city}</p>
-                                </div>
-                                <span class="text-xs bg-white/5 text-gray-400 px-2 py-1 rounded-lg flex-shrink-0">{item.category}</span>
-                            </a>
-                        {/each}
-                    </div>
-                </section>
-            {/if}
-
-            <!-- שאר הארץ -->
-            {#if data.results.other.length > 0}
-                <section class="mb-8">
-                    <div class="flex items-center gap-2 mb-4">
-                        <span class="text-xl">🇮🇱</span>
-                        <h2 class="text-white font-black text-lg">שאר הארץ</h2>
-                        <span class="bg-white/10 text-gray-300 border border-white/10 text-xs font-bold px-2 py-0.5 rounded-full">
-                            {data.results.other.length}
-                        </span>
-                    </div>
-                    <div class="flex flex-col gap-3">
-                        {#each data.results.other as item}
-                            <a href="/items/{item.id}" class="result-card border-white/10 hover:border-white/25">
-                                <span class="text-2xl flex-shrink-0">{item.icon ?? '📌'}</span>
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-white font-bold text-sm">{item.label}</p>
-                                    {#if item.description}
-                                        <p class="text-gray-400 text-xs mt-0.5 line-clamp-2">{item.description}</p>
-                                    {/if}
-                                    {#if item.city}
-                                        <p class="text-gray-500 text-xs mt-1">📍 {item.city}</p>
-                                    {/if}
-                                </div>
-                                <span class="text-xs bg-white/5 text-gray-400 px-2 py-1 rounded-lg flex-shrink-0">{item.category}</span>
-                            </a>
-                        {/each}
-                    </div>
-                </section>
-            {/if}
+<div class="mx-auto flex max-w-3xl flex-col gap-4 py-6">
+    <header>
+        <h1 class="text-2xl font-black text-white sm:text-3xl">🔍 חיפוש מדורגים</h1>
+        {#if data.q}
+            <p class="mt-1 text-sm text-gray-400">
+                {data.total} תוצאות עבור "{data.q}"
+                {#if data.total > data.results.length}
+                    <span class="text-gray-500">(מוצגות {data.results.length} הראשונות)</span>
+                {/if}
+            </p>
         {/if}
-    </div>
+    </header>
+
+    <form onsubmit={submit} class="flex flex-wrap gap-2">
+        <input
+            type="search"
+            bind:value={query}
+            placeholder="שם, תפקיד, סיעה, ערכאה או משרד…"
+            aria-label="חיפוש מדורגים"
+            class="min-w-40 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none"
+        />
+        <button type="submit" class="btn-premium rounded-xl px-5 py-2 text-sm font-bold text-white">
+            חיפוש
+        </button>
+    </form>
+
+    {#if !data.q}
+        <div class="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center">
+            <p class="text-sm text-gray-400">הקלידו שם של נבחר או עובד ציבור, או עיינו בלוחות:</p>
+            <div class="mt-3 flex flex-wrap justify-center gap-2">
+                {#each GROUPS as g (g.key)}
+                    <a href={g.route} class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10">
+                        {g.icon} {g.title}
+                    </a>
+                {/each}
+                <a href="/officials" class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10">
+                    📇 אינדקס מלא
+                </a>
+            </div>
+        </div>
+    {:else if data.results.length === 0}
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+            <p class="mb-1 font-bold text-white">לא נמצאו תוצאות עבור "{data.q}"</p>
+            <p class="mb-3 text-sm text-gray-400">
+                אולי הוא עדיין לא ברשימה — אפשר להציע להוסיף אותו
+            </p>
+            <a href="/suggest" class="btn-premium inline-block rounded-xl px-5 py-2 text-sm font-bold text-white">
+                ➕ הציעו לדירוג
+            </a>
+        </div>
+    {:else}
+        <ul class="flex flex-col gap-2">
+            {#each data.results as o (o.id)}
+                <li>
+                    <a
+                        href="/officials/{o.id}"
+                        class="result-card flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors"
+                    >
+                        <Avatar name={o.name} image={o.image} size={48} />
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate font-bold text-white">{o.name}</span>
+                            <span class="block truncate text-xs text-gray-400">
+                                {o.position}{o.org ? ` · ${o.org}` : ''}
+                            </span>
+                            <span class="mt-0.5 block text-[11px] text-gray-500">
+                                {o.groupIcon} {o.groupTitle}
+                            </span>
+                        </span>
+                        <span class="flex shrink-0 flex-col items-center gap-0.5">
+                            {#if o.count > 0}
+                                <Stars value={o.average ?? 0} size={14} />
+                                <span class="text-xs font-bold text-amber-300 tabular-nums">
+                                    {fmtScore(o.average)}
+                                    <span class="font-normal text-gray-500">({o.count})</span>
+                                </span>
+                            {:else}
+                                <span class="text-[11px] text-gray-500">טרם דורג</span>
+                            {/if}
+                        </span>
+                    </a>
+                </li>
+            {/each}
+        </ul>
+    {/if}
 </div>
 
 <style>
-    :global(.result-card) {
-        display: flex;
-        align-items: flex-start;
-        gap: 0.75rem;
-        background: rgba(255,255,255,0.03);
-        border-radius: 1rem;
-        border-width: 1px;
-        border-style: solid;
-        padding: 0.875rem 1rem;
-        transition: all 0.2s;
-        text-decoration: none;
-    }
-    :global(.result-card:hover) {
-        background: rgba(255,255,255,0.06);
-        transform: translateY(-1px);
+    /* Tailwind v4: group-hover שבור — CSS מפורש */
+    .result-card:hover {
+        background: rgba(255, 255, 255, 0.09);
+        border-color: rgba(96, 165, 250, 0.4);
     }
 </style>
