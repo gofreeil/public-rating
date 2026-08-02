@@ -232,7 +232,7 @@
                         </div>
 
                         {#if currentUser}
-                            <a href="/profile" class="relative group flex-shrink-0" aria-label="לאזור האישי – {currentUser.username ?? 'משתמש'}">
+                            <a href="/my-ratings" class="relative group flex-shrink-0" aria-label="לדירוגים שלי – {currentUser.username ?? 'משתמש'}">
                                 {#if currentUser.avatar_url}
                                     <img
                                         src={currentUser.avatar_url}
@@ -384,9 +384,9 @@
                         <div class="flex items-center gap-3">
                             <!-- תמונת פרופיל עם hover -->
                             <a
-                                href="/profile"
+                                href="/my-ratings"
                                 class="relative flex-shrink-0"
-                                aria-label="לאזור האישי – {userName}"
+                                aria-label="לדירוגים שלי – {userName}"
                                 onmouseenter={() => showProfileTooltip = true}
                                 onmouseleave={() => showProfileTooltip = false}
                                 onmousemove={handleProfileMouseMove}
