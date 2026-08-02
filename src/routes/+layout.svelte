@@ -4,6 +4,7 @@
 	import "$lib/i18n";
 	import Header from "$lib/components/Header.svelte";
 	import NavBar from "$lib/components/rating/NavBar.svelte";
+	import MobileSponsored from "$lib/components/rating/MobileSponsored.svelte";
 	import RightAdBanner from "$lib/components/RightAdBanner.svelte";
 	import AdsSidebar from "$lib/components/AdsSidebar.svelte";
 	import Footer from "$lib/components/Footer.svelte";
@@ -63,6 +64,10 @@
 		<RightAdBanner />
 		<main id="main-content" tabindex="-1" class="main-content">
 			{@render children()}
+			<!-- המקבילה של הטור הימני בנייד, שם הוא מוסתר -->
+			<div class="mt-6">
+				<MobileSponsored />
+			</div>
 		</main>
 		<AdsSidebar />
 	</div>

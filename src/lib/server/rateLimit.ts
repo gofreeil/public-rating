@@ -89,6 +89,10 @@ export const LIMITS = {
     survey: { max: 10, windowMs: HOUR },
     /** מדידת פרסומות — נדיב בכוונה: חוסם לולאה מתוסרטת, לא גולש אמיתי */
     adTrack: { max: 120, windowMs: HOUR },
+    /** שליחת פרסומת חדשה — כתיבה כבדה (תמונות מוטבעות) */
+    adSubmit: { max: 3, windowMs: HOUR },
+    /** עריכת פרסומת קיימת בידי בעליה */
+    adEdit: { max: 10, windowMs: HOUR },
 } as const;
 
 export type LimitName = keyof typeof LIMITS;
