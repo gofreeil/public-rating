@@ -178,7 +178,6 @@
     {/if}
 
     <div class="flex flex-wrap justify-center gap-3 text-sm">
-        <a href="/officials" class="text-blue-400 transition-colors hover:text-blue-300">📇 אינדקס המדורגים</a>
         <a href="/suggest" class="text-blue-400 transition-colors hover:text-blue-300">➕ הצעת מדורג</a>
         <a href="/" class="text-blue-400 transition-colors hover:text-blue-300">← דף הבית</a>
     </div>

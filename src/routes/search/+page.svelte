@@ -62,9 +62,6 @@
                         {g.icon} {g.title}
                     </a>
                 {/each}
-                <a href="/officials" class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10">
-                    📇 אינדקס מלא
-                </a>
             </div>
         </div>
     {:else if data.results.length === 0}

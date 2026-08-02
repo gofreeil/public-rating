@@ -60,9 +60,6 @@
                     {g.icon} {g.title}
                 </a>
             {/each}
-            <a href="/officials" class="chip-link rounded-full border border-white/10 bg-white/5 px-3 py-1 text-gray-300 transition-colors">
-                📇 אינדקס מלא
-            </a>
         </div>
     </section>
 

@@ -265,12 +265,9 @@
     {#if officials.length > 0}
         <div class="pt-2">
             <FaqAccordion items={FAQ_COMPACT} title="איך עובד הדירוג?" compact />
-            <p class="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-center text-xs text-gray-500">
+            <p class="mt-2 text-center text-xs text-gray-500">
                 <a href="/about#methodology" class="text-blue-400/80 hover:text-blue-300">
                     לכל השאלות והתשובות ←
-                </a>
-                <a href="/officials" class="text-blue-400/80 hover:text-blue-300">
-                    אינדקס כל המדורגים ←
                 </a>
             </p>
         </div>
