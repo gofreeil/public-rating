@@ -128,11 +128,19 @@
     <section class="rounded-2xl border border-amber-400/25 bg-gradient-to-l from-amber-500/10 to-transparent p-6 text-center">
         <h2 class="text-xl font-black text-white">מעוניינים?</h2>
         <p class="mt-1 text-sm text-gray-300">כתבו לנו ונחזור אליכם עם זמינות ומחיר</p>
-        <a href={mailto} class="btn-premium mt-4 inline-block rounded-xl px-6 py-3 text-sm font-bold text-white">
-            ✉️ שליחת פנייה
-        </a>
+        <div class="mt-4 flex flex-wrap justify-center gap-2">
+            <a href="/advertise/builder" class="btn-premium rounded-xl px-6 py-3 text-sm font-bold text-white">
+                🎨 לעיצוב הפרסומת
+            </a>
+            <a
+                href={mailto}
+                class="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10"
+            >✉️ שליחת פנייה</a>
+        </div>
         <p class="mt-3 text-xs text-gray-500">
-            או ישירות:
+            כבר יש לכם פרסומת?
+            <a href="/advertise/manage" class="text-blue-400 hover:text-blue-300">לניהול הפרסומות שלי</a>
+            · או ישירות:
             <a href="mailto:{email}" class="text-blue-400 hover:text-blue-300">{email}</a>
         </p>
     </section>
