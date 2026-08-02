@@ -4,7 +4,7 @@
 // עמיד: נפילת Strapi מחזירה מפה עם הדפים הסטטיים בלבד, לא 500.
 // ============================================================
 
-import { getRatedOfficials } from '$lib/server/rating';
+import { getRatedOfficials, listProposals } from '$lib/server/rating';
 import { GROUPS } from '$lib/rating/types';
 import { SITE_URL } from '$lib/seo';
 import type { RequestHandler } from './$types';
@@ -21,6 +21,7 @@ const STATIC_ENTRIES: Entry[] = [
     ...GROUPS.map((g) => ({ loc: g.route, changefreq: 'daily' as const, priority: '0.9' })),
     { loc: '/top-rated', changefreq: 'daily', priority: '0.9' },
     { loc: '/compare', changefreq: 'weekly', priority: '0.7' },
+    { loc: '/proposals', changefreq: 'daily', priority: '0.7' },
     // /officials (אינדקס מלא) הוסר מהמפה בשלב זה יחד עם קישורי הכניסה אליו.
     // הנתיב עצמו נשאר קיים — להחזרה מספיק לשחזר את השורה הזו ואת הקישורים.
     { loc: '/about', changefreq: 'monthly', priority: '0.6' },
@@ -63,6 +64,15 @@ export const GET: RequestHandler = async ({ setHeaders }) => {
                 // מדורג עם דירוגים חשוב יותר למנוע החיפוש
                 priority: o.stats.count > 0 ? '0.8' : '0.6',
             });
+        }
+    } catch {
+        // באקאנד לא זמין — מפה חלקית עדיפה על 500
+    }
+
+    try {
+        const proposals = await listProposals();
+        for (const p of proposals) {
+            entries.push({ loc: `/proposals/${p.id}`, changefreq: 'weekly', priority: '0.6' });
         }
     } catch {
         // באקאנד לא זמין — מפה חלקית עדיפה על 500

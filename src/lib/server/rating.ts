@@ -7,21 +7,32 @@
 // ============================================================
 
 import { strapiGet, strapiPost, strapiPut } from './strapiClient.js';
-import { sanitizeScores, type Scores } from '$lib/rating/criteria';
+import { CRITERIA, sanitizeScores, type Scores } from '$lib/rating/criteria';
 import { overallOf, rankOfficials } from '$lib/rating/aggregate';
 import {
     COMMENT_CATEGORY,
+    INQUIRY_CATEGORY,
     OFFICIAL_CATEGORY,
+    PROPOSAL_CATEGORY,
     REPORT_CATEGORY,
     REVIEW_CATEGORY,
+    SURVEY_CATEGORY,
     groupByKey,
+    promiseStatusOf,
+    proposalStatusOf,
+    type CivicProposal,
     type ContentReport,
     type GroupKey,
     type Official,
     type OfficialComment,
+    type OfficialInquiry,
+    type OfficialPromise,
+    type ProposalStatus,
+    type ProposalUpdate,
     type RatedOfficial,
     type ReportReason,
     type Review,
+    type SurveyResults,
 } from '$lib/rating/types';
 
 // אוסף מבודד לאתר הדירוג הציבורי.
@@ -71,8 +82,39 @@ function ef(item: StrapiItem): Record<string, unknown> {
     return item.extra_fields && typeof item.extra_fields === 'object' ? item.extra_fields : {};
 }
 
+/** מחרוזת בטוחה מ-extra_fields (כל טיפוס אחר → ריק) */
+function str(v: unknown): string {
+    return typeof v === 'string' ? v : '';
+}
+
+/** מערך מחרוזות בטוח מ-extra_fields (מסנן איברים שאינם מחרוזת) */
+function strArr(v: unknown): string[] {
+    return Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string' && s.trim() !== '') : [];
+}
+
+function parsePromises(v: unknown): OfficialPromise[] {
+    if (!Array.isArray(v)) return [];
+    return v
+        .filter((p): p is Record<string, unknown> => Boolean(p) && typeof p === 'object')
+        .map((p) => ({ text: str(p.text).trim(), status: promiseStatusOf(str(p.status)) }))
+        .filter((p) => p.text);
+}
+
+function parseUpdates(v: unknown): ProposalUpdate[] {
+    if (!Array.isArray(v)) return [];
+    return v
+        .filter((u): u is Record<string, unknown> => Boolean(u) && typeof u === 'object')
+        .map((u) => ({ date: str(u.date), text: str(u.text).trim() }))
+        .filter((u) => u.text);
+}
+
 function mapOfficial(item: StrapiItem): Official {
     const x = ef(item);
+    const contacts = (x.contacts && typeof x.contacts === 'object' ? x.contacts : {}) as Record<
+        string,
+        unknown
+    >;
+    const attendance = Number(x.attendance_score);
     return {
         id: item.documentId,
         name: item.label ?? '',
@@ -84,6 +126,22 @@ function mapOfficial(item: StrapiItem): Official {
         approved: x.approved !== false,
         suggested_by: typeof x.suggested_by === 'string' ? x.suggested_by : null,
         created_at: item.createdAt ?? '',
+        contacts: {
+            email: str(contacts.email),
+            phone: str(contacts.phone),
+            whatsapp: str(contacts.whatsapp),
+            facebook: str(contacts.facebook),
+            website: str(contacts.website),
+        },
+        verified: x.verified === true,
+        platform_url: str(x.platform_url),
+        annual_report_url: str(x.annual_report_url),
+        promises: parsePromises(x.promises),
+        specialties: strArr(x.specialties),
+        attendance_score:
+            Number.isFinite(attendance) && x.attendance_score !== null && x.attendance_score !== ''
+                ? Math.min(100, Math.max(0, Math.round(attendance)))
+                : null,
     };
 }
 
@@ -115,6 +173,42 @@ function mapComment(item: StrapiItem): OfficialComment {
         text: item.description ?? '',
         commenter_name: typeof x.commenter_name === 'string' ? x.commenter_name : '',
         official_reply: x.official_reply === true,
+        created_at: item.createdAt ?? '',
+    };
+}
+
+function mapInquiry(item: StrapiItem): OfficialInquiry {
+    const x = ef(item);
+    return {
+        id: item.documentId,
+        official_id: item.label ?? '',
+        user_id: item.user_id ?? null,
+        text: item.description ?? '',
+        author_name: str(x.author_name),
+        anonymous: x.anonymous === true,
+        joined_by: strArr(x.joined_by),
+        reply_text: str(x.reply_text),
+        replied_at: str(x.replied_at) || null,
+        created_at: item.createdAt ?? '',
+    };
+}
+
+function mapProposal(item: StrapiItem): CivicProposal {
+    const x = ef(item);
+    return {
+        id: item.documentId,
+        title: item.label ?? '',
+        text: item.description ?? '',
+        user_id: item.user_id ?? null,
+        proposer_name: str(x.proposer_name),
+        anonymous: x.anonymous === true,
+        pros: strArr(x.pros),
+        cons: strArr(x.cons),
+        status: proposalStatusOf(str(x.status)),
+        approved: x.approved !== false,
+        supporters: strArr(x.supporters),
+        official_ids: strArr(x.official_ids),
+        updates: parseUpdates(x.updates),
         created_at: item.createdAt ?? '',
     };
 }
@@ -408,9 +502,22 @@ export async function createOfficial(
     return res.data.documentId;
 }
 
+/** שדות הפרופיל המלא — כולם אופציונליים; undefined = ללא שינוי */
+export interface OfficialProfileInput {
+    contacts?: { email: string; phone: string; whatsapp: string; facebook: string; website: string };
+    verified?: boolean;
+    platformUrl?: string;
+    annualReportUrl?: string;
+    promises?: OfficialPromise[];
+    specialties?: string[];
+    /** null = מחיקת הנתון */
+    attendanceScore?: number | null;
+}
+
 export async function updateOfficial(
     id: string,
-    input: Partial<OfficialInput> & { approved?: boolean; officialUserId?: string | null },
+    input: Partial<OfficialInput> &
+        OfficialProfileInput & { approved?: boolean; officialUserId?: string | null },
 ): Promise<void> {
     const res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${id}`);
     const item = res.data;
@@ -430,6 +537,18 @@ export async function updateOfficial(
                 // null = ניתוק חשבון הדמות; undefined = ללא שינוי
                 ...(input.officialUserId !== undefined
                     ? { official_user_id: input.officialUserId }
+                    : {}),
+                // ---- פרופיל מלא ----
+                ...(input.contacts !== undefined ? { contacts: input.contacts } : {}),
+                ...(input.verified !== undefined ? { verified: input.verified } : {}),
+                ...(input.platformUrl !== undefined ? { platform_url: input.platformUrl } : {}),
+                ...(input.annualReportUrl !== undefined
+                    ? { annual_report_url: input.annualReportUrl }
+                    : {}),
+                ...(input.promises !== undefined ? { promises: input.promises } : {}),
+                ...(input.specialties !== undefined ? { specialties: input.specialties } : {}),
+                ...(input.attendanceScore !== undefined
+                    ? { attendance_score: input.attendanceScore }
                     : {}),
             },
         },
@@ -519,4 +638,338 @@ export async function softDeleteRatingItem(id: string, byAdmin: string): Promise
         data: { status1: 'deleted', contact: `[הוסר ע"י: ${byAdmin}]` },
     });
     invalidateRating();
+}
+
+// ============================================================
+// ---- פניות ציבור למדורגים ----
+// ============================================================
+
+/** כל הפניות בדף מדורג — שליפה אחת (label=המדורג), חדש ראשון */
+export async function getInquiriesFor(officialId: string): Promise<OfficialInquiry[]> {
+    const res = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
+        'filters[category][$eq]': INQUIRY_CATEGORY,
+        'filters[label][$eq]': officialId,
+        'filters[status1][$eq]': 'active',
+        'sort': 'createdAt:desc',
+        'pagination[limit]': '1000',
+    });
+    return (res.data ?? []).map(mapInquiry).filter((i) => i.text);
+}
+
+export interface AddInquiryInput {
+    officialId: string;
+    userId: string;
+    authorName: string;
+    text: string;
+    anonymous: boolean;
+}
+
+/** פנייה ציבורית חדשה — משתמשים רשומים בלבד (נאכף ב-action) */
+export async function addInquiry(input: AddInquiryInput): Promise<void> {
+    await strapiPost(ITEMS, {
+        data: {
+            category: INQUIRY_CATEGORY,
+            label: input.officialId,
+            description: input.text,
+            user_id: input.userId,
+            extra_fields: {
+                author_name: input.authorName,
+                anonymous: input.anonymous,
+                joined_by: [],
+                reply_text: '',
+                replied_at: null,
+            },
+            icon: '📨',
+            color: 'blue',
+            status1: 'active',
+            publishedAt: new Date().toISOString(),
+        },
+    });
+}
+
+/** פנייה בודדת — לאימות בעלות לפני מחיקה */
+export async function getInquiry(id: string): Promise<OfficialInquiry | undefined> {
+    let res: { data: StrapiItem };
+    try {
+        res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
+    } catch (e) {
+        if (String(e).includes('→ 404')) return undefined;
+        throw e;
+    }
+    if (!res.data || res.data.category !== INQUIRY_CATEGORY || res.data.status1 !== 'active') {
+        return undefined;
+    }
+    return mapInquiry(res.data);
+}
+
+/**
+ * הצטרפות/ביטול הצטרפות לפנייה ציבורית.
+ * הפנייה חייבת להיות פעילה ושייכת למדורג שבכתובת; הפונה עצמו כבר נספר.
+ */
+export async function toggleJoinInquiry(
+    inquiryId: string,
+    userId: string,
+    officialId: string,
+): Promise<boolean> {
+    let res: { data: StrapiItem };
+    try {
+        res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(inquiryId)}`);
+    } catch (e) {
+        if (String(e).includes('→ 404')) return false;
+        throw e;
+    }
+    const item = res.data;
+    if (!item || item.category !== INQUIRY_CATEGORY) return false;
+    if (item.status1 !== 'active' || item.label !== officialId) return false;
+    // הפונה כבר נמנה עם הפנייה — הצטרפות עצמית מנפחת את המונה
+    if (item.user_id && item.user_id === userId) return false;
+
+    const x = ef(item);
+    const set = new Set(strArr(x.joined_by));
+    if (set.has(userId)) set.delete(userId);
+    else set.add(userId);
+    await strapiPut(`${ITEMS}/${item.documentId}`, {
+        data: { extra_fields: { ...x, joined_by: [...set] } },
+    });
+    return true;
+}
+
+/**
+ * מענה רשמי לפנייה — רק חשבון הדמות (נאכף ב-action).
+ * מענה חוזר מעדכן את הטקסט; replied_at נשמר מהמענה הראשון.
+ */
+export async function replyToInquiry(
+    inquiryId: string,
+    officialId: string,
+    replyText: string,
+): Promise<boolean> {
+    let res: { data: StrapiItem };
+    try {
+        res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(inquiryId)}`);
+    } catch (e) {
+        if (String(e).includes('→ 404')) return false;
+        throw e;
+    }
+    const item = res.data;
+    if (!item || item.category !== INQUIRY_CATEGORY) return false;
+    if (item.status1 !== 'active' || item.label !== officialId) return false;
+
+    const x = ef(item);
+    await strapiPut(`${ITEMS}/${item.documentId}`, {
+        data: {
+            extra_fields: {
+                ...x,
+                reply_text: replyText,
+                replied_at: str(x.replied_at) || new Date().toISOString(),
+            },
+        },
+    });
+    return true;
+}
+
+// ============================================================
+// ---- מרחב ההצעות האזרחיות ----
+// ============================================================
+
+/** כל ההצעות המאושרות — חדש ראשון */
+export async function listProposals(): Promise<CivicProposal[]> {
+    return cached('proposals', async () =>
+        (await fetchByCategory(PROPOSAL_CATEGORY)).map(mapProposal).filter((p) => p.approved),
+    );
+}
+
+/** הצעות שממתינות לאישור אדמין */
+export async function listPendingProposals(): Promise<CivicProposal[]> {
+    return (await fetchByCategory(PROPOSAL_CATEGORY)).map(mapProposal).filter((p) => !p.approved);
+}
+
+/** הצעה בודדת (גם ממתינה — הנתיב מחליט אם להציג לפי בעלות/אדמין) */
+export async function getProposal(id: string): Promise<CivicProposal | undefined> {
+    let res: { data: StrapiItem };
+    try {
+        res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
+    } catch (e) {
+        if (String(e).includes('→ 404')) return undefined;
+        throw e;
+    }
+    if (!res.data || res.data.category !== PROPOSAL_CATEGORY || res.data.status1 !== 'active') {
+        return undefined;
+    }
+    return mapProposal(res.data);
+}
+
+export interface CreateProposalInput {
+    title: string;
+    text: string;
+    pros: string[];
+    cons: string[];
+    userId: string;
+    proposerName: string;
+    anonymous: boolean;
+}
+
+/** הגשת הצעה — נכנסת כממתינה לאישור אדמין; מחזירה documentId */
+export async function createProposal(input: CreateProposalInput): Promise<string> {
+    const res = await strapiPost<{ data: StrapiItem }>(ITEMS, {
+        data: {
+            category: PROPOSAL_CATEGORY,
+            label: input.title,
+            description: input.text,
+            user_id: input.userId,
+            extra_fields: {
+                proposer_name: input.proposerName,
+                anonymous: input.anonymous,
+                pros: input.pros,
+                cons: input.cons,
+                status: 'discussion',
+                approved: false,
+                supporters: [],
+                official_ids: [],
+                updates: [],
+            },
+            icon: '📜',
+            color: 'purple',
+            status1: 'active',
+            publishedAt: new Date().toISOString(),
+        },
+    });
+    invalidateRating();
+    return res.data.documentId;
+}
+
+/** תמיכה/ביטול תמיכה בהצעה מאושרת */
+export async function toggleSupportProposal(proposalId: string, userId: string): Promise<boolean> {
+    let res: { data: StrapiItem };
+    try {
+        res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(proposalId)}`);
+    } catch (e) {
+        if (String(e).includes('→ 404')) return false;
+        throw e;
+    }
+    const item = res.data;
+    if (!item || item.category !== PROPOSAL_CATEGORY || item.status1 !== 'active') return false;
+    const x = ef(item);
+    if (x.approved === false) return false;
+
+    const set = new Set(strArr(x.supporters));
+    if (set.has(userId)) set.delete(userId);
+    else set.add(userId);
+    await strapiPut(`${ITEMS}/${item.documentId}`, {
+        data: { extra_fields: { ...x, supporters: [...set] } },
+    });
+    invalidateRating();
+    return true;
+}
+
+/** עדכון הצעה ע"י אדמין: אישור, סטטוס, קישור מדורגים, עדכון בציר הזמן */
+export async function updateProposal(
+    id: string,
+    input: {
+        approved?: boolean;
+        status?: ProposalStatus;
+        officialIds?: string[];
+        addUpdate?: string;
+    },
+): Promise<void> {
+    const res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
+    const item = res.data;
+    if (!item || item.category !== PROPOSAL_CATEGORY) throw new Error('הצעה לא נמצאה');
+    const x = ef(item);
+    const updates = parseUpdates(x.updates);
+    if (input.addUpdate?.trim()) {
+        updates.push({ date: new Date().toISOString(), text: input.addUpdate.trim() });
+    }
+    await strapiPut(`${ITEMS}/${item.documentId}`, {
+        data: {
+            extra_fields: {
+                ...x,
+                ...(input.approved !== undefined ? { approved: input.approved } : {}),
+                ...(input.status !== undefined ? { status: input.status } : {}),
+                ...(input.officialIds !== undefined ? { official_ids: input.officialIds } : {}),
+                updates,
+            },
+        },
+    });
+    invalidateRating();
+}
+
+// ============================================================
+// ---- סקר "מה הכי חשוב לך?" ----
+// ============================================================
+
+/** ההצבעה של המשתמש בסקר החשיבות (label קבוע — סקר אחד) */
+const SURVEY_LABEL = 'criteria_importance';
+
+export async function getMySurveyVote(userId: string): Promise<Scores | null> {
+    const res = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
+        'filters[category][$eq]': SURVEY_CATEGORY,
+        'filters[label][$eq]': SURVEY_LABEL,
+        'filters[user_id][$eq]': userId,
+        'filters[status1][$eq]': 'active',
+        'pagination[limit]': '1',
+    });
+    const row = res.data?.[0];
+    if (!row) return null;
+    const scores = sanitizeScores(ef(row).importance);
+    return Object.keys(scores).length ? scores : null;
+}
+
+/** הצבעה בסקר — אחת למשתמש (upsert) */
+export async function upsertSurveyVote(userId: string, importance: Scores): Promise<void> {
+    const existing = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
+        'filters[category][$eq]': SURVEY_CATEGORY,
+        'filters[label][$eq]': SURVEY_LABEL,
+        'filters[user_id][$eq]': userId,
+        'filters[status1][$eq]': 'active',
+        'pagination[limit]': '1',
+    });
+    const prev = existing.data?.[0];
+    if (prev) {
+        await strapiPut(`${ITEMS}/${prev.documentId}`, {
+            data: { extra_fields: { ...ef(prev), importance } },
+        });
+    } else {
+        await strapiPost(ITEMS, {
+            data: {
+                category: SURVEY_CATEGORY,
+                label: SURVEY_LABEL,
+                description: '',
+                user_id: userId,
+                extra_fields: { importance },
+                icon: '📊',
+                color: 'blue',
+                status1: 'active',
+                publishedAt: new Date().toISOString(),
+            },
+        });
+    }
+    invalidateRating();
+}
+
+/** תוצאות הסקר המצטברות — ממוצע חשיבות לכל מדד */
+export async function getSurveyResults(): Promise<SurveyResults> {
+    return cached('survey', async () => {
+        const rows = (await fetchByCategory(SURVEY_CATEGORY)).filter(
+            (r) => r.label === SURVEY_LABEL,
+        );
+        const importance = {} as SurveyResults['importance'];
+        let count = 0;
+        const sums = new Map<string, { sum: number; n: number }>();
+        for (const row of rows) {
+            const scores = sanitizeScores(ef(row).importance);
+            if (!Object.keys(scores).length) continue;
+            count++;
+            for (const [key, val] of Object.entries(scores)) {
+                const s = sums.get(key) ?? { sum: 0, n: 0 };
+                s.sum += val;
+                s.n++;
+                sums.set(key, s);
+            }
+        }
+        for (const c of CRITERIA) {
+            const s = sums.get(c.key);
+            importance[c.key] = s && s.n > 0 ? s.sum / s.n : null;
+        }
+        return { count, importance };
+    });
 }

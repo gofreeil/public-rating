@@ -8,8 +8,9 @@
     import OfficialCard from '$lib/components/rating/OfficialCard.svelte';
     import OfficialSearch from '$lib/components/rating/OfficialSearch.svelte';
     import Stars from '$lib/components/rating/Stars.svelte';
+    import SurveyPanel from '$lib/components/rating/SurveyPanel.svelte';
 
-    let { data } = $props();
+    let { data, form } = $props();
 
     const STEPS = [
         { icon: '🔎', title: 'מאתרים את המדורג', text: 'חיפוש מהיר או גלישה בלוחות — כנסת, שופטים ועובדי ציבור' },
@@ -146,6 +147,9 @@
             {/each}
         </div>
     </section>
+
+    <!-- e2) סקר: מה הכי חשוב לציבור במשרתיו -->
+    <SurveyPanel results={data.survey} myVote={data.mySurveyVote} loggedIn={data.loggedIn} {form} />
 
     <!-- f) איך זה עובד -->
     <section>

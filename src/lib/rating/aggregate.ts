@@ -4,11 +4,15 @@
 
 import { CRITERIA, type CriterionKey, type Scores } from './criteria';
 import type {
+    CivicProposal,
     MyReview,
     Official,
     OfficialComment,
+    OfficialInquiry,
     OfficialStats,
     PublicComment,
+    PublicInquiry,
+    PublicProposal,
     PublicReview,
     RatedOfficial,
     Review,
@@ -37,7 +41,20 @@ export function weightedScore(average: number | null, count: number, prior = BAY
     return (count / (count + BAYES_M)) * average + (BAYES_M / (count + BAYES_M)) * prior;
 }
 
-export function computeStats(reviews: Review[], prior = BAYES_PRIOR): OfficialStats {
+/**
+ * דעיכת דירוגים ישנים: מחצית המשקל אחרי שנה, רבע אחרי שנתיים.
+ * מדורג נמדד על ההווה — ביקורת מלפני שלוש שנים אינה שווה לביקורת מהחודש.
+ * הדעיכה חלה רק על הציון המשוקלל (סדר הלוחות); הממוצע המוצג נשאר פשוט.
+ */
+const DECAY_HALF_LIFE_MS = 365 * 24 * 60 * 60 * 1000;
+
+export function decayWeight(createdAt: string, now: number): number {
+    const t = new Date(createdAt).getTime();
+    if (!Number.isFinite(t) || t >= now) return 1;
+    return 0.5 ** ((now - t) / DECAY_HALF_LIFE_MS);
+}
+
+export function computeStats(reviews: Review[], prior = BAYES_PRIOR, now = Date.now()): OfficialStats {
     const count = reviews.length;
     const distribution: [number, number, number, number, number] = [0, 0, 0, 0, 0];
     const perCriterion = {} as Record<CriterionKey, number | null>;
@@ -59,7 +76,24 @@ export function computeStats(reviews: Review[], prior = BAYES_PRIOR): OfficialSt
             : null;
     }
 
-    return { count, average, weighted: weightedScore(average, count, prior), perCriterion, distribution };
+    // הציון המשוקלל נבנה מממוצע דועך ומספירה אפקטיבית (סכום המשקלים):
+    // דירוג ישן תורם פחות גם לציון וגם לביטחון שהשקלול מייחס לו
+    let decayedSum = 0;
+    let effectiveCount = 0;
+    for (const r of reviews) {
+        const w = decayWeight(r.created_at, now);
+        decayedSum += w * r.overall;
+        effectiveCount += w;
+    }
+    const decayedAverage = effectiveCount > 0 ? decayedSum / effectiveCount : null;
+
+    return {
+        count,
+        average,
+        weighted: weightedScore(decayedAverage, effectiveCount, prior),
+        perCriterion,
+        distribution,
+    };
 }
 
 /** ממוצע כלל-פלטפורמי — משמש כפריור לשקלול ההוגן */
@@ -74,6 +108,8 @@ export function globalAverage(reviews: Review[]): number {
  */
 export function rankOfficials(officials: Official[], reviews: Review[]): RatedOfficial[] {
     const prior = globalAverage(reviews);
+    // נקודת זמן אחת לכל הדירוג — שכל המדורגים יידעכו מאותו רגע
+    const now = Date.now();
     const byOfficial = new Map<string, Review[]>();
     for (const r of reviews) {
         const list = byOfficial.get(r.official_id);
@@ -81,7 +117,7 @@ export function rankOfficials(officials: Official[], reviews: Review[]): RatedOf
         else byOfficial.set(r.official_id, [r]);
     }
     return officials
-        .map((o) => ({ ...o, stats: computeStats(byOfficial.get(o.id) ?? [], prior) }))
+        .map((o) => ({ ...o, stats: computeStats(byOfficial.get(o.id) ?? [], prior, now) }))
         .sort((a, b) => {
             if (a.stats.count && !b.stats.count) return -1;
             if (!a.stats.count && b.stats.count) return 1;
@@ -136,6 +172,45 @@ export function toPublicComment(c: OfficialComment, meId: string | null): Public
         official_reply: c.official_reply,
         mine: meId ? c.user_id === meId : false,
         created_at: c.created_at,
+    };
+}
+
+/**
+ * המרת פנייה ציבורית לצורה בטוחה לדפדפן — user_id ו-joined_by (מזהים של
+ * משתמשים אחרים, שעלולים להכיל אימייל) נשארים בשרת; שם פונה אנונימי מוסתר.
+ */
+export function toPublicInquiry(i: OfficialInquiry, meId: string | null): PublicInquiry {
+    return {
+        id: i.id,
+        text: i.text,
+        author_name: i.anonymous ? '' : i.author_name,
+        anonymous: i.anonymous,
+        joinCount: i.joined_by.length,
+        joinedByMe: meId ? i.joined_by.includes(meId) : false,
+        mine: meId ? i.user_id === meId : false,
+        reply_text: i.reply_text,
+        replied_at: i.replied_at,
+        created_at: i.created_at,
+    };
+}
+
+/** המרת הצעה אזרחית לצורה בטוחה לדפדפן — user_id ו-supporters נשארים בשרת */
+export function toPublicProposal(p: CivicProposal, meId: string | null): PublicProposal {
+    return {
+        id: p.id,
+        title: p.title,
+        text: p.text,
+        proposer_name: p.anonymous ? '' : p.proposer_name,
+        anonymous: p.anonymous,
+        pros: p.pros,
+        cons: p.cons,
+        status: p.status,
+        supportCount: p.supporters.length,
+        supportedByMe: meId ? p.supporters.includes(meId) : false,
+        mine: meId ? p.user_id === meId : false,
+        official_ids: p.official_ids,
+        updates: p.updates,
+        created_at: p.created_at,
     };
 }
 

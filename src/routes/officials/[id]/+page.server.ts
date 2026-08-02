@@ -4,9 +4,21 @@
 
 import { error, fail } from '@sveltejs/kit';
 import { CRITERIA, sanitizeScores } from '$lib/rating/criteria';
-import { computeStats, toMyReview, toPublicComment, toPublicReview } from '$lib/rating/aggregate';
+import {
+    computeStats,
+    toMyReview,
+    toPublicComment,
+    toPublicInquiry,
+    toPublicReview,
+} from '$lib/rating/aggregate';
 import { TOO_FAST, TOO_MANY, allowAction, botCheck } from '$lib/server/rateLimit';
-import { REPORT_REASONS, type OfficialComment, type ReportReason, type Review } from '$lib/rating/types';
+import {
+    REPORT_REASONS,
+    type OfficialComment,
+    type OfficialInquiry,
+    type ReportReason,
+    type Review,
+} from '$lib/rating/types';
 import {
     createReport,
     getOfficial,
@@ -19,6 +31,11 @@ import {
     getOfficialOwnerUserId,
     addComment,
     getComment,
+    addInquiry,
+    getInquiriesFor,
+    getInquiry,
+    toggleJoinInquiry,
+    replyToInquiry,
 } from '$lib/server/rating';
 import type { PageServerLoad, Actions } from './$types';
 
@@ -49,6 +66,13 @@ export const load: PageServerLoad = async (event) => {
         comments = [];
     }
 
+    let inquiries: OfficialInquiry[] = [];
+    try {
+        inquiries = await getInquiriesFor(official.id);
+    } catch {
+        inquiries = [];
+    }
+
     let session = null;
     try {
         session = await event.locals.auth();
@@ -71,11 +95,21 @@ export const load: PageServerLoad = async (event) => {
         } catch {}
     }
 
+    // חותם "מגיב לפניות" — מועד המענה הרשמי האחרון, נגזר מהפניות עצמן
+    const lastResponseAt =
+        inquiries
+            .map((i) => i.replied_at)
+            .filter((d): d is string => Boolean(d))
+            .sort()
+            .at(-1) ?? null;
+
     return {
         official,
         // צורה ציבורית בלבד — user_id (שעלול להכיל אימייל) ושם של מדרג אנונימי לא עוזבים את השרת
         reviews: reviews.map((r) => toPublicReview(r, meId)),
         comments: comments.map((c) => toPublicComment(c, meId)),
+        inquiries: inquiries.map((i) => toPublicInquiry(i, meId)),
+        lastResponseAt,
         stats: computeStats(reviews),
         // גם הדירוג "שלי" עובר ניקוי — helpful_by שבתוכו הוא רשימת מזהים של אחרים
         myReview: myReview ? toMyReview(myReview) : null,
@@ -314,6 +348,151 @@ export const actions: Actions = {
         }
 
         return { reportSuccess: true };
+    },
+
+    // פנייה ציבורית חדשה — משתמשים רשומים בלבד
+    inquire: async (event) => {
+        let session = null;
+        try {
+            session = await event.locals.auth();
+        } catch {}
+        if (!session?.user?.id) return fail(401, { inquiryError: 'יש להתחבר כדי לפנות' });
+        if (!allowAction(event, 'inquire', session.user.id)) {
+            return fail(429, { inquiryError: TOO_MANY });
+        }
+
+        const fd = await event.request.formData();
+        const bot = botCheck(fd);
+        if (bot.trap) return { inquirySuccess: true };
+        if (bot.tooFast) return fail(400, { inquiryError: TOO_FAST });
+
+        const text = (fd.get('inquiry_text')?.toString() ?? '').trim().slice(0, 1000);
+        if (text.length < 10) {
+            return fail(400, { inquiryError: 'פנייה קצרה מדי — פרטו את הבקשה (לפחות 10 תווים)' });
+        }
+        const anonymous = Boolean(fd.get('anonymous'));
+
+        // פנייה רק למדורג קיים ומאושר
+        let official;
+        try {
+            official = await getOfficial(event.params.id);
+        } catch {
+            return fail(503, { inquiryError: 'המערכת עמוסה כרגע — נסו שוב בעוד רגע' });
+        }
+        if (!official) return fail(404, { inquiryError: 'המדורג לא נמצא או שטרם אושר' });
+
+        try {
+            await addInquiry({
+                officialId: event.params.id,
+                userId: session.user.id,
+                authorName: session.user.name ?? 'אזרח/ית',
+                text,
+                anonymous,
+            });
+        } catch (e) {
+            console.error('[rating] addInquiry failed:', e);
+            return fail(500, { inquiryError: 'שגיאה בשליחת הפנייה — נסו שוב בעוד רגע' });
+        }
+
+        return { inquirySuccess: true };
+    },
+
+    // הצטרפות/ביטול הצטרפות לפנייה ציבורית
+    join_inquiry: async (event) => {
+        let session = null;
+        try {
+            session = await event.locals.auth();
+        } catch {}
+        if (!session?.user?.id) return fail(401, { inquiryError: 'יש להתחבר כדי להצטרף לפנייה' });
+        if (!allowAction(event, 'join', session.user.id)) {
+            return fail(429, { inquiryError: TOO_MANY });
+        }
+
+        const fd = await event.request.formData();
+        const inquiryId = fd.get('inquiry_id')?.toString() ?? '';
+        if (!inquiryId) return fail(400, { inquiryError: 'הפנייה לא נמצאה' });
+
+        let ok = false;
+        try {
+            ok = await toggleJoinInquiry(inquiryId, session.user.id, event.params.id);
+        } catch (e) {
+            console.error('[rating] toggleJoinInquiry failed:', e);
+            return fail(500, { inquiryError: 'שגיאה בהצטרפות — נסו שוב' });
+        }
+        if (!ok) return fail(400, { inquiryError: 'לא ניתן להצטרף לפנייה הזו' });
+
+        return { joined: true };
+    },
+
+    // מענה רשמי לפנייה — חשבון הדמות המדורגת בלבד
+    reply_inquiry: async (event) => {
+        let session = null;
+        try {
+            session = await event.locals.auth();
+        } catch {}
+        if (!session?.user?.id) return fail(401, { inquiryError: 'יש להתחבר' });
+        if (!allowAction(event, 'inquiryReply', session.user.id)) {
+            return fail(429, { inquiryError: TOO_MANY });
+        }
+
+        // רק חשבון הדמות עונה רשמית — גם אדמין לא מפרסם מענה בשם המדורג
+        let isOwner = false;
+        try {
+            isOwner = (await getOfficialOwnerUserId(event.params.id)) === session.user.id;
+        } catch {}
+        if (!isOwner) return fail(403, { inquiryError: 'רק חשבון הדמות המדורגת עונה על פניות' });
+
+        const fd = await event.request.formData();
+        const inquiryId = fd.get('inquiry_id')?.toString() ?? '';
+        const replyText = (fd.get('reply_text')?.toString() ?? '').trim().slice(0, 2000);
+        if (!inquiryId) return fail(400, { inquiryError: 'הפנייה לא נמצאה' });
+        if (replyText.length < 2) return fail(400, { inquiryError: 'המענה קצר מדי' });
+
+        let ok = false;
+        try {
+            ok = await replyToInquiry(inquiryId, event.params.id, replyText);
+        } catch (e) {
+            console.error('[rating] replyToInquiry failed:', e);
+            return fail(500, { inquiryError: 'שגיאה בפרסום המענה — נסו שוב' });
+        }
+        if (!ok) return fail(400, { inquiryError: 'לא ניתן לענות על הפנייה הזו' });
+
+        return { inquiryReplied: true };
+    },
+
+    // מחיקת פנייה — סופר-אדמין או הפונה עצמו
+    delete_inquiry: async (event) => {
+        let session = null;
+        try {
+            session = await event.locals.auth();
+        } catch {}
+        if (!session?.user?.id) return fail(401, { inquiryError: 'יש להתחבר' });
+
+        const fd = await event.request.formData();
+        const inquiryId = fd.get('inquiry_id')?.toString() ?? '';
+        if (!inquiryId) return fail(400, { inquiryError: 'הפנייה לא נמצאה' });
+
+        let inquiry;
+        try {
+            inquiry = await getInquiry(inquiryId);
+        } catch {}
+        if (!inquiry || inquiry.official_id !== event.params.id) {
+            return fail(404, { inquiryError: 'הפנייה לא נמצאה' });
+        }
+
+        const isAdmin = session.user.role === 'super_admin';
+        if (!isAdmin && inquiry.user_id !== session.user.id) {
+            return fail(403, { inquiryError: 'אין הרשאה למחוק פנייה זו' });
+        }
+
+        try {
+            await softDeleteRatingItem(inquiryId, session.user.id);
+        } catch (e) {
+            console.error('[rating] delete inquiry failed:', e);
+            return fail(500, { inquiryError: 'שגיאה במחיקה — נסו שוב' });
+        }
+
+        return { inquiryDeleted: true };
     },
 
     // מחיקה רכה — סופר-אדמין או בעל הדירוג בלבד

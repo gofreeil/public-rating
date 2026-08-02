@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
-	import { GROUPS, groupByKey, type GroupKey, type RatedOfficial } from '$lib/rating/types';
+	import { GROUPS, PROMISE_STATUSES, groupByKey, type GroupKey, type RatedOfficial } from '$lib/rating/types';
 	import { heMatches } from '$lib/rating/heSearch';
 	import { fmtScore } from '$lib/rating/aggregate';
 	import Avatar from '$lib/components/rating/Avatar.svelte';
@@ -27,6 +27,28 @@
 	let editOrg = $state('');
 	let editBio = $state('');
 	let editImage = $state('');
+	// שדות הפרופיל המלא
+	let editVerified = $state(false);
+	let editEmail = $state('');
+	let editPhone = $state('');
+	let editWhatsapp = $state('');
+	let editFacebook = $state('');
+	let editWebsite = $state('');
+	let editPlatformUrl = $state('');
+	let editReportUrl = $state('');
+	let editSpecialties = $state('');
+	let editPromises = $state('');
+	let editAttendance = $state('');
+
+	/** הבטחות → שורות טופס: "טקסט | סטטוס" (בלי סטטוס כשטרם נבחנה) */
+	function promisesToLines(o: RatedOfficial): string {
+		return o.promises
+			.map((p) => {
+				const label = PROMISE_STATUSES.find((s) => s.key === p.status)?.label ?? '';
+				return p.status === 'unknown' ? p.text : `${p.text} | ${label}`;
+			})
+			.join('\n');
+	}
 
 	function startEdit(o: RatedOfficial) {
 		editingId = o.id;
@@ -35,6 +57,17 @@
 		editOrg = o.org;
 		editBio = o.bio;
 		editImage = o.image;
+		editVerified = o.verified;
+		editEmail = o.contacts.email;
+		editPhone = o.contacts.phone;
+		editWhatsapp = o.contacts.whatsapp;
+		editFacebook = o.contacts.facebook;
+		editWebsite = o.contacts.website;
+		editPlatformUrl = o.platform_url;
+		editReportUrl = o.annual_report_url;
+		editSpecialties = o.specialties.join(', ');
+		editPromises = promisesToLines(o);
+		editAttendance = o.attendance_score === null ? '' : String(o.attendance_score);
 	}
 </script>
 
@@ -201,6 +234,50 @@
 									title="מזהה המשתמש של הדמות עצמה — תגובותיה בדף יסומנו כמענה רשמי"
 									class="{inputCls} flex-1 min-w-[240px]"
 								/>
+
+								<!-- פרופיל מלא: אימות, קשר, שקיפות, התמחויות, הבטחות, נוכחות -->
+								<div class="w-full border-t border-white/10 pt-3 mt-1">
+									<p class="text-xs font-bold text-gray-400 mb-2">🪪 תעודת זהות ציבורית</p>
+									<div class="flex flex-wrap gap-2 items-center">
+										<label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer whitespace-nowrap">
+											<input type="checkbox" name="verified" bind:checked={editVerified} class="accent-sky-500" />
+											✔️ פרופיל מאומת
+										</label>
+										<input
+											name="attendance_score"
+											bind:value={editAttendance}
+											type="number" min="0" max="100" dir="ltr"
+											placeholder="נוכחות %"
+											title="אחוז נוכחות בדיונים/הצבעות (0-100); ריק = אין נתון"
+											class="{inputCls} w-28"
+										/>
+										<input name="contact_email" bind:value={editEmail} type="email" dir="ltr" placeholder="דוא&quot;ל לשכה" class="{inputCls} flex-1 min-w-[160px]" />
+										<input name="contact_phone" bind:value={editPhone} dir="ltr" placeholder="טלפון לשכה" class="{inputCls} w-36" />
+										<input name="contact_whatsapp" bind:value={editWhatsapp} dir="ltr" placeholder="וואטסאפ (מספר/קישור)" class="{inputCls} w-44" />
+									</div>
+									<div class="flex flex-wrap gap-2 items-center mt-2">
+										<input name="contact_facebook" bind:value={editFacebook} type="url" dir="ltr" placeholder="פייסבוק (URL)" class="{inputCls} flex-1 min-w-[160px]" />
+										<input name="contact_website" bind:value={editWebsite} type="url" dir="ltr" placeholder="אתר רשמי (URL)" class="{inputCls} flex-1 min-w-[160px]" />
+										<input name="platform_url" bind:value={editPlatformUrl} type="url" dir="ltr" placeholder="מצע/התחייבויות (URL)" class="{inputCls} flex-1 min-w-[160px]" />
+										<input name="annual_report_url" bind:value={editReportUrl} type="url" dir="ltr" placeholder="דין וחשבון שנתי (URL)" class="{inputCls} flex-1 min-w-[160px]" />
+									</div>
+									<div class="flex flex-wrap gap-2 items-start mt-2">
+										<input
+											name="specialties"
+											bind:value={editSpecialties}
+											placeholder="תחומי עיסוק, מופרדים בפסיק (ביטחון, כלכלה, חינוך)"
+											class="{inputCls} flex-1 min-w-[220px]"
+										/>
+										<textarea
+											name="promises"
+											bind:value={editPromises}
+											rows="3"
+											placeholder={'הבטחה בכל שורה. סטטוס אחרי קו אנכי: הבטחה | קוימה\nאו: | בתהליך · | הופרה · בלי קו = טרם נבחנה'}
+											class="{inputCls} flex-1 min-w-[260px] leading-relaxed"
+										></textarea>
+									</div>
+								</div>
+
 								<button
 									type="submit"
 									class="px-4 py-2 text-sm font-bold rounded-xl bg-gradient-to-l from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition-all cursor-pointer"

@@ -13,6 +13,8 @@
     import CriteriaBars from '$lib/components/rating/CriteriaBars.svelte';
     import RateForm from '$lib/components/rating/RateForm.svelte';
     import ReviewList from '$lib/components/rating/ReviewList.svelte';
+    import ProfileDetails from '$lib/components/rating/ProfileDetails.svelte';
+    import InquiryPanel from '$lib/components/rating/InquiryPanel.svelte';
     import type { PageData, ActionData } from './$types';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -86,7 +88,21 @@
     <section class="flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
         <Avatar name={official.name} image={official.image} size={72} />
         <div class="min-w-0 flex-1">
-            <h1 class="text-2xl font-black text-white sm:text-3xl">{official.name}</h1>
+            <h1 class="flex flex-wrap items-center gap-2 text-2xl font-black text-white sm:text-3xl">
+                {official.name}
+                {#if official.verified}
+                    <span
+                        class="rounded-full border border-sky-400/40 bg-sky-500/10 px-2.5 py-0.5 text-xs font-bold text-sky-300"
+                        title="הזהות, התפקיד ופרטי הקשר אומתו על ידי צוות האתר"
+                    >✔️ פרופיל מאומת</span>
+                {/if}
+                {#if data.lastResponseAt}
+                    <span
+                        class="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-300"
+                        title="ענה/תה רשמית לפניות ציבור באתר"
+                    >🟢 מגיב/ה לפניות</span>
+                {/if}
+            </h1>
             <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-400">
                 <span>{official.position}{official.org ? ` · ${official.org}` : ''}</span>
                 {#if group}
@@ -101,6 +117,9 @@
             {/if}
         </div>
     </section>
+
+    <!-- תעודת זהות ציבורית: קשר, שקיפות בפועל, התמחויות והבטחות -->
+    <ProfileDetails {official} lastResponseAt={data.lastResponseAt} />
 
     <!-- סיכום ציון: ממוצע + היסטוגרמה + מדדים -->
     <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
@@ -203,6 +222,25 @@
             <a href="/legal" class="text-blue-400/80 hover:underline">בתנאי השימוש</a>.
         </p>
     </section>
+
+    <!-- פניות ציבור -->
+    {#if form?.inquiryError}
+        <p class="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            {form.inquiryError}
+        </p>
+    {:else if form?.inquirySuccess}
+        <p class="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+            ✅ הפנייה פורסמה — היא גלויה עכשיו לציבור ולמדורג
+        </p>
+    {/if}
+    <InquiryPanel
+        inquiries={data.inquiries}
+        officialId={official.id}
+        officialName={official.name}
+        loggedIn={data.me !== null}
+        isAdmin={data.isAdmin}
+        isOfficialUser={data.isOfficialUser}
+    />
 
     <div class="text-center">
         {#if group}

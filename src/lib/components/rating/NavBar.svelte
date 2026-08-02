@@ -11,6 +11,7 @@
         ...GROUPS.map((g) => ({ href: g.route, label: g.title })),
         { href: '/compare', label: '⚖️ השוואה' },
         { href: '/top-rated', label: '🏆 המצטיינים' },
+        { href: '/proposals', label: '📜 הצעות' },
         ...(loggedIn ? [{ href: '/my-ratings', label: '⭐ שלי' }] : []),
         { href: '/about', label: 'אודות' },
     ]);

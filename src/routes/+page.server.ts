@@ -1,10 +1,20 @@
 // ============================================================
 // דף הבית — נתוני דירוג רזים: מובילים, טעוני שיפור, ביקורות אחרונות
+// + סקר "מה הכי חשוב לך?" (הצבעה על חשיבות המדדים)
 // ============================================================
 
-import { getRatedOfficials, listAllReviews } from '$lib/server/rating';
-import { GROUPS, type GroupKey } from '$lib/rating/types';
-import type { PageServerLoad } from './$types';
+import { fail } from '@sveltejs/kit';
+import {
+    getMySurveyVote,
+    getRatedOfficials,
+    getSurveyResults,
+    listAllReviews,
+    upsertSurveyVote,
+} from '$lib/server/rating';
+import { GROUPS, type GroupKey, type SurveyResults } from '$lib/rating/types';
+import { CRITERIA, sanitizeScores, type Scores } from '$lib/rating/criteria';
+import { TOO_MANY, allowAction } from '$lib/server/rateLimit';
+import type { Actions, PageServerLoad } from './$types';
 
 function emptyGroupCounts(): Record<GroupKey, number> {
     const out = {} as Record<GroupKey, number>;
@@ -12,7 +22,34 @@ function emptyGroupCounts(): Record<GroupKey, number> {
     return out;
 }
 
-export const load: PageServerLoad = async () => {
+function emptySurvey(): SurveyResults {
+    const importance = {} as SurveyResults['importance'];
+    for (const c of CRITERIA) importance[c.key] = null;
+    return { count: 0, importance };
+}
+
+export const load: PageServerLoad = async (event) => {
+    // הסקר אישי (הצבעה קודמת) — נטען לצד הנתונים הציבוריים; כל כשל → ברירת מחדל
+    let session = null;
+    try {
+        session = await event.locals.auth();
+    } catch {}
+    const meId = session?.user?.id ?? null;
+
+    let survey = emptySurvey();
+    try {
+        survey = await getSurveyResults();
+    } catch {}
+
+    let mySurveyVote: Scores | null = null;
+    if (meId) {
+        try {
+            mySurveyVote = await getMySurveyVote(meId);
+        } catch {}
+    }
+
+    const surveyData = { survey, mySurveyVote, loggedIn: Boolean(meId) };
+
     try {
         const [officials, reviews] = await Promise.all([getRatedOfficials(), listAllReviews()]);
 
@@ -69,6 +106,7 @@ export const load: PageServerLoad = async () => {
             recentReviews,
             groupCounts,
             searchIndex,
+            ...surveyData,
         };
     } catch (e) {
         console.warn('[home] load failed:', e instanceof Error ? e.message : e);
@@ -78,6 +116,38 @@ export const load: PageServerLoad = async () => {
             recentReviews: [],
             groupCounts: emptyGroupCounts(),
             searchIndex: [],
+            ...surveyData,
         };
     }
+};
+
+export const actions: Actions = {
+    // הצבעה בסקר החשיבות — אחת למשתמש, עדכון חוזר מותר
+    survey: async (event) => {
+        let session = null;
+        try {
+            session = await event.locals.auth();
+        } catch {}
+        if (!session?.user?.id) return fail(401, { surveyError: 'יש להתחבר כדי להצביע בסקר' });
+        if (!allowAction(event, 'survey', session.user.id)) {
+            return fail(429, { surveyError: TOO_MANY });
+        }
+
+        const fd = await event.request.formData();
+        const raw: Record<string, unknown> = {};
+        for (const c of CRITERIA) raw[c.key] = fd.get(c.key)?.toString();
+        const importance = sanitizeScores(raw);
+        if (!Object.keys(importance).length) {
+            return fail(400, { surveyError: 'דרגו לפחות מדד אחד' });
+        }
+
+        try {
+            await upsertSurveyVote(session.user.id, importance);
+        } catch (e) {
+            console.error('[home] upsertSurveyVote failed:', e);
+            return fail(500, { surveyError: 'שגיאה בשמירת ההצבעה — נסו שוב בעוד רגע' });
+        }
+
+        return { surveySuccess: true };
+    },
 };

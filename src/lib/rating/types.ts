@@ -12,6 +12,9 @@ export const OFFICIAL_CATEGORY = 'pr_official';
 export const REVIEW_CATEGORY = 'pr_review';
 export const COMMENT_CATEGORY = 'pr_comment';
 export const REPORT_CATEGORY = 'pr_report';
+export const INQUIRY_CATEGORY = 'pr_inquiry';
+export const PROPOSAL_CATEGORY = 'pr_proposal';
+export const SURVEY_CATEGORY = 'pr_survey';
 
 // ---- קבוצות (לוחות הדירוג) ----
 
@@ -74,6 +77,42 @@ export const MAX_COMPARE = 4;
 
 // ---- עובד/נבחר ציבור ----
 
+/** פרטי קשר רשמיים של המדורג (לשכה/ציבורי — לא פרטי). ריק = לא ידוע */
+export interface OfficialContacts {
+    email: string;
+    phone: string;
+    whatsapp: string;
+    facebook: string;
+    website: string;
+}
+
+export const EMPTY_CONTACTS: OfficialContacts = {
+    email: '',
+    phone: '',
+    whatsapp: '',
+    facebook: '',
+    website: '',
+};
+
+export type PromiseStatus = 'kept' | 'in_progress' | 'broken' | 'unknown';
+
+export const PROMISE_STATUSES: { key: PromiseStatus; label: string; icon: string }[] = [
+    { key: 'kept', label: 'קוימה', icon: '✅' },
+    { key: 'in_progress', label: 'בתהליך', icon: '⏳' },
+    { key: 'broken', label: 'הופרה', icon: '❌' },
+    { key: 'unknown', label: 'טרם נבחנה', icon: '❔' },
+];
+
+export function promiseStatusOf(key: string | undefined | null): PromiseStatus {
+    return PROMISE_STATUSES.some((s) => s.key === key) ? (key as PromiseStatus) : 'unknown';
+}
+
+/** הבטחה פומבית של המדורג — בסיס למעקב "הבטיח מול קיים" */
+export interface OfficialPromise {
+    text: string;
+    status: PromiseStatus;
+}
+
 export interface Official {
     /** documentId ב-Strapi */
     id: string;
@@ -91,6 +130,21 @@ export interface Official {
     approved: boolean;
     suggested_by: string | null;
     created_at: string;
+    // ---- פרופיל מלא ----
+    /** פרטי קשר רשמיים (דוא"ל לשכה, טלפון, רשתות) */
+    contacts: OfficialContacts;
+    /** הפרופיל אומת ע"י צוות האתר (זהות, תפקיד ופרטי קשר) */
+    verified: boolean;
+    /** קישור למצע / להתחייבויות פומביות */
+    platform_url: string;
+    /** קישור לדין וחשבון שנתי שפרסם המדורג */
+    annual_report_url: string;
+    /** הבטחות פומביות במעקב */
+    promises: OfficialPromise[];
+    /** תחומי עיסוק והתמחות */
+    specialties: string[];
+    /** אחוז נוכחות בדיונים/הצבעות (0-100, מנתונים רשמיים); null = אין נתון */
+    attendance_score: number | null;
 }
 
 // ---- דירוג (ביקורת של משתמש בודד) ----
@@ -208,6 +262,113 @@ export interface ContentReport {
     snapshot: string;
     status: 'pending' | 'handled';
     created_at: string;
+}
+
+// ---- פנייה ציבורית למדורג ----
+
+export interface OfficialInquiry {
+    /** documentId ב-Strapi */
+    id: string;
+    /** documentId של המדורג (label — שליפה אחת לדף) */
+    official_id: string;
+    user_id: string | null;
+    text: string;
+    author_name: string;
+    anonymous: boolean;
+    /** מזהי משתמשים שהצטרפו לפנייה */
+    joined_by: string[];
+    /** מענה של חשבון הדמות; ריק = טרם נענתה */
+    reply_text: string;
+    replied_at: string | null;
+    created_at: string;
+}
+
+/** צורת פנייה בטוחה לדפדפן — בלי user_id ובלי joined_by גולמי */
+export interface PublicInquiry {
+    id: string;
+    text: string;
+    author_name: string;
+    anonymous: boolean;
+    joinCount: number;
+    joinedByMe: boolean;
+    mine: boolean;
+    reply_text: string;
+    replied_at: string | null;
+    created_at: string;
+}
+
+// ---- הצעה אזרחית (מרחב ההצעות) ----
+
+export type ProposalStatus = 'discussion' | 'submitted' | 'adopted' | 'closed';
+
+export const PROPOSAL_STATUSES: { key: ProposalStatus; label: string; icon: string }[] = [
+    { key: 'discussion', label: 'בדיון ציבורי', icon: '💬' },
+    { key: 'submitted', label: 'הוגשה לגורם רשמי', icon: '📨' },
+    { key: 'adopted', label: 'אומצה', icon: '✅' },
+    { key: 'closed', label: 'הדיון הסתיים', icon: '🗄️' },
+];
+
+export function proposalStatusOf(key: string | undefined | null): ProposalStatus {
+    return PROPOSAL_STATUSES.some((s) => s.key === key) ? (key as ProposalStatus) : 'discussion';
+}
+
+export function proposalStatusLabel(key: ProposalStatus): { label: string; icon: string } {
+    const s = PROPOSAL_STATUSES.find((x) => x.key === key);
+    return s ? { label: s.label, icon: s.icon } : { label: 'בדיון ציבורי', icon: '💬' };
+}
+
+/** עדכון בציר הזמן של הצעה (נוסף ע"י אדמין) */
+export interface ProposalUpdate {
+    date: string;
+    text: string;
+}
+
+export interface CivicProposal {
+    /** documentId ב-Strapi */
+    id: string;
+    title: string;
+    text: string;
+    user_id: string | null;
+    proposer_name: string;
+    anonymous: boolean;
+    /** נימוקים בעד / נגד — שורות טקסט */
+    pros: string[];
+    cons: string[];
+    status: ProposalStatus;
+    /** הצעות ממתינות לאישור אדמין לפני פרסום (approved=false) */
+    approved: boolean;
+    /** מזהי משתמשים שתמכו */
+    supporters: string[];
+    /** מדורגים שקשורים להצעה (מקדמים/רלוונטיים) */
+    official_ids: string[];
+    updates: ProposalUpdate[];
+    created_at: string;
+}
+
+/** צורת הצעה בטוחה לדפדפן — בלי user_id ובלי supporters גולמי */
+export interface PublicProposal {
+    id: string;
+    title: string;
+    text: string;
+    proposer_name: string;
+    anonymous: boolean;
+    pros: string[];
+    cons: string[];
+    status: ProposalStatus;
+    supportCount: number;
+    supportedByMe: boolean;
+    mine: boolean;
+    official_ids: string[];
+    updates: ProposalUpdate[];
+    created_at: string;
+}
+
+// ---- סקר "מה הכי חשוב לך?" ----
+
+/** תוצאות מצטברות: ממוצע חשיבות 1-5 לכל מדד + מספר משתתפים */
+export interface SurveyResults {
+    count: number;
+    importance: Record<CriterionKey, number | null>;
 }
 
 // ---- סטטיסטיקה מצטברת ----

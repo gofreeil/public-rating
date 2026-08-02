@@ -13,7 +13,38 @@ import {
     updateOfficial,
     softDeleteRatingItem,
 } from '$lib/server/rating';
-import { groupByKey, type GroupKey, type Official, type RatedOfficial } from '$lib/rating/types';
+import {
+    PROMISE_STATUSES,
+    groupByKey,
+    type GroupKey,
+    type Official,
+    type OfficialPromise,
+    type PromiseStatus,
+    type RatedOfficial,
+} from '$lib/rating/types';
+
+/**
+ * שורת הבטחה בטופס האדמין: "טקסט ההבטחה | סטטוס" (הסטטוס אופציונלי).
+ * סטטוסים: קוימה / בתהליך / הופרה — כל דבר אחר נחשב "טרם נבחנה".
+ */
+function parsePromiseLines(raw: string): OfficialPromise[] {
+    return raw
+        .split('\n')
+        .map((line) => {
+            const parts = line.split('|');
+            let status: PromiseStatus = 'unknown';
+            if (parts.length > 1) {
+                const label = parts[parts.length - 1].trim();
+                const found = PROMISE_STATUSES.find((s) => s.label === label || s.key === label);
+                if (found) {
+                    status = found.key;
+                    parts.pop();
+                }
+            }
+            return { text: parts.join('|').trim(), status };
+        })
+        .filter((p) => p.text);
+}
 
 export const load: PageServerLoad = async (event) => {
     const session = await event.locals.auth();
@@ -95,7 +126,7 @@ export const actions: Actions = {
         }
     },
 
-    // עריכת פרטי מדורג קיים
+    // עריכת פרטי מדורג קיים (כולל שדות הפרופיל המלא)
     update: async (event) => {
         const session = await event.locals.auth();
         requireSuperAdmin(session);
@@ -110,6 +141,29 @@ export const actions: Actions = {
         // חשבון הדמות (מענה רשמי): ריק = ללא שינוי, "-" = ניתוק
         const officialUser = String(fd.get('official_user') ?? '').trim();
 
+        // ---- פרופיל מלא ----
+        const contacts = {
+            email: String(fd.get('contact_email') ?? '').trim(),
+            phone: String(fd.get('contact_phone') ?? '').trim(),
+            whatsapp: String(fd.get('contact_whatsapp') ?? '').trim(),
+            facebook: String(fd.get('contact_facebook') ?? '').trim(),
+            website: String(fd.get('contact_website') ?? '').trim(),
+        };
+        const verified = Boolean(fd.get('verified'));
+        const platformUrl = String(fd.get('platform_url') ?? '').trim();
+        const annualReportUrl = String(fd.get('annual_report_url') ?? '').trim();
+        const specialties = String(fd.get('specialties') ?? '')
+            .split(',')
+            .map((s) => s.trim())
+            .filter(Boolean);
+        const promises = parsePromiseLines(String(fd.get('promises') ?? ''));
+        const attendanceRaw = String(fd.get('attendance_score') ?? '').trim();
+        const attendanceNum = Number(attendanceRaw);
+        const attendanceScore =
+            attendanceRaw !== '' && Number.isFinite(attendanceNum)
+                ? Math.min(100, Math.max(0, Math.round(attendanceNum)))
+                : null;
+
         if (!id) return fail(400, { error: 'חסר מזהה מדורג' });
         if (!name) return fail(400, { error: 'חסר שם המדורג' });
 
@@ -120,6 +174,13 @@ export const actions: Actions = {
                 org,
                 bio,
                 image,
+                contacts,
+                verified,
+                platformUrl,
+                annualReportUrl,
+                specialties,
+                promises,
+                attendanceScore,
                 ...(officialUser ? { officialUserId: officialUser === '-' ? null : officialUser } : {}),
             });
             return { success: true, message: `"${name}" עודכן` };
