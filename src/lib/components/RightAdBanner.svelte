@@ -1,165 +1,43 @@
 <script lang="ts">
-    import { onMount } from "svelte";
+    // ============================================================
+    // הטור הימני — מודעות מקומיות ומשבצות פנויות.
+    //
+    // מודעה בתשלום מובילה ל-/ads/<id> באתר עצמו ולא לאתר של המפרסם.
+    // זה בדיוק ההבדל שבגללו הפלטפורמה נבנתה. משבצת פנויה מובילה
+    // ל-/advertise, שמוכר את המקומות של האתר הזה בלבד.
+    // ============================================================
+    import { onMount } from 'svelte';
+    import { adSlots, loadApprovedAds } from '$lib/ads/adSlots.svelte';
+    import { gradientCss, gradientInk } from '$lib/ads/gradients';
 
-    let currentGroup = $state(0);
-    let totalSwaps = $state(0);
-    const MAX_SWAPS = 8; // 3 full cycles of 3 groups (original + 8 swaps = 9 steps)
+    const PER_VIEW = 4; // כמה משבצות נראות בטור בו-זמנית
+    const VIEW_MS = 14000; // כמה זמן כל קבוצה נשארת על המסך
+    const FADE_MS = 900; // אורך הדעיכה בין קבוצה לקבוצה
 
-    const ads = [
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-orange-500/30",
-            bgColor: "bg-orange-900/10",
-            hoverBorder: "hover:border-orange-500",
-            hoverBg: "hover:bg-orange-900/20",
-            textColor: "text-orange-400",
-            hoverText: "group-hover:text-orange-200",
-            buttonColor: "bg-orange-600 hover:bg-orange-500",
-        },
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-blue-500/30",
-            bgColor: "bg-blue-900/10",
-            hoverBorder: "hover:border-blue-500",
-            hoverBg: "hover:bg-blue-900/20",
-            textColor: "text-blue-400",
-            hoverText: "group-hover:text-blue-200",
-            buttonColor: "bg-blue-600 hover:bg-blue-500",
-        },
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-green-500/30",
-            bgColor: "bg-green-900/10",
-            hoverBorder: "hover:border-green-500",
-            hoverBg: "hover:bg-green-900/20",
-            textColor: "text-green-400",
-            hoverText: "group-hover:text-green-200",
-            buttonColor: "bg-green-600 hover:bg-green-500",
-        },
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-amber-500/30",
-            bgColor: "bg-amber-900/10",
-            hoverBorder: "hover:border-amber-500",
-            hoverBg: "hover:bg-amber-900/20",
-            textColor: "text-amber-400",
-            hoverText: "group-hover:text-amber-200",
-            buttonColor: "bg-amber-600 hover:bg-amber-500",
-        },
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-purple-500/30",
-            bgColor: "bg-purple-900/10",
-            hoverBorder: "hover:border-purple-500",
-            hoverBg: "hover:bg-purple-900/20",
-            textColor: "text-purple-400",
-            hoverText: "group-hover:text-purple-200",
-            buttonColor: "bg-purple-600 hover:bg-purple-500",
-        },
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-red-500/30",
-            bgColor: "bg-red-900/10",
-            hoverBorder: "hover:border-red-500",
-            hoverBg: "hover:bg-red-900/20",
-            textColor: "text-red-400",
-            hoverText: "group-hover:text-red-200",
-            buttonColor: "bg-red-600 hover:bg-red-500",
-        },
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-indigo-500/30",
-            bgColor: "bg-indigo-900/10",
-            hoverBorder: "hover:border-indigo-500",
-            hoverBg: "hover:bg-indigo-900/20",
-            textColor: "text-indigo-400",
-            hoverText: "group-hover:text-indigo-200",
-            buttonColor: "bg-indigo-600 hover:bg-indigo-500",
-        },
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-teal-500/30",
-            bgColor: "bg-teal-900/10",
-            hoverBorder: "hover:border-teal-500",
-            hoverBg: "hover:bg-teal-900/20",
-            textColor: "text-teal-400",
-            hoverText: "group-hover:text-teal-200",
-            buttonColor: "bg-teal-600 hover:bg-teal-500",
-        },
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-pink-500/30",
-            bgColor: "bg-pink-900/10",
-            hoverBorder: "hover:border-pink-500",
-            hoverBg: "hover:bg-pink-900/20",
-            textColor: "text-pink-400",
-            hoverText: "group-hover:text-pink-200",
-            buttonColor: "bg-pink-600 hover:bg-pink-500",
-        },
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-yellow-500/30",
-            bgColor: "bg-yellow-900/10",
-            hoverBorder: "hover:border-yellow-500",
-            hoverBg: "hover:bg-yellow-900/20",
-            textColor: "text-yellow-400",
-            hoverText: "group-hover:text-yellow-200",
-            buttonColor: "bg-yellow-600 hover:bg-yellow-500",
-        },
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-emerald-500/30",
-            bgColor: "bg-emerald-900/10",
-            hoverBorder: "hover:border-emerald-500",
-            hoverBg: "hover:bg-emerald-900/20",
-            textColor: "text-emerald-400",
-            hoverText: "group-hover:text-emerald-200",
-            buttonColor: "bg-emerald-600 hover:bg-emerald-500",
-        },
-        {
-            text: "מקום פרסום",
-            description: "יכול להיות שלך",
-            borderColor: "border-fuchsia-500/30",
-            bgColor: "bg-fuchsia-900/10",
-            hoverBorder: "hover:border-fuchsia-500",
-            hoverBg: "hover:bg-fuchsia-900/20",
-            textColor: "text-fuchsia-400",
-            hoverText: "group-hover:text-fuchsia-200",
-            buttonColor: "bg-fuchsia-600 hover:bg-fuchsia-500",
-        },
-    ];
-
-    const VIEW_MS = 14000;   // כמה זמן כל קבוצה נשארת על המסך (החלפה איטית)
-    const FADE_MS = 900;     // אורך הדעיכה בין קבוצה לקבוצה — חייב להתאים ל-CSS
-
+    let rotation = $state(0);
     let fading = $state(false);
 
+    const slots = $derived(adSlots());
+
+    // הסבב אינסופי. קודם הייתה כאן תקרת החלפות (MAX_SWAPS) שעצרה את
+    // הטור על קבוצה אחת אחרי שלושה מחזורים, כך שרוב המשבצות לא קיבלו במה.
+    const displayed = $derived.by(() => {
+        if (slots.length <= PER_VIEW) return slots;
+        const start = (rotation * PER_VIEW) % slots.length;
+        return Array.from({ length: PER_VIEW }, (_, i) => slots[(start + i) % slots.length]);
+    });
+
     onMount(() => {
+        loadApprovedAds();
         let fadeTimer: ReturnType<typeof setTimeout> | undefined;
-        // דעיכה החוצה → החלפת הקבוצה בזמן שהטור שקוף → דעיכה פנימה.
-        // כך אין קפיצה: המשבצות לא מתחלפות מול העין אלא מתוך שקיפות מלאה.
+        // דעיכה החוצה → החלפה בזמן שהטור שקוף → דעיכה פנימה, בלי קפיצה
         const interval = setInterval(() => {
-            if (totalSwaps < MAX_SWAPS) {
-                fading = true;
-                fadeTimer = setTimeout(() => {
-                    currentGroup = (currentGroup + 1) % 3;
-                    totalSwaps++;
-                    fading = false;
-                }, FADE_MS);
-            } else {
-                clearInterval(interval);
-            }
+            if (slots.length <= PER_VIEW) return;
+            fading = true;
+            fadeTimer = setTimeout(() => {
+                rotation++;
+                fading = false;
+            }, FADE_MS);
         }, VIEW_MS);
 
         return () => {
@@ -167,78 +45,107 @@
             clearTimeout(fadeTimer);
         };
     });
-
-    let displayedAds = $derived(
-        ads.slice(currentGroup * 4, (currentGroup + 1) * 4),
-    );
 </script>
 
-<!-- RightAdBanner.svelte -->
-<aside
-    aria-label="פרסומות"
-    class="hidden xl:block w-36 flex-shrink-0 relative h-fit pb-8 text-center"
->
-    <h4
-        class="text-xs font-bold text-amber-400 uppercase tracking-widest mb-2 px-2"
-    >
+<aside aria-label="פרסומות" class="relative hidden h-fit w-36 flex-shrink-0 pb-8 text-center xl:block">
+    <h4 class="mb-2 px-2 text-xs font-bold tracking-widest text-amber-400 uppercase">
         תוכן שיווקי
     </h4>
-    <div class="space-y-3 ads-track" class:fading>
-        {#each displayedAds as ad, index}
-            <a
-                href="/advertise"
-                aria-label="מקום פרסום פנוי — לפרטים על פרסום באתר"
-                class="h-[470px] flex flex-col items-center justify-center rounded-2xl border-2 border-dashed {ad.borderColor} {ad.bgColor} p-3 text-center transition-all {ad.hoverBorder} {ad.hoverBg} group duration-700 relative overflow-hidden"
-            >
-                <!-- Ad Numbering -->
-                <div
-                    class="absolute top-3 right-3 text-sm font-black text-white/60 bg-white/10 px-3 py-1 rounded-full border border-white/5 backdrop-blur-sm shadow-sm"
+
+    <div class="ads-track space-y-3" class:fading>
+        {#each displayed as item (item.kind === 'real' ? item.ad.id : `v${item.no}`)}
+            {#if item.kind === 'real'}
+                <!-- מודעה בתשלום — הקליק נשאר באתר ונוחת בדף הנחיתה המקומי -->
+                <a
+                    href="/ads/{item.ad.id}"
+                    aria-label="{item.ad.title} — {item.ad.subtitle}"
+                    class="ad-card relative flex h-[470px] flex-col overflow-hidden rounded-2xl shadow-lg"
                 >
-                    {currentGroup * 4 + index + 1}
-                </div>
+                    <span class="relative flex-1 overflow-hidden bg-black/30">
+                        {#if item.ad.mainImage}
+                            <img
+                                src={item.ad.mainImage}
+                                alt=""
+                                loading="lazy"
+                                decoding="async"
+                                class="ad-photo absolute inset-0 h-full w-full object-cover"
+                            />
+                        {/if}
 
-                <div
-                    class="flex flex-col items-center justify-between h-full py-6 relative overflow-hidden w-full"
-                >
-                    <div
-                        class="text-3xl mt-4 z-10 transition-transform group-hover:scale-125 duration-300"
-                    >
-                        📢
-                    </div>
+                        <span class="ad-caption absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-2 pt-8 text-center">
+                            <span class="block text-sm leading-tight font-black text-white">{item.ad.title}</span>
+                            {#if item.ad.subtitle}
+                                <span class="mt-0.5 block text-[11px] leading-tight text-gray-200">
+                                    {item.ad.subtitle}
+                                </span>
+                            {/if}
+                        </span>
 
-                    <div
-                        class="absolute inset-0 flex items-center justify-center pointer-events-none"
-                    >
-                        <div
-                            class="-rotate-90 flex items-center gap-3 whitespace-nowrap transform origin-center"
-                        >
-                            <span
-                                class="text-2xl font-black {ad.textColor} {ad.hoverText} tracking-wider drop-shadow-sm"
-                            >
-                                {ad.text} זה
+                        <!-- שכבת הריחוף: טקסט המכירה שהמפרסם כתב -->
+                        <span class="ad-hover absolute inset-0 flex items-center justify-center bg-black/70 p-3 text-center backdrop-blur-sm">
+                            <span>
+                                <span class="mb-1 block text-sm leading-tight font-black text-white">
+                                    {item.ad.title}
+                                </span>
+                                {#if item.ad.subtitle}
+                                    <span class="block text-[11px] leading-tight text-gray-200">
+                                        {item.ad.subtitle}
+                                    </span>
+                                {/if}
+                                {#if item.ad.hoverText}
+                                    <span class="mt-2 block border-t border-white/20 pt-2 text-[11px] leading-snug font-bold text-amber-200">
+                                        {item.ad.hoverText}
+                                    </span>
+                                {/if}
                             </span>
-                            <span
-                                class="text-base font-bold {ad.textColor} {ad.hoverText} opacity-90 drop-shadow-sm"
-                            >
-                                - {ad.description}
-                            </span>
-                        </div>
-                    </div>
-
-                    <span
-                        class="mb-4 z-10 rounded-full {ad.buttonColor} px-5 py-2 text-sm font-bold text-white shadow-xl transition-transform hover:scale-105"
-                    >
-                        לפרטים
+                        </span>
                     </span>
-                </div>
-            </a>
+
+                    <!-- הגרדיאנט מגיע מרשימה סגורה, לא ממחרוזת CSS של המפרסם -->
+                    <span
+                        class="p-2.5 text-center"
+                        style="background: {gradientCss(item.ad.gradientId)}; color: {gradientInk(item.ad.gradientId)}"
+                    >
+                        <span class="text-xs leading-tight font-bold">{item.ad.cta}</span>
+                    </span>
+                </a>
+            {:else}
+                {@const ad = item.slot}
+                <a
+                    href="/advertise"
+                    aria-label="{ad.text} — {ad.description}: לפרטים על פרסום באתר"
+                    class="vacant-card relative flex h-[470px] flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed p-3 text-center transition-all duration-700 {ad.borderColor} {ad.bgColor} {ad.hoverBorder} {ad.hoverBg}"
+                >
+                    <span class="absolute top-3 right-3 rounded-full border border-white/5 bg-white/10 px-3 py-1 text-sm font-black text-white/60 shadow-sm backdrop-blur-sm">
+                        {item.no}
+                    </span>
+
+                    <span class="relative flex h-full w-full flex-col items-center justify-between overflow-hidden py-6">
+                        <span class="vacant-icon z-10 mt-4 text-3xl">📢</span>
+
+                        <span class="pointer-events-none absolute inset-0 flex items-center justify-center">
+                            <span class="flex origin-center -rotate-90 transform items-center gap-3 whitespace-nowrap">
+                                <span class="text-2xl font-black tracking-wider drop-shadow-sm {ad.textColor}">
+                                    {ad.text} זה
+                                </span>
+                                <span class="text-base font-bold opacity-90 drop-shadow-sm {ad.textColor}">
+                                    - {ad.description}
+                                </span>
+                            </span>
+                        </span>
+
+                        <span class="z-10 mb-4 rounded-full px-5 py-2 text-sm font-bold text-white shadow-xl {ad.buttonColor}">
+                            לפרטים
+                        </span>
+                    </span>
+                </a>
+            {/if}
         {/each}
     </div>
 </aside>
 
 <style>
-    /* דעיכה רכה בין קבוצות המודעות — במקום החלקה קופצנית של כל כרטיס.
-       הערך חייב להתאים ל-FADE_MS שבסקריפט. */
+    /* דעיכה רכה בין קבוצות המודעות — הערך חייב להתאים ל-FADE_MS שבסקריפט */
     .ads-track {
         opacity: 1;
         transition: opacity 900ms ease-in-out;
@@ -246,8 +153,44 @@
     .ads-track.fading {
         opacity: 0;
     }
+
+    /* Tailwind v4: group-hover שבור בפרויקט הזה — CSS מפורש */
+    .ad-card {
+        transition: transform 200ms ease;
+    }
+    .ad-card:hover {
+        transform: scale(1.04);
+    }
+    .ad-hover {
+        opacity: 0;
+        transition: opacity 700ms ease;
+    }
+    .ad-card:hover .ad-hover,
+    .ad-card:focus-visible .ad-hover {
+        opacity: 1;
+    }
+    .ad-photo,
+    .ad-caption {
+        transition: opacity 700ms ease;
+    }
+    .ad-card:hover .ad-photo,
+    .ad-card:hover .ad-caption {
+        opacity: 0;
+    }
+    .vacant-icon {
+        transition: transform 300ms ease;
+    }
+    .vacant-card:hover .vacant-icon {
+        transform: scale(1.25);
+    }
+
     @media (prefers-reduced-motion: reduce) {
-        .ads-track {
+        .ads-track,
+        .ad-card,
+        .ad-hover,
+        .ad-photo,
+        .ad-caption,
+        .vacant-icon {
             transition-duration: 1ms;
         }
     }
