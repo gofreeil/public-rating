@@ -12,8 +12,6 @@
     }
 
     import { fade } from "svelte/transition";
-    import { ads, type Ad } from "$lib/adsData";
-    import FullAdModal from "$lib/components/FullAdModal.svelte";
 
     let { currentUser, onLogout, onShowAuth }: Props = $props();
 
@@ -57,7 +55,6 @@
         headerCompletion < 70 ? '#eab308' : '#22c55e'
     );
 
-    let selectedAdForModal = $state<Ad | null>(null);
 
     // חיפוש
     let searchQuery     = $state('');
@@ -435,11 +432,6 @@
             👤 לאזור האישי
         </div>
     </div>
-{/if}
-
-<!-- FullAdModal popup -->
-{#if selectedAdForModal}
-    <FullAdModal ad={selectedAdForModal} onClose={() => selectedAdForModal = null} />
 {/if}
 
 <style>

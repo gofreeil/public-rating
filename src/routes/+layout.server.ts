@@ -1,5 +1,4 @@
 import type { LayoutServerLoad } from './$types';
-import { getUserById } from '$lib/server/db';
 
 export const load: LayoutServerLoad = async (event) => {
     let session = null;
@@ -9,14 +8,7 @@ export const load: LayoutServerLoad = async (event) => {
         // session לא תקין - נמשיך כמשתמש אנונימי
     }
 
-    // טעינת פרטי משתמש מלאים לתצוגה בדרואר
-    let layoutUser = null;
-    if (session?.user?.id) {
-        try {
-            const jwt = event.cookies.get('strapi_jwt');
-            layoutUser = await getUserById(session.user.id as string, jwt);
-        } catch { /* שקט */ }
-    }
-
-    return { session, layoutUser };
+    // הצרכן היחיד של layoutUser היה דרואר הפרסומות (getUserById מול Strapi
+    // בכל בקשה, בכל דף). עם הסרתו נחסכה קריאת רשת מכל טעינת דף.
+    return { session };
 };

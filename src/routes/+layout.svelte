@@ -4,12 +4,7 @@
 	import "$lib/i18n";
 	import Header from "$lib/components/Header.svelte";
 	import NavBar from "$lib/components/rating/NavBar.svelte";
-	import RightAdBanner from "$lib/components/RightAdBanner.svelte";
-	import AdsSidebar from "$lib/components/AdsSidebar.svelte";
 	import Footer from "$lib/components/Footer.svelte";
-	import CoinAnimation from "$lib/components/CoinAnimation.svelte";
-	import MobileAdsDrawer from "$lib/components/MobileAdsDrawer.svelte";
-	import MobileAdPopup from "$lib/components/MobileAdPopup.svelte";
 	import WelcomeScreen from "$lib/components/WelcomeScreen.svelte";
 	import { signOut } from "@auth/sveltekit/client";
 	import { goto } from "$app/navigation";
@@ -47,9 +42,6 @@
 <a href="#main-content" class="skip-link">דלג לתוכן הראשי</a>
 <!-- מסך פתיחה אחרי הרשמה / זיהוי ראשון — גלובלי, מופעל ע"י ?welcome ב-URL -->
 <WelcomeScreen userName={data.session?.user?.name ?? ''} />
-<CoinAnimation />
-<MobileAdsDrawer currentUser={currentUser} layoutUser={data.layoutUser} />
-<MobileAdPopup />
 <div class="min-h-screen flex flex-col bg-[#0f172a]">
 	<Header
 		currentUser={currentUser}
@@ -60,35 +52,35 @@
 	<NavBar loggedIn={Boolean(data.session?.user)} />
 
 	<div class="layout-container flex-grow">
-		<RightAdBanner />
 		<main id="main-content" tabindex="-1" class="main-content">
 			{@render children()}
 		</main>
-		<AdsSidebar />
 	</div>
 
 	<Footer />
 </div>
 
 <style>
+	/*
+	  קודם היה כאן flex בן שלוש עמודות: באנר פרסום מימין, תוכן באמצע וסרגל
+	  פרסומות משמאל. אחרי הסרת הפרסומות התוכן הוא העמוד כולו. הרוחב הוקטן
+	  מ-1440 ל-1200: בלי שתי הרצועות בצדדים, 1440 היה מותח כרטיס דירוג
+	  לרוחב שאי אפשר לסרוק בעין.
+	*/
 	.layout-container {
-		max-width: 1440px;
+		max-width: 1200px;
 		margin: 0 auto;
-		display: flex;
-		gap: 2rem;
-		padding: 2rem 2rem 0 2rem;
+		padding: 1.5rem 2rem 0 2rem;
 		width: 100%;
 	}
 
 	.main-content {
-		flex: 1;
 		min-width: 0;
 	}
 
 	@media (max-width: 1024px) {
 		.layout-container {
 			padding: 1rem;
-			flex-direction: column;
 		}
 	}
 </style>
