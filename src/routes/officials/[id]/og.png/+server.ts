@@ -14,6 +14,7 @@ import { computeStats } from '$lib/rating/aggregate';
 import { groupByKey } from '$lib/rating/types';
 import { getOfficial, getReviewsFor } from '$lib/server/rating';
 import { renderCard } from '$lib/server/og/card';
+import { fetchImageDataUri } from '$lib/server/og/remoteImage';
 import { DEFAULT_OG_IMAGE } from '$lib/seo';
 import type { RequestHandler } from './$types';
 
@@ -63,6 +64,10 @@ export const GET: RequestHandler = async ({ params, setHeaders }) => {
         stats = computeStats([]);
     }
 
+    // תמונת פנים אמיתית עושה את ההבדל בין קישור שנפתח לקישור שנגלל.
+    // כישלון כאן אינו כישלון של הכרטיס — נופלים לאווטאר ראשי תיבות.
+    const imageDataUri = official.image ? ((await fetchImageDataUri(official.image)) ?? undefined) : undefined;
+
     let png: Buffer;
     try {
         png = renderCard({
@@ -72,6 +77,7 @@ export const GET: RequestHandler = async ({ params, setHeaders }) => {
             groupTitle: groupByKey(official.group)?.title ?? '',
             average: stats.average,
             count: stats.count,
+            imageDataUri,
         });
     } catch (e) {
         console.error('[og] render failed:', e instanceof Error ? e.message : e);
