@@ -105,10 +105,12 @@ function normalizeStyle(raw: unknown): Partial<AdCardStyle> {
     if (dh !== undefined) out.diag_height = dh;
     if (s.logo_shape === 'circle' || s.logo_shape === 'square') out.logo_shape = s.logo_shape;
     if (s.logo_position === 'top' || s.logo_position === 'bottom') out.logo_position = s.logo_position;
-    const ix = num(s.image_x, -100, 100);
+    const ix = num(s.image_x, -50, 50);
     if (ix !== undefined) out.image_x = ix;
-    const iy = num(s.image_y, -100, 100);
+    const iy = num(s.image_y, -50, 50);
     if (iy !== undefined) out.image_y = iy;
+    const iz = num(s.image_zoom, 0.5, 4);
+    if (iz !== undefined) out.image_zoom = iz;
     return out;
 }
 

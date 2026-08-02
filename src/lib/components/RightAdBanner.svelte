@@ -9,7 +9,7 @@
     import { onMount } from 'svelte';
     import { adSlots, loadApprovedAds } from '$lib/ads/adSlots.svelte';
     import { markAdSeen, trackAdClick } from '$lib/ads/adTrack';
-    import { gradientCss, gradientInk } from '$lib/ads/gradients';
+    import AdCard from '$lib/components/rating/AdCard.svelte';
 
     const PER_VIEW = 4; // כמה משבצות נראות בטור בו-זמנית
     const VIEW_MS = 14000; // כמה זמן כל קבוצה נשארת על המסך
@@ -68,55 +68,18 @@
                     href="/ads/{item.ad.id}"
                     onclick={() => trackAdClick(item.ad.id)}
                     aria-label="{item.ad.title} — {item.ad.subtitle}"
-                    class="ad-card relative flex h-[470px] flex-col overflow-hidden rounded-2xl shadow-lg"
+                    class="real-ad block h-[470px]"
                 >
-                    <span class="relative flex-1 overflow-hidden bg-black/30">
-                        {#if item.ad.mainImage}
-                            <img
-                                src={item.ad.mainImage}
-                                alt=""
-                                loading="lazy"
-                                decoding="async"
-                                class="ad-photo absolute inset-0 h-full w-full object-cover"
-                            />
-                        {/if}
-
-                        <span class="ad-caption absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-2 pt-8 text-center">
-                            <span class="block text-sm leading-tight font-black text-white">{item.ad.title}</span>
-                            {#if item.ad.subtitle}
-                                <span class="mt-0.5 block text-[11px] leading-tight text-gray-200">
-                                    {item.ad.subtitle}
-                                </span>
-                            {/if}
-                        </span>
-
-                        <!-- שכבת הריחוף: טקסט המכירה שהמפרסם כתב -->
-                        <span class="ad-hover absolute inset-0 flex items-center justify-center bg-black/70 p-3 text-center backdrop-blur-sm">
-                            <span>
-                                <span class="mb-1 block text-sm leading-tight font-black text-white">
-                                    {item.ad.title}
-                                </span>
-                                {#if item.ad.subtitle}
-                                    <span class="block text-[11px] leading-tight text-gray-200">
-                                        {item.ad.subtitle}
-                                    </span>
-                                {/if}
-                                {#if item.ad.hoverText}
-                                    <span class="mt-2 block border-t border-white/20 pt-2 text-[11px] leading-snug font-bold text-amber-200">
-                                        {item.ad.hoverText}
-                                    </span>
-                                {/if}
-                            </span>
-                        </span>
-                    </span>
-
-                    <!-- הגרדיאנט מגיע מרשימה סגורה, לא ממחרוזת CSS של המפרסם -->
-                    <span
-                        class="p-2.5 text-center"
-                        style="background: {gradientCss(item.ad.gradientId)}; color: {gradientInk(item.ad.gradientId)}"
-                    >
-                        <span class="text-xs leading-tight font-bold">{item.ad.cta}</span>
-                    </span>
+                    <AdCard
+                        title={item.ad.title}
+                        subtitle={item.ad.subtitle}
+                        hoverText={item.ad.hoverText}
+                        cta={item.ad.cta}
+                        gradientId={item.ad.gradientId}
+                        mainImage={item.ad.mainImage}
+                        logo={item.ad.logo}
+                        style={item.ad.style}
+                    />
                 </a>
             {:else}
                 {@const ad = item.slot}
@@ -163,28 +126,14 @@
         opacity: 0;
     }
 
-    /* Tailwind v4: group-hover שבור בפרויקט הזה — CSS מפורש */
-    .ad-card {
+    /* Tailwind v4: group-hover שבור בפרויקט הזה — CSS מפורש.
+       שאר עיצוב הכרטיס חי ב-AdCard.svelte: אותו מרנדר משמש גם את
+       התצוגה המקדימה בבילדר, כדי שמה שהמפרסם עיצב יהיה מה שיעלה. */
+    .real-ad {
         transition: transform 200ms ease;
     }
-    .ad-card:hover {
+    .real-ad:hover {
         transform: scale(1.04);
-    }
-    .ad-hover {
-        opacity: 0;
-        transition: opacity 700ms ease;
-    }
-    .ad-card:hover .ad-hover,
-    .ad-card:focus-visible .ad-hover {
-        opacity: 1;
-    }
-    .ad-photo,
-    .ad-caption {
-        transition: opacity 700ms ease;
-    }
-    .ad-card:hover .ad-photo,
-    .ad-card:hover .ad-caption {
-        opacity: 0;
     }
     .vacant-icon {
         transition: transform 300ms ease;
@@ -195,10 +144,7 @@
 
     @media (prefers-reduced-motion: reduce) {
         .ads-track,
-        .ad-card,
-        .ad-hover,
-        .ad-photo,
-        .ad-caption,
+        .real-ad,
         .vacant-icon {
             transition-duration: 1ms;
         }

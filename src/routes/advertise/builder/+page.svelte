@@ -8,7 +8,7 @@
     // ממשק גרירה שקשה להפעיל בנייד ובמקלדת.
     // ============================================================
     import { goto } from '$app/navigation';
-    import { AD_GRADIENTS, gradientCss, gradientInk } from '$lib/ads/gradients';
+    import AdCardEditor from '$lib/components/rating/AdCardEditor.svelte';
     import { compressImage, dataUrlBytes, fmtKb } from '$lib/ads/adImage';
     import Seo from '$lib/components/rating/Seo.svelte';
     import type { PageData } from './$types';
@@ -20,7 +20,8 @@
     let subtitle = $state('');
     let hoverText = $state('');
     let cta = $state('לפרטים');
-    let gradientId = $state(AD_GRADIENTS[0].id);
+    let gradientId = $state('amber');
+    let cardStyle = $state<Record<string, unknown>>({});
     let mainImage = $state('');
     let logo = $state('');
 
@@ -86,6 +87,7 @@
                     hoverText,
                     cta,
                     gradientId,
+                    style: cardStyle,
                     mainImage,
                     logo,
                     requestedDurationDays: durationDays,
@@ -164,17 +166,9 @@
                     <span class={labelCls}>משפט המכירה — מוצג בריחוף על הכרטיס (עד 90)</span>
                     <input bind:value={hoverText} maxlength="90" class={inputCls} />
                 </label>
-                <label class="block">
+                <label class="block sm:col-span-2">
                     <span class={labelCls}>טקסט הכפתור</span>
                     <input bind:value={cta} maxlength="30" class={inputCls} />
-                </label>
-                <label class="block">
-                    <span class={labelCls}>צבע</span>
-                    <select bind:value={gradientId} class={inputCls}>
-                        {#each AD_GRADIENTS as g (g.id)}
-                            <option value={g.id} class="bg-slate-900">{g.label}</option>
-                        {/each}
-                    </select>
                 </label>
                 <label class="block">
                     <span class={labelCls}>תמונה ראשית</span>
@@ -278,37 +272,17 @@
         </div>
     </form>
 
-    <!-- ---- תצוגה מקדימה ---- -->
-    <aside class="lg:sticky lg:top-20 lg:w-44 lg:shrink-0">
-        <p class="mb-2 text-center text-xs font-bold tracking-widest text-amber-400 uppercase">
-            תצוגה מקדימה
-        </p>
-        <div class="relative mx-auto flex h-[470px] w-36 flex-col overflow-hidden rounded-2xl shadow-lg">
-            <span class="relative flex-1 overflow-hidden bg-black/30">
-                {#if mainImage}
-                    <img src={mainImage} alt="" class="absolute inset-0 h-full w-full object-cover" />
-                {/if}
-                {#if logo}
-                    <img src={logo} alt="" class="absolute top-2 right-2 h-10 w-10 rounded-full border-2 border-white/40 object-cover" />
-                {/if}
-                <span class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-2 pt-8 text-center">
-                    <span class="block text-sm leading-tight font-black text-white">{title || 'כותרת'}</span>
-                    {#if subtitle}
-                        <span class="mt-0.5 block text-[11px] leading-tight text-gray-200">{subtitle}</span>
-                    {/if}
-                </span>
-            </span>
-            <span
-                class="p-2.5 text-center"
-                style="background: {gradientCss(gradientId)}; color: {gradientInk(gradientId)}"
-            >
-                <span class="text-xs leading-tight font-bold">{cta || 'לפרטים'}</span>
-            </span>
-        </div>
-        {#if hoverText}
-            <p class="mt-2 rounded-xl border border-white/10 bg-white/5 p-2 text-center text-[11px] text-amber-200">
-                בריחוף: {hoverText}
-            </p>
-        {/if}
+    <!-- ---- עורך הכרטיס: תצוגה מקדימה חיה + פקדי עיצוב ---- -->
+    <aside class="lg:w-72 lg:shrink-0">
+        <AdCardEditor
+            {title}
+            {subtitle}
+            {hoverText}
+            {cta}
+            bind:gradientId
+            {mainImage}
+            {logo}
+            bind:style={cardStyle}
+        />
     </aside>
 </div>

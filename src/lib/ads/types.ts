@@ -51,13 +51,30 @@ export interface AdLanding {
 /** עיצוב הכרטיס בטור הימני — נשמר, בניגוד לגמ"ח ששמר אותו ב-localStorage בלבד */
 export interface AdCardStyle {
     title_color: string;
+    /** הזזת הכותרת אנכית, באחוזים מגובה הכרטיס */
     title_offset_y: number;
+    /** גובה הפס האלכסוני התחתון, באחוזים */
     diag_height: number;
     logo_shape: 'circle' | 'square';
     logo_position: 'top' | 'bottom';
+    /** מיקום התמונה בתוך המסגרת, באחוזים (-50..50) */
     image_x: number;
     image_y: number;
+    /** זום התמונה (1 = מלא מסגרת) */
+    image_zoom: number;
 }
+
+/** ברירות המחדל של עיצוב הכרטיס — מקור אמת יחיד לעורך ולתצוגה */
+export const DEFAULT_CARD_STYLE: AdCardStyle = {
+    title_color: '#ffffff',
+    title_offset_y: 0,
+    diag_height: 0,
+    logo_shape: 'circle',
+    logo_position: 'top',
+    image_x: 0,
+    image_y: 0,
+    image_zoom: 1,
+};
 
 /** הצורה המלאה בשרת — כוללת שדות שלעולם לא עוזבים אותו */
 export interface SubmittedAd {
