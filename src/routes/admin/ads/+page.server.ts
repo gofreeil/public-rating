@@ -22,6 +22,7 @@ import {
     removeAd,
     submitAd,
 } from '$lib/server/ads';
+import { getAdStats, type AdStatRow } from '$lib/server/adStats';
 import type { SubmittedAd } from '$lib/ads/types';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -38,6 +39,14 @@ export const load: PageServerLoad = async (event) => {
         backendUnavailable = true;
     }
 
+    // המדדים הם שכבה נלווית — כשלון בטעינתם לא מונע ניהול
+    let stats: Record<string, AdStatRow> = {};
+    try {
+        stats = await getAdStats(ads.map((a) => a.id));
+    } catch (e) {
+        console.warn('[admin/ads] getAdStats failed:', e instanceof Error ? e.message : e);
+    }
+
     const now = Date.now();
     const rows = ads.map((ad) => ({
         ...ad,
@@ -50,6 +59,7 @@ export const load: PageServerLoad = async (event) => {
         editedAfterDecision: Boolean(
             ad.editedAt && ad.decidedAt && new Date(ad.editedAt) > new Date(ad.decidedAt),
         ),
+        stats: stats[ad.id] ?? { impressions: 0, clicks: 0, landing: 0, leads: 0, ctr: 0 },
     }));
 
     const live = rows.filter((a) => a.status === 'approved' && !a.expired).length;

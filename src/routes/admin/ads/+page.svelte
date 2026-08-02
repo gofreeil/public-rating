@@ -216,6 +216,23 @@
                             {#if ad.bytes > 0}<span>{Math.round(ad.bytes / 1024)}KB</span>{/if}
                         </p>
 
+                        {#if ad.status === 'approved' && ad.stats.impressions > 0}
+                            <p class="flex flex-wrap gap-2 text-[11px]">
+                                <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-gray-400">
+                                    👁 {ad.stats.impressions} חשיפות
+                                </span>
+                                <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-gray-400">
+                                    🖱 {ad.stats.clicks} קליקים ({(ad.stats.ctr * 100).toFixed(1)}%)
+                                </span>
+                                <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-gray-400">
+                                    📄 {ad.stats.landing} צפיות בנחיתה
+                                </span>
+                                <span class="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">
+                                    📞 {ad.stats.leads} פניות
+                                </span>
+                            </p>
+                        {/if}
+
                         {#if ad.landing.website}
                             <!--
                               כתובת של מודעה שטרם אושרה לא הופכת לקישור.

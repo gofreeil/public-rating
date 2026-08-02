@@ -8,6 +8,7 @@
     // ============================================================
     import { onMount } from 'svelte';
     import { adSlots, loadApprovedAds } from '$lib/ads/adSlots.svelte';
+    import { markAdSeen, trackAdClick } from '$lib/ads/adTrack';
     import { gradientCss, gradientInk } from '$lib/ads/gradients';
 
     const PER_VIEW = 4; // כמה משבצות נראות בטור בו-זמנית
@@ -25,6 +26,13 @@
         if (slots.length <= PER_VIEW) return slots;
         const start = (rotation * PER_VIEW) % slots.length;
         return Array.from({ length: PER_VIEW }, (_, i) => slots[(start + i) % slots.length]);
+    });
+
+    // כל מודעה שנכנסת לקבוצה המוצגת נספרת כחשיפה — פעם אחת לביקור
+    $effect(() => {
+        for (const item of displayed) {
+            if (item.kind === 'real') markAdSeen(item.ad.id);
+        }
     });
 
     onMount(() => {
@@ -58,6 +66,7 @@
                 <!-- מודעה בתשלום — הקליק נשאר באתר ונוחת בדף הנחיתה המקומי -->
                 <a
                     href="/ads/{item.ad.id}"
+                    onclick={() => trackAdClick(item.ad.id)}
                     aria-label="{item.ad.title} — {item.ad.subtitle}"
                     class="ad-card relative flex h-[470px] flex-col overflow-hidden rounded-2xl shadow-lg"
                 >

@@ -77,6 +77,18 @@ export const LIMITS = {
     report: { max: 10, windowMs: HOUR },
     /** שליחת דוא"ל ליעד שהמבקש בחר — התקרה החשובה ביותר, פתוח לאנונימי */
     orderEmail: { max: 3, windowMs: HOUR },
+    /** פנייה ציבורית למדורג */
+    inquire: { max: 5, windowMs: HOUR },
+    /** הצטרפות לפנייה / תמיכה בהצעה — פעולות מונה קלות */
+    join: { max: 60, windowMs: HOUR },
+    /** מענה רשמי לפנייה (חשבון הדמות) */
+    inquiryReply: { max: 30, windowMs: HOUR },
+    /** הגשת הצעה אזרחית למרחב ההצעות */
+    propose: { max: 3, windowMs: HOUR },
+    /** הצבעה בסקר החשיבות (upsert — עדכון חוזר לגיטימי) */
+    survey: { max: 10, windowMs: HOUR },
+    /** מדידת פרסומות — נדיב בכוונה: חוסם לולאה מתוסרטת, לא גולש אמיתי */
+    adTrack: { max: 120, windowMs: HOUR },
 } as const;
 
 export type LimitName = keyof typeof LIMITS;

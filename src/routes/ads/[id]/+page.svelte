@@ -6,6 +6,8 @@
     // safeHttpUrl גם כאן ולא רק בכתיבה: שורה שנשמרה לפני שהחיטוי נכנס,
     // או שנערכה ידנית באדמין של Strapi, לא תעקוף את הבדיקה.
     // ============================================================
+    import { onMount } from 'svelte';
+    import { trackAdLanding, trackAdLead } from '$lib/ads/adTrack';
     import { gradientCss, gradientInk } from '$lib/ads/gradients';
     import { safeDataImage, safeHttpUrl } from '$lib/ads/sanitize';
     import Seo from '$lib/components/rating/Seo.svelte';
@@ -30,6 +32,8 @@
 
     const advantages = $derived(lp.advantages.filter((a) => a.trim()));
     const products = $derived(lp.products.filter((p) => p.name.trim()));
+
+    onMount(() => trackAdLanding(ad.id));
 
     const contacts = $derived(
         [
@@ -91,6 +95,7 @@
             {#each contacts as c (c.name)}
                 <a
                     href={c.href}
+                    onclick={() => trackAdLead(ad.id)}
                     target={c.href.startsWith('http') ? '_blank' : undefined}
                     rel="noopener noreferrer nofollow"
                     class="contact-btn flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white transition-colors"
