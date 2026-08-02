@@ -5,6 +5,4 @@ export { default as Header } from './components/Header.svelte';
 export { default as Footer } from './components/Footer.svelte';
 export { default as AdsSidebar } from './components/AdsSidebar.svelte';
 export { default as NewsTicker } from './components/NewsTicker.svelte';
-export { default as JerusalemMap } from './components/JerusalemMap.svelte';
-export { default as LostAndFound } from './components/LostAndFound.svelte';
 export { default as RightAdBanner } from './components/RightAdBanner.svelte';
