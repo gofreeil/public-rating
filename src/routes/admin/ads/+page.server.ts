@@ -1,0 +1,169 @@
+// ============================================================
+// /admin/ads — ניהול הפרסומות (סופר-אדמין בלבד)
+//
+// אישור, דחייה, הארכה, הסרה והזנה ידנית. ההזנה הידנית היא מה שהופך
+// את המערכת לשמישה מהיום הראשון: בעל האתר מזין מודעה של מפרסם שסגר
+// איתו בטלפון, בלי שהמפרסם צריך חשבון או בילדר.
+//
+// הרשאה נבדקת גם ב-load וגם בתוך כל action — כלל 3 ב-CLAUDE.md.
+// ============================================================
+
+import { fail, redirect } from '@sveltejs/kit';
+import { requireSuperAdmin } from '$lib/server/auth';
+import { AD_SLOTS } from '$lib/ads/slots';
+import { adPlans } from '$lib/ads/plans';
+import {
+    AdTooLargeError,
+    approveAd,
+    extendAd,
+    isExpired,
+    listAllForAdmin,
+    rejectAd,
+    removeAd,
+    submitAd,
+} from '$lib/server/ads';
+import type { SubmittedAd } from '$lib/ads/types';
+import type { Actions, PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async (event) => {
+    const session = await event.locals.auth();
+    if (session?.user?.role !== 'super_admin') redirect(303, '/');
+
+    let ads: SubmittedAd[] = [];
+    let backendUnavailable = false;
+    try {
+        ads = await listAllForAdmin();
+    } catch (e) {
+        console.warn('[admin/ads] listAllForAdmin failed:', e instanceof Error ? e.message : e);
+        backendUnavailable = true;
+    }
+
+    const now = Date.now();
+    const rows = ads.map((ad) => ({
+        ...ad,
+        // המפרסם ופרטי הקשר נשארים כאן: זה מסך אדמין מאחורי הרשאה,
+        // בניגוד לדף הנחיתה הציבורי שמקבל רק toPublicAd
+        expired: isExpired(ad, now),
+        daysLeft: ad.expiresAt
+            ? Math.ceil((new Date(ad.expiresAt).getTime() - now) / 86_400_000)
+            : 0,
+        editedAfterDecision: Boolean(
+            ad.editedAt && ad.decidedAt && new Date(ad.editedAt) > new Date(ad.decidedAt),
+        ),
+    }));
+
+    const live = rows.filter((a) => a.status === 'approved' && !a.expired).length;
+
+    return {
+        rows,
+        backendUnavailable,
+        plans: adPlans,
+        slotCount: AD_SLOTS.length,
+        live,
+        pending: rows.filter((a) => a.status === 'pending').length,
+    };
+};
+
+/** כל פעולה מאמתת הרשאה בעצמה ומחזירה את המזהה של המבצע */
+async function adminOf(event: Parameters<Actions[string]>[0]): Promise<string> {
+    const session = await event.locals.auth();
+    requireSuperAdmin(session);
+    return session?.user?.email ?? session?.user?.name ?? 'admin';
+}
+
+export const actions: Actions = {
+    approve: async (event) => {
+        const by = await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            await approveAd(id, { durationDays: fd.get('duration_days'), decidedBy: by });
+            return { success: true, message: 'הפרסומת אושרה ועלתה לאוויר' };
+        } catch (e) {
+            return fail(500, { error: `שגיאה באישור: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    reject: async (event) => {
+        const by = await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            await rejectAd(id, { reason: String(fd.get('reason') ?? ''), decidedBy: by });
+            return { success: true, message: 'הפרסומת נדחתה' };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בדחייה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    extend: async (event) => {
+        await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            await extendAd(id, fd.get('duration_days'));
+            return { success: true, message: 'הפרסום הוארך' };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בהארכה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    remove: async (event) => {
+        const by = await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            await removeAd(id, by);
+            return { success: true, message: 'הפרסומת הוסרה' };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בהסרה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // הזנה ידנית — נוצרת כ-pending ואז מאושרת בלחיצה, כדי שיהיה מסלול
+    // כתיבה אחד בלבד (submitAd) ולא שני נתיבי יצירה שיכולים להיפרד
+    create: async (event) => {
+        const session = await event.locals.auth();
+        requireSuperAdmin(session);
+
+        const fd = await event.request.formData();
+        const title = String(fd.get('title') ?? '').trim();
+        if (!title) return fail(400, { error: 'חסרה כותרת לפרסומת' });
+
+        try {
+            await submitAd({
+                title,
+                subtitle: String(fd.get('subtitle') ?? ''),
+                hoverText: String(fd.get('hover_text') ?? ''),
+                cta: String(fd.get('cta') ?? ''),
+                gradientId: String(fd.get('gradient_id') ?? ''),
+                logo: '',
+                mainImage: '',
+                style: {},
+                landing: {
+                    headline: String(fd.get('headline') ?? title),
+                    pitch: String(fd.get('pitch') ?? ''),
+                    phone: String(fd.get('phone') ?? ''),
+                    whatsapp: String(fd.get('whatsapp') ?? ''),
+                    website: String(fd.get('website') ?? ''),
+                    email: String(fd.get('email') ?? ''),
+                    address: String(fd.get('address') ?? ''),
+                    hours: String(fd.get('hours') ?? ''),
+                },
+                requestedDurationDays: fd.get('duration_days'),
+                ownerId: session?.user?.id ?? '',
+                ownerName: String(fd.get('advertiser') ?? ''),
+                contactEmail: String(fd.get('email') ?? ''),
+                payment: 'owner',
+            });
+            return { success: true, message: `"${title}" נוצרה וממתינה לאישור` };
+        } catch (e) {
+            if (e instanceof AdTooLargeError) return fail(400, { error: e.message });
+            return fail(500, { error: `שגיאה ביצירה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+};
