@@ -75,7 +75,9 @@
     title={seoTitle}
     description={metaDescription}
     type="profile"
-    image={official.image || undefined}
+    image="/officials/{official.id}/og.png"
+    imageWidth={1200}
+    imageHeight={630}
     {jsonLd}
 />
 

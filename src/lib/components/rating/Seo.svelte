@@ -7,6 +7,8 @@
         title = '',
         description = '',
         image = DEFAULT_OG_IMAGE,
+        imageWidth = 0,
+        imageHeight = 0,
         type = 'website',
         noindex = false,
         jsonLd = null,
@@ -15,6 +17,9 @@
         title?: string;
         description?: string;
         image?: string;
+        /** מידות התמונה — בלעדיהן וואטסאפ ופייסבוק נוטים להציג תצוגה מוקטנת */
+        imageWidth?: number;
+        imageHeight?: number;
         type?: string;
         /** דפים אישיים/ניהוליים — לא לאינדוקס */
         noindex?: boolean;
@@ -50,6 +55,10 @@
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:alt" content={fullTitle} />
+    {#if imageWidth > 0 && imageHeight > 0}
+        <meta property="og:image:width" content={String(imageWidth)} />
+        <meta property="og:image:height" content={String(imageHeight)} />
+    {/if}
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={fullTitle} />

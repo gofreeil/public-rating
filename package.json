@@ -32,6 +32,7 @@
 	},
 	"dependencies": {
 		"@auth/sveltekit": "^1.11.1",
+		"@resvg/resvg-js": "^2.6.2",
 		"bcryptjs": "^3.0.3",
 		"resend": "^6.9.3",
 		"web-push": "^3.6.7"
