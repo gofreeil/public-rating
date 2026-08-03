@@ -71,6 +71,11 @@ export const POST: RequestHandler = async (event) => {
         if (e instanceof AdTooLargeError) {
             return json({ ok: false, error: e.message }, { status: 400 });
         }
+        // רשת ביטחון: אם בכל זאת עברנו את תקרת koa-body של Strapi (~1MB
+        // לבקשה), שהמפרסם יקבל הנחיה שאפשר לפעול לפיה ולא "שגיאה בשליחה"
+        if (e instanceof Error && e.message.includes('→ 413')) {
+            return json({ ok: false, error: 'התמונות כבדות מדי — הקטינו תמונה ונסו שוב' }, { status: 413 });
+        }
         console.error('[ads] submit failed:', e);
         return json({ ok: false, error: 'שגיאה בשליחה — נסו שוב בעוד רגע' }, { status: 502 });
     }
