@@ -24,8 +24,10 @@ npm run check     # בדיקת TypeScript + Svelte
 | `pr_official` | מדורג | label=שם, description=רקע, extra_fields={group, position, org, approved, suggested_by, official_user_id} |
 | `pr_review` | דירוג משתמש | **label=documentId של המדורג** (לסינון מדויק), description=טקסט, user_id=מדרג, extra_fields={scores, reviewer_name, anonymous, helpful_by} |
 | `pr_comment` | תגובה על דירוג | **label=documentId של המדורג** (שליפה אחת לדף), description=טקסט, user_id=מגיב, extra_fields={review_id, commenter_name, official_reply} |
+| `pr_sync` | יומן סנכרון | label=knesset_sync (רשומה אחת, upsert), extra_fields={log} — הדוח האחרון של סנכרון הכנסת+שקוף |
 
 - `official_user_id` = חשבון הדמות עצמה (נקבע באדמין) — תגובותיה מסומנות "תגובה רשמית"; **לא נשלח לדפדפן** (עלול להכיל אימייל)
+- סנכרון חיצוני (`src/lib/server/knessetSync.ts`, כפתור ב-/admin/officials): מצבת המכהנים מ-OData הכנסת (מקור אמת לתפקיד/סיעה; התאמה לפי `knesset_person_id` ואז שם) + מדד המיניסטרמטר של שקוף (wp-json, נשמר ב-extra_fields.shakuf ומוצג ב-ProfileDetails). לא דורס שדות ידניים, לא מוחק אף מדורג (עוזבים מדווחים בלבד)
 
 - דירוג אחד למשתמש למדורג — upsert ב-`upsertReview`
 - מיון הוגן: שקלול בייסיאני (IMDb, m=3) ב-`aggregate.ts`; סף פרסים = 3 דירוגים

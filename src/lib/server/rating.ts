@@ -17,6 +17,7 @@ import {
     REPORT_CATEGORY,
     REVIEW_CATEGORY,
     SURVEY_CATEGORY,
+    SYNC_CATEGORY,
     groupByKey,
     promiseStatusOf,
     proposalStatusOf,
@@ -32,6 +33,7 @@ import {
     type RatedOfficial,
     type ReportReason,
     type Review,
+    type ShakufData,
     type SurveyResults,
 } from '$lib/rating/types';
 
@@ -108,6 +110,17 @@ function parseUpdates(v: unknown): ProposalUpdate[] {
         .filter((u) => u.text);
 }
 
+/** נתוני שקוף מ-extra_fields — בלי שלושת שדות החובה הנתון לא מוצג */
+function parseShakuf(v: unknown): ShakufData | null {
+    if (!v || typeof v !== 'object') return null;
+    const s = v as Record<string, unknown>;
+    const ministry = str(s.ministry).trim();
+    const summary = str(s.summary).trim();
+    const report_url = str(s.report_url).trim();
+    if (!ministry || !summary || !report_url.startsWith('https://')) return null;
+    return { ministry, summary, report_url, source_date: str(s.source_date), synced_at: str(s.synced_at) };
+}
+
 function mapOfficial(item: StrapiItem): Official {
     const x = ef(item);
     const contacts = (x.contacts && typeof x.contacts === 'object' ? x.contacts : {}) as Record<
@@ -142,6 +155,7 @@ function mapOfficial(item: StrapiItem): Official {
             Number.isFinite(attendance) && x.attendance_score !== null && x.attendance_score !== ''
                 ? Math.min(100, Math.max(0, Math.round(attendance)))
                 : null,
+        shakuf: parseShakuf(x.shakuf),
     };
 }
 
@@ -471,6 +485,8 @@ export interface OfficialInput {
     org: string;
     bio: string;
     image?: string;
+    /** PersonID מה-OData של הכנסת — מזהה יציב להתאמה בסנכרונים הבאים */
+    knessetPersonId?: number;
 }
 
 /** יצירת מדורג — אדמין (approved) או הצעת משתמש (ממתינה לאישור) */
@@ -489,6 +505,7 @@ export async function createOfficial(
                 position: input.position,
                 org: input.org,
                 ...(input.image ? { image: input.image } : {}),
+                ...(input.knessetPersonId ? { knesset_person_id: input.knessetPersonId } : {}),
                 approved: opts.approved,
                 ...(opts.suggestedBy ? { suggested_by: opts.suggestedBy } : {}),
             },
@@ -944,6 +961,142 @@ export async function upsertSurveyVote(userId: string, importance: Scores): Prom
         });
     }
     invalidateRating();
+}
+
+// ============================================================
+// ---- סנכרון נתונים חיצוני (כנסת + שקוף) — ראו knessetSync.ts ----
+// ============================================================
+
+/** צורת מדורג מינימלית לצורכי השוואה בסנכרון — טרייה, כולל לא-מאושרים */
+export interface SyncOfficialRow {
+    id: string;
+    name: string;
+    group: GroupKey;
+    position: string;
+    org: string;
+    bio: string;
+    approved: boolean;
+    knessetPersonId: number | null;
+    shakuf: ShakufData | null;
+}
+
+export async function listOfficialsForSync(): Promise<SyncOfficialRow[]> {
+    return (await fetchByCategory(OFFICIAL_CATEGORY)).map((item) => {
+        const o = mapOfficial(item);
+        const pid = Number(ef(item).knesset_person_id);
+        return {
+            id: o.id,
+            name: o.name,
+            group: o.group,
+            position: o.position,
+            org: o.org,
+            bio: o.bio,
+            approved: o.approved,
+            knessetPersonId: Number.isInteger(pid) && pid > 0 ? pid : null,
+            shakuf: o.shakuf,
+        };
+    });
+}
+
+/** עדכון עדין מהסנכרון — נוגע רק בשדות שהמקור החיצוני אחראי עליהם */
+export interface OfficialSyncPatch {
+    position?: string;
+    org?: string;
+    bio?: string;
+    /** הצעת משתמש שהתבררה כמכהן/ת — מאושרת אוטומטית */
+    approved?: boolean;
+    knessetPersonId?: number;
+    /** null = ניקוי הנתון (המשרד כבר לא בידי המדורג) */
+    shakuf?: ShakufData | null;
+}
+
+export async function applyOfficialSync(id: string, patch: OfficialSyncPatch): Promise<void> {
+    const res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
+    const item = res.data;
+    if (!item || item.category !== OFFICIAL_CATEGORY) throw new Error('מדורג לא נמצא');
+    await strapiPut(`${ITEMS}/${item.documentId}`, {
+        data: {
+            ...(patch.bio !== undefined ? { description: patch.bio } : {}),
+            extra_fields: {
+                ...ef(item),
+                ...(patch.position !== undefined ? { position: patch.position } : {}),
+                ...(patch.org !== undefined ? { org: patch.org } : {}),
+                ...(patch.approved !== undefined ? { approved: patch.approved } : {}),
+                ...(patch.knessetPersonId !== undefined
+                    ? { knesset_person_id: patch.knessetPersonId }
+                    : {}),
+                ...(patch.shakuf !== undefined ? { shakuf: patch.shakuf } : {}),
+            },
+        },
+    });
+    // invalidateRating() נקרא פעם אחת בסוף הסנכרון, לא על כל כתיבה
+}
+
+/** יומן הסנכרון האחרון — נשמר כרשומה אחת (upsert) לתצוגה באדמין */
+export interface SyncLog {
+    ran_at: string;
+    ran_by: string;
+    roster_count: number;
+    added: string[];
+    updated: string[];
+    departed: string[];
+    shakuf_applied: string[];
+    errors: string[];
+}
+
+const SYNC_LOG_LABEL = 'knesset_sync';
+
+function parseSyncLog(v: unknown): SyncLog | null {
+    if (!v || typeof v !== 'object') return null;
+    const s = v as Record<string, unknown>;
+    if (!str(s.ran_at)) return null;
+    return {
+        ran_at: str(s.ran_at),
+        ran_by: str(s.ran_by),
+        roster_count: Number(s.roster_count) || 0,
+        added: strArr(s.added),
+        updated: strArr(s.updated),
+        departed: strArr(s.departed),
+        shakuf_applied: strArr(s.shakuf_applied),
+        errors: strArr(s.errors),
+    };
+}
+
+export async function getSyncLog(): Promise<SyncLog | null> {
+    const res = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
+        'filters[category][$eq]': SYNC_CATEGORY,
+        'filters[label][$eq]': SYNC_LOG_LABEL,
+        'filters[status1][$eq]': 'active',
+        'pagination[limit]': '1',
+    });
+    const row = res.data?.[0];
+    return row ? parseSyncLog(ef(row).log) : null;
+}
+
+export async function saveSyncLog(log: SyncLog): Promise<void> {
+    const existing = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
+        'filters[category][$eq]': SYNC_CATEGORY,
+        'filters[label][$eq]': SYNC_LOG_LABEL,
+        'filters[status1][$eq]': 'active',
+        'pagination[limit]': '1',
+    });
+    const prev = existing.data?.[0];
+    if (prev) {
+        await strapiPut(`${ITEMS}/${prev.documentId}`, { data: { extra_fields: { log } } });
+    } else {
+        await strapiPost(ITEMS, {
+            data: {
+                category: SYNC_CATEGORY,
+                label: SYNC_LOG_LABEL,
+                description: 'יומן סנכרון הנתונים החיצוני (כנסת + שקוף)',
+                extra_fields: { log },
+                icon: '🔄',
+                color: 'blue',
+                status1: 'active',
+                publishedAt: new Date().toISOString(),
+            },
+        });
+    }
 }
 
 /** תוצאות הסקר המצטברות — ממוצע חשיבות לכל מדד */

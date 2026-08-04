@@ -54,6 +54,7 @@
             official.specialties.length > 0 ||
             official.promises.length > 0 ||
             official.attendance_score !== null ||
+            official.shakuf !== null ||
             Boolean(official.platform_url || official.annual_report_url || lastResponseAt),
     );
 
@@ -131,6 +132,29 @@
                 </div>
             {/if}
 
+            <!-- מדד המיניסטרמטר של שקוף — הערכת ביצועי המשרד שבראשות המדורג -->
+            {#if official.shakuf}
+                <div class="border-t border-white/10 pt-3">
+                    <h3 class="mb-1.5 text-sm font-bold text-white">📊 מיניסטרמטר — מדד ביצועי המשרד</h3>
+                    <p class="text-sm leading-relaxed text-gray-300">
+                        <span class="font-bold text-white">{official.shakuf.ministry}:</span>
+                        {official.shakuf.summary}
+                    </p>
+                    <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <a
+                            href={official.shakuf.report_url}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                            class="shakuf-link rounded-full border border-purple-400/30 bg-purple-500/10 px-2.5 py-1 text-xs font-bold text-purple-300 transition-colors"
+                        >לדו"ח המלא באתר שקוף ↗</a>
+                        <span class="text-xs text-gray-600">
+                            מקור: "שקוף" — בדיקה מבוססת נתונים רשמיים
+                            {#if official.shakuf.source_date}· עודכן {absDate(official.shakuf.source_date)}{/if}
+                        </span>
+                    </div>
+                </div>
+            {/if}
+
             <!-- הבטחות במעקב -->
             {#if official.promises.length}
                 <div class="border-t border-white/10 pt-3">
@@ -163,5 +187,8 @@
     }
     .chip-ok:hover {
         background: rgba(16, 185, 129, 0.2);
+    }
+    .shakuf-link:hover {
+        background: rgba(168, 85, 247, 0.2);
     }
 </style>

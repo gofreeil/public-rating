@@ -12,7 +12,14 @@ import {
     createOfficial,
     updateOfficial,
     softDeleteRatingItem,
+    getSyncLog,
+    type SyncLog,
 } from '$lib/server/rating';
+import { runKnessetSync } from '$lib/server/knessetSync';
+
+// הסנכרון מדבר עם ה-OData של הכנסת + שקוף + עשרות כתיבות ל-Strapi —
+// יותר מ-10 שניות ברירת המחדל של Vercel (נקרא ע"י adapter-vercel, מיותר ב-node)
+export const config = { maxDuration: 60 };
 import {
     PROMISE_STATUSES,
     groupByKey,
@@ -52,6 +59,7 @@ export const load: PageServerLoad = async (event) => {
 
     let pending: Official[] = [];
     let officials: RatedOfficial[] = [];
+    let syncLog: SyncLog | null = null;
 
     try {
         pending = await listPendingOfficials();
@@ -63,11 +71,40 @@ export const load: PageServerLoad = async (event) => {
     } catch (e) {
         console.warn('[admin/officials] getRatedOfficials failed:', e);
     }
+    try {
+        syncLog = await getSyncLog();
+    } catch (e) {
+        console.warn('[admin/officials] getSyncLog failed:', e);
+    }
 
-    return { pending, officials };
+    return { pending, officials, syncLog };
 };
 
 export const actions: Actions = {
+    // סנכרון נתונים חיצוני: מצבת המכהנים מה-OData של הכנסת + מדד שקוף
+    sync: async (event) => {
+        const session = await event.locals.auth();
+        requireAdmin(session);
+
+        try {
+            const ranBy = session?.user?.name || session?.user?.email || 'admin';
+            const report = await runKnessetSync(ranBy);
+            if (!report.ok) {
+                return fail(502, { error: `הסנכרון נכשל: ${report.errors.join(' · ') || 'שגיאה לא ידועה'}` });
+            }
+            const parts = [
+                `${report.added.length} נוספו`,
+                `${report.updated.length} עודכנו`,
+                `${report.shakuf_applied.length} מדדי שקוף`,
+                ...(report.departed.length ? [`${report.departed.length} לא ברשימת המכהנים`] : []),
+                ...(report.errors.length ? [`${report.errors.length} שגיאות`] : []),
+            ];
+            return { success: true, message: `הסנכרון הושלם (${report.roster_count} מכהנים): ${parts.join(' · ')}` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בסנכרון: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
     // הוספת מדורג חדש (מאושר מיד)
     create: async (event) => {
         const session = await event.locals.auth();

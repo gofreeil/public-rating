@@ -15,6 +15,7 @@ export const REPORT_CATEGORY = 'pr_report';
 export const INQUIRY_CATEGORY = 'pr_inquiry';
 export const PROPOSAL_CATEGORY = 'pr_proposal';
 export const SURVEY_CATEGORY = 'pr_survey';
+export const SYNC_CATEGORY = 'pr_sync';
 
 // ---- קבוצות (לוחות הדירוג) ----
 
@@ -113,6 +114,24 @@ export interface OfficialPromise {
     status: PromiseStatus;
 }
 
+/**
+ * מדד המיניסטרמטר של "שקוף" (shakuf.co.il) — הערכת ביצועי המשרד שבראשות
+ * המדורג. נשמר סיכום קצר + קישור לדו"ח המלא, תמיד עם ייחוס למקור.
+ * מתעדכן בסנכרון האדמין (knessetSync); null = אין מדד למשרד הזה.
+ */
+export interface ShakufData {
+    /** שם המשרד כפי שמופיע בשקוף ("משרד התחבורה") */
+    ministry: string;
+    /** משפט הסיכום ("ארבעה מתוך חמישה מדדים קיבלו ציון 'נכשל'") */
+    summary: string;
+    /** קישור לדו"ח המלא באתר שקוף */
+    report_url: string;
+    /** מועד העדכון האחרון של העמוד בשקוף (ISO) */
+    source_date: string;
+    /** מועד הסנכרון לאתר (ISO) */
+    synced_at: string;
+}
+
 export interface Official {
     /** documentId ב-Strapi */
     id: string;
@@ -145,6 +164,8 @@ export interface Official {
     specialties: string[];
     /** אחוז נוכחות בדיונים/הצבעות (0-100, מנתונים רשמיים); null = אין נתון */
     attendance_score: number | null;
+    /** מדד המיניסטרמטר של שקוף למשרד שבראשות המדורג; null = אין */
+    shakuf: ShakufData | null;
 }
 
 // ---- דירוג (ביקורת של משתמש בודד) ----

@@ -1,0 +1,633 @@
+// ============================================================
+// knessetSync.ts — סנכרון נתונים חיצוני, מופעל בכפתור מ-/admin/officials
+//
+// מקור 1: ה-OData הרשמי של הכנסת (knesset.gov.il/Odata) — אותו מקור
+//   שמזין את עמוד "כל חברי הכנסת המכהנים" באתר הכנסת. עדיף על גירוד
+//   העמוד עצמו: העמוד הוא אפליקציית JS ריקה ב-HTML, וה-OData מתועד ויציב.
+// מקור 2: "מיניסטרמטר" של שקוף — מדד ביצועי שרי הממשלה. נקרא דרך
+//   ה-WP REST API (wp-json) שמחזיר JSON יציב, לא דרך ה-HTML של התבנית.
+//
+// עקרונות בטיחות:
+//   הכנסת = מקור אמת לתפקיד/סיעה/מצבת המכהנים. שדות שאדמין מילא ידנית
+//   (תמונה, פרטי קשר, הבטחות, ביו מותאם) לעולם לא נדרסים. אף מדורג לא
+//   נמחק אוטומטית — מי שאינו ברשימת המכהנים רק מדווח לאדמין.
+// ============================================================
+
+import {
+    applyOfficialSync,
+    createOfficial,
+    invalidateRating,
+    listOfficialsForSync,
+    saveSyncLog,
+    type OfficialSyncPatch,
+    type SyncLog,
+    type SyncOfficialRow,
+} from './rating.js';
+import type { ShakufData } from '$lib/rating/types';
+
+const ODATA = 'https://knesset.gov.il/Odata/ParliamentInfo.svc';
+const SHAKUF_BASE = 'https://shakuf.co.il';
+const SHAKUF_API = `${SHAKUF_BASE}/wp-json/wp/v2/data/62356`;
+const FALLBACK_KNESSET_NUM = 25;
+const FETCH_HEADERS = {
+    Accept: 'application/json',
+    'User-Agent': 'Mozilla/5.0 (compatible; rating.gofreeil.com data-sync)',
+};
+
+// PositionID → משמעות (מתוך KNS_Position)
+const POS = {
+    MK: [43, 61], // חבר/חברת הכנסת
+    FACTION_MEMBER: [54], // חבר/ת סיעה — מקור שם הסיעה
+    MINISTER: [39, 57], // שר/שרה
+    DEPUTY_MINISTER: [40, 59], // סגן/סגנית שר
+    PM: [45], // ראש הממשלה
+};
+const WANTED = new Set(Object.values(POS).flat());
+
+// FactionID → שם מוכר (כנסת 25); סיעה לא ממופה נופלת לשם הרשמי מה-OData
+const FACTION_SHORT: Record<number, string> = {
+    1095: 'ש"ס',
+    1096: 'הליכוד',
+    1097: 'הציונות הדתית',
+    1098: 'המחנה הממלכתי',
+    1099: 'רע"ם',
+    1100: 'העבודה',
+    1101: 'יהדות התורה',
+    1102: 'יש עתיד',
+    1103: 'חד"ש-תע"ל',
+    1104: 'ישראל ביתנו',
+    1105: 'הציונות הדתית',
+    1106: 'עוצמה יהודית',
+    1107: 'נעם',
+    1108: 'תקווה חדשה',
+    1110: 'המחנה הממלכתי',
+};
+
+// שם רשמי (כולל שם אמצעי) → השם המוכר לציבור — לרשומות *חדשות* בלבד;
+// רשומות קיימות מותאמות גם בהתאמת תת-קבוצת מילים (ר' matchByName)
+const NAME_OVERRIDES: Record<string, string> = {
+    'אריה מכלוף דרעי': 'אריה דרעי',
+    'בנימין גנץ': 'בני גנץ',
+    'יצחק שמעון וסרלאוף': 'יצחק וסרלאוף',
+    'יולי יואל אדלשטיין': 'יולי אדלשטיין',
+    'מירי מרים רגב': 'מירי רגב',
+    'מכלוף מיקי זוהר': 'מיקי זוהר',
+    'אורית מלכה סטרוק': 'אורית סטרוק',
+    'אביחי אברהם בוארון': 'אביחי בוארון',
+    'חוה אתי עטייה': 'אתי עטייה',
+    'קטי קטרין שטרית': 'קטי שטרית',
+    'מיכל מרים וולדיגר': 'מיכל וולדיגר',
+    'ששון ששי גואטה': 'ששי גואטה',
+    'צבי ידידיה סוכות': 'צבי סוכות',
+    'מיכאל מרדכי ביטון': 'מיכאל ביטון',
+    'שרן מרים השכל': 'שרן השכל',
+    'יצחק גולדקנופ': 'יצחק גולדקנופף',
+    'חנוך דב מלביצקי': 'חנוך מלביצקי',
+};
+
+// ---- כלי עזר ----
+
+/** השוואת שמות סלחנית: מקפים→רווח, בלי גרשיים/גרש, כתיב ביטחון/בטחון אחיד */
+function norm(s: string | null | undefined): string {
+    return String(s ?? '')
+        .replace(/[־–—-]/g, ' ')
+        .replace(/["'׳״`]/g, '')
+        .replace(/ביטחון/g, 'בטחון')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/** ריצת מיפוי עם תקרת מקביליות — כדי לא להפגיז את Strapi/OData */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+    const out: R[] = new Array(items.length);
+    let next = 0;
+    const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+        while (next < items.length) {
+            const i = next++;
+            out[i] = await fn(items[i]);
+        }
+    });
+    await Promise.all(workers);
+    return out;
+}
+
+/** fetch עם timeout ושני ניסיונות — מקורות ממשלתיים אוהבים להתעטש */
+async function fetchJson<T>(url: string): Promise<T> {
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+            const res = await fetch(url, {
+                headers: FETCH_HEADERS,
+                signal: AbortSignal.timeout(20_000),
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return (await res.json()) as T;
+        } catch (e) {
+            lastErr = e;
+        }
+    }
+    throw new Error(`${url.split('?')[0]} → ${lastErr instanceof Error ? lastErr.message : lastErr}`);
+}
+
+// ============================================================
+// ---- מקור 1: מצבת המכהנים מה-OData של הכנסת ----
+// ============================================================
+
+interface P2PRow {
+    PersonID: number;
+    PositionID: number;
+    StartDate: string | null;
+    GovMinistryName: string | null;
+    DutyDesc: string | null;
+    FactionID: number | null;
+    FactionName: string | null;
+}
+
+interface PersonRow {
+    PersonID: number;
+    FirstName: string | null;
+    LastName: string | null;
+    GenderDesc: string | null;
+}
+
+export interface RosterEntry {
+    personId: number;
+    name: string;
+    position: string;
+    org: string;
+    /** ביו אוטומטי — נכתב רק כשאין ביו ידני */
+    bio: string;
+    /** תיקי שר (לא סגנים) — למיפוי מדד שקוף למשרד */
+    ministries: { name: string; extra: boolean }[];
+}
+
+async function odataAll<T>(entity: string, filter: string): Promise<T[]> {
+    const PAGE = 100; // תקרת העמוד של ה-OData של הכנסת
+    const rows: T[] = [];
+    for (let skip = 0; ; skip += PAGE) {
+        const json = await fetchJson<{ value?: T[] }>(
+            `${ODATA}/${entity}?$filter=${encodeURIComponent(filter)}&$top=${PAGE}&$skip=${skip}&$format=json`,
+        );
+        const page = json.value ?? [];
+        rows.push(...page);
+        if (page.length < PAGE) return rows;
+    }
+}
+
+/** "משרד החינוך" → "שר החינוך" · "המשרד לביטחון לאומי" → "השר לביטחון לאומי" */
+function ministerTitle(ministry: string, female: boolean): string {
+    const base = female ? 'שרת' : 'שר';
+    const m = ministry.trim();
+    if (!m) return female ? 'שרה' : 'שר';
+    if (m === 'משרד ראש הממשלה') return `${base} במשרד ראש הממשלה`;
+    if (m.startsWith('המשרד ל')) return `${female ? 'השרה' : 'השר'} ל${m.slice('המשרד ל'.length)}`;
+    if (m.startsWith('משרד ')) return `${base} ${m.slice('משרד '.length)}`;
+    return `${base} — ${m}`;
+}
+
+function deputyTitle(ministry: string, female: boolean): string {
+    const base = female ? 'סגנית שר' : 'סגן שר';
+    const m = ministry.trim().replace(/^המשרד/, 'משרד');
+    return m ? `${base} ב${m}` : base;
+}
+
+function autoBio(position: string, org: string): string {
+    return org ? `${position} מטעם ${org}` : position;
+}
+
+/** שם סיעה תצוגתי: המיפוי המקוצר, ואם אין — השם הרשמי בלי "בראשות ..." */
+function factionDisplay(factionId: number | null, factionName: string | null): string {
+    if (factionId && FACTION_SHORT[factionId]) return FACTION_SHORT[factionId];
+    return String(factionName ?? '').replace(/ בראשות .*$/, '').trim();
+}
+
+export async function fetchKnessetRoster(): Promise<RosterEntry[]> {
+    // מספר הכנסת הנוכחית — עמיד לחילופי כנסות בלי שינוי קוד
+    let knessetNum = FALLBACK_KNESSET_NUM;
+    try {
+        const cur = await fetchJson<{ value?: { KnessetNum: number }[] }>(
+            `${ODATA}/KNS_Knesset?$filter=${encodeURIComponent('IsCurrent eq true')}&$format=json`,
+        );
+        if (cur.value?.[0]?.KnessetNum) knessetNum = cur.value[0].KnessetNum;
+    } catch {
+        // נופלים לברירת המחדל — לא מפילים סנכרון שלם על שאילתת עזר
+    }
+
+    const p2p = await odataAll<P2PRow>(
+        'KNS_PersonToPosition',
+        `KnessetNum eq ${knessetNum} and IsCurrent eq true`,
+    );
+    const relevant = p2p.filter((r) => WANTED.has(r.PositionID));
+
+    interface Agg {
+        mk: boolean;
+        pm: boolean;
+        ministries: { duty: string; ministry: string; extra: boolean }[];
+        deputies: { duty: string; ministry: string }[];
+        factionId: number | null;
+        factionName: string | null;
+        factionStart: string;
+    }
+    const people = new Map<number, Agg>();
+    for (const r of relevant) {
+        const p =
+            people.get(r.PersonID) ??
+            ({ mk: false, pm: false, ministries: [], deputies: [], factionId: null, factionName: null, factionStart: '' } as Agg);
+        const duty = (r.DutyDesc ?? '').trim();
+        const ministry = (r.GovMinistryName ?? '').trim();
+        if (POS.MK.includes(r.PositionID)) p.mk = true;
+        if (POS.PM.includes(r.PositionID)) p.pm = true;
+        if (POS.MINISTER.includes(r.PositionID)) {
+            p.ministries.push({ duty, ministry, extra: duty.includes('נוסף') });
+        }
+        if (POS.DEPUTY_MINISTER.includes(r.PositionID)) p.deputies.push({ duty, ministry });
+        if (POS.FACTION_MEMBER.includes(r.PositionID) && (r.StartDate ?? '') >= p.factionStart) {
+            p.factionId = r.FactionID;
+            p.factionName = r.FactionName;
+            p.factionStart = r.StartDate ?? '';
+        }
+        people.set(r.PersonID, p);
+    }
+
+    // שרים "נורווגים" בלי רשומת סיעה נוכחית — שליפת הסיעה האחרונה שלהם במרוכז
+    const noFaction = [...people.entries()].filter(([, p]) => !p.factionId).map(([pid]) => pid);
+    for (let i = 0; i < noFaction.length; i += 15) {
+        const batch = noFaction.slice(i, i + 15);
+        const ors = batch.map((id) => `PersonID eq ${id}`).join(' or ');
+        const rows = await odataAll<P2PRow>(
+            'KNS_PersonToPosition',
+            `KnessetNum eq ${knessetNum} and PositionID eq 54 and (${ors})`,
+        );
+        for (const pid of batch) {
+            const latest = rows
+                .filter((r) => r.PersonID === pid)
+                .sort((a, b) => String(b.StartDate).localeCompare(String(a.StartDate)))[0];
+            const p = people.get(pid);
+            if (latest && p) {
+                p.factionId = latest.FactionID;
+                p.factionName = latest.FactionName;
+            }
+        }
+    }
+
+    // שמות ומגדר — באצוות של 20, במקביל
+    const ids = [...people.keys()];
+    const batches: number[][] = [];
+    for (let i = 0; i < ids.length; i += 20) batches.push(ids.slice(i, i + 20));
+    const persons = new Map<number, PersonRow>();
+    const results = await mapLimit(batches, 4, async (batch) => {
+        const filter = batch.map((id) => `PersonID eq ${id}`).join(' or ');
+        const json = await fetchJson<{ value?: PersonRow[] }>(
+            `${ODATA}/KNS_Person?$filter=${encodeURIComponent(filter)}&$format=json`,
+        );
+        return json.value ?? [];
+    });
+    for (const row of results.flat()) persons.set(row.PersonID, row);
+
+    const entries: RosterEntry[] = [];
+    for (const [pid, p] of people) {
+        const person = persons.get(pid);
+        if (!person) continue;
+        const rawName = `${person.FirstName ?? ''} ${person.LastName ?? ''}`.replace(/\s+/g, ' ').trim();
+        if (!rawName) continue;
+        const name = NAME_OVERRIDES[rawName] ?? rawName;
+        const female = person.GenderDesc === 'נקבה';
+        const org = factionDisplay(p.factionId, p.factionName);
+
+        // תיק "אמיתי" עדיף על "שר נוסף במשרד X" כשיש כמה תיקים
+        const pick = <T extends { duty: string }>(list: T[]) =>
+            list.find((x) => x.duty && !x.duty.includes('נוסף')) ?? list[0];
+
+        let position: string;
+        if (p.pm) position = 'ראש הממשלה';
+        else if (p.ministries.length) {
+            const m = pick(p.ministries);
+            position = m.duty || ministerTitle(m.ministry, female);
+        } else if (p.deputies.length) {
+            const m = pick(p.deputies);
+            position = m.duty || deputyTitle(m.ministry, female);
+        } else position = female ? 'חברת כנסת' : 'חבר כנסת';
+
+        entries.push({
+            personId: pid,
+            name,
+            position,
+            org,
+            bio: autoBio(position, org),
+            ministries: p.ministries
+                .filter((m) => m.ministry)
+                .map((m) => ({ name: m.ministry, extra: m.extra })),
+        });
+    }
+    return entries;
+}
+
+// ============================================================
+// ---- מקור 2: המיניסטרמטר של שקוף ----
+// ============================================================
+
+export interface ShakufEntry {
+    ministry: string;
+    summary: string;
+    reportUrl: string;
+    sourceDate: string;
+}
+
+/** &quot; ‎&#8221; וחבריהם → התו עצמו (רק מה שמופיע בפועל בתוכן של שקוף) */
+function decodeEntities(s: string): string {
+    return s
+        .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&apos;/g, "'");
+}
+
+function stripTags(s: string): string {
+    return decodeEntities(s.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * חילוץ בלוקי המשרדים מתוכן העמוד: כל <h2> הוא שם משרד; משפט הסיכום הוא
+ * ה-<strong> הראשון אחריו שמכיל "מדד"/"ציון"; הקישור הוא ה-/data/N הראשון
+ * אחריו — הכל לפני ה-<h2> הבא. משרד "בקרוב" (בלי דו"ח) מדולג מעצמו.
+ */
+export function parseShakufContent(html: string, sourceDate: string): ShakufEntry[] {
+    interface Token { pos: number; kind: 'h2' | 'sum' | 'link'; text: string }
+    const tokens: Token[] = [];
+    for (const m of html.matchAll(/<h2[^>]*>([\s\S]*?)<\/h2>/g)) {
+        tokens.push({ pos: m.index ?? 0, kind: 'h2', text: stripTags(m[1]) });
+    }
+    for (const m of html.matchAll(/<strong[^>]*>([\s\S]*?)<\/strong>/g)) {
+        const text = stripTags(m[1]);
+        if (/מדד|ציון/.test(text)) tokens.push({ pos: m.index ?? 0, kind: 'sum', text });
+    }
+    for (const m of html.matchAll(/href="([^"]*\/data\/\d+)"/g)) {
+        tokens.push({ pos: m.index ?? 0, kind: 'link', text: m[1] });
+    }
+    tokens.sort((a, b) => a.pos - b.pos);
+
+    const entries: ShakufEntry[] = [];
+    for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        if (t.kind !== 'h2' || !t.text.includes('משרד')) continue;
+        let summary = '';
+        let reportUrl = '';
+        for (let j = i + 1; j < tokens.length && tokens[j].kind !== 'h2'; j++) {
+            if (tokens[j].kind === 'sum' && !summary) summary = tokens[j].text;
+            if (tokens[j].kind === 'link' && !reportUrl) {
+                reportUrl = new URL(tokens[j].text, SHAKUF_BASE).toString();
+            }
+        }
+        if (!summary || !reportUrl) continue; // "בקרוב" או בלוק שאינו משרד
+        if (entries.some((e) => e.ministry === t.text)) continue; // כפילות בעמוד
+        entries.push({ ministry: t.text, summary, reportUrl, sourceDate });
+    }
+    return entries;
+}
+
+export async function fetchShakufMinistermeter(): Promise<ShakufEntry[]> {
+    const json = await fetchJson<{ modified?: string; content?: { rendered?: string } }>(SHAKUF_API);
+    const html = json.content?.rendered ?? '';
+    if (!html) throw new Error('שקוף: תוכן העמוד ריק');
+    const entries = parseShakufContent(html, json.modified ?? '');
+    if (!entries.length) throw new Error('שקוף: לא זוהו בלוקי משרדים — ייתכן שמבנה העמוד השתנה');
+    return entries;
+}
+
+/** "משרד התחבורה" → "תחבורה" · "המשרד לביטחון לאומי" → "בטחון לאומי" (אחרי norm) */
+function ministryKeyword(title: string): string {
+    const n = norm(title);
+    for (const prefix of ['המשרד ל', 'משרד ה', 'משרד ']) {
+        if (n.startsWith(prefix)) return n.slice(prefix.length).trim();
+    }
+    return n;
+}
+
+// ============================================================
+// ---- מנוע הסנכרון ----
+// ============================================================
+
+export interface SyncReport extends SyncLog {
+    ok: boolean;
+}
+
+/** התאמת שמות: שוויון מלא, או תת-קבוצת מילים (שם אמצעי) — רק כשאין דו-משמעות */
+function matchByName(rosterName: string, candidates: SyncOfficialRow[]): SyncOfficialRow | null {
+    const target = norm(rosterName);
+    const exact = candidates.filter((c) => norm(c.name) === target);
+    if (exact.length === 1) return exact[0];
+    if (exact.length > 1) return null;
+
+    const tSet = new Set(target.split(' '));
+    const subset = candidates.filter((c) => {
+        const cSet = new Set(norm(c.name).split(' '));
+        if (cSet.size < 2 || tSet.size < 2) return false;
+        const [small, big] = cSet.size <= tSet.size ? [cSet, tSet] : [tSet, cSet];
+        return [...small].every((w) => big.has(w));
+    });
+    return subset.length === 1 ? subset[0] : null;
+}
+
+export async function runKnessetSync(ranBy: string): Promise<SyncReport> {
+    const report: SyncReport = {
+        ok: false,
+        ran_at: new Date().toISOString(),
+        ran_by: ranBy,
+        roster_count: 0,
+        added: [],
+        updated: [],
+        departed: [],
+        shakuf_applied: [],
+        errors: [],
+    };
+
+    // שלושת המקורות במקביל; בלי מצבת הכנסת או רשימת המדורגים אין מה לסנכרן,
+    // כשל בשקוף בלבד → ממשיכים בלעדיו ומדווחים
+    const [rosterRes, officialsRes, shakufRes] = await Promise.allSettled([
+        fetchKnessetRoster(),
+        listOfficialsForSync(),
+        fetchShakufMinistermeter(),
+    ]);
+    if (rosterRes.status === 'rejected') {
+        report.errors.push(`שליפת הכנסת נכשלה: ${rosterRes.reason}`);
+        return report;
+    }
+    if (officialsRes.status === 'rejected') {
+        report.errors.push(`שליפת המדורגים נכשלה: ${officialsRes.reason}`);
+        return report;
+    }
+    const roster = rosterRes.value;
+    const officials = officialsRes.value;
+    let shakuf: ShakufEntry[] | null = null;
+    if (shakufRes.status === 'fulfilled') shakuf = shakufRes.value;
+    else report.errors.push(`שליפת שקוף נכשלה (הרוסטר סונכרן בלי המדד): ${shakufRes.reason}`);
+
+    report.roster_count = roster.length;
+    if (roster.length < 100) {
+        // כנסת מלאה כוללת 120 ח"כים + שרים; פחות מזה = תשובה חלקית מה-OData.
+        // ממשיכים לעדכן את מי שכן חזר, אבל לא מדווחים "עוזבים" על סמך רשימה קטומה.
+        report.errors.push(`ה-OData החזיר ${roster.length} מכהנים בלבד — דילוג על איתור עוזבים`);
+    }
+
+    // ---- התאמה: personId קודם, אחר כך שם ----
+    const byPersonId = new Map<number, SyncOfficialRow>();
+    for (const o of officials) if (o.knessetPersonId) byPersonId.set(o.knessetPersonId, o);
+
+    const matchedOfficialIds = new Set<string>();
+    const officialIdByPersonId = new Map<number, string>(); // כולל חדשים — למיפוי שקוף
+    const toCreate: RosterEntry[] = [];
+    const toPatch: { row: SyncOfficialRow; patch: OfficialSyncPatch; entry: RosterEntry }[] = [];
+
+    for (const entry of roster) {
+        const existing =
+            byPersonId.get(entry.personId) ??
+            matchByName(entry.name, officials.filter((o) => !matchedOfficialIds.has(o.id)));
+        if (!existing) {
+            toCreate.push(entry);
+            continue;
+        }
+        matchedOfficialIds.add(existing.id);
+        officialIdByPersonId.set(entry.personId, existing.id);
+
+        const patch: OfficialSyncPatch = {};
+        if (existing.position !== entry.position) patch.position = entry.position;
+        if (existing.org !== entry.org) patch.org = entry.org;
+        // ביו נדרס רק אם הוא ריק או אוטומטי (התבנית מהערכים הישנים) — ביו ידני נשמר
+        const oldAuto = autoBio(existing.position, existing.org);
+        if ((!existing.bio || existing.bio === oldAuto) && existing.bio !== entry.bio) {
+            patch.bio = entry.bio;
+        }
+        if (existing.knessetPersonId !== entry.personId) patch.knessetPersonId = entry.personId;
+        if (!existing.approved) patch.approved = true; // הצעת משתמש שהתבררה כמכהן/ת
+        if (Object.keys(patch).length) toPatch.push({ row: existing, patch, entry });
+    }
+
+    // ---- מיפוי שקוף: משרד → השר/ה המכהן/ה → רשומת המדורג ----
+    const shakufPatches = new Map<string, ShakufData>(); // officialId → נתון
+    if (shakuf) {
+        const now = new Date().toISOString();
+        for (const s of shakuf) {
+            const keyword = ministryKeyword(s.ministry);
+            if (!keyword) continue;
+            const holders = roster.filter((e) =>
+                e.ministries.some((m) => norm(m.name).includes(keyword)),
+            );
+            // שר בתיק מלא עדיף על "שר נוסף במשרד"
+            const holder =
+                holders.find((e) => e.ministries.some((m) => norm(m.name).includes(keyword) && !m.extra)) ??
+                holders[0];
+            if (!holder) {
+                report.errors.push(`שקוף: לא נמצא שר מכהן ל"${s.ministry}"`);
+                continue;
+            }
+            const officialId = officialIdByPersonId.get(holder.personId);
+            const data: ShakufData = {
+                ministry: s.ministry,
+                summary: s.summary,
+                report_url: s.reportUrl,
+                source_date: s.sourceDate,
+                synced_at: now,
+            };
+            if (officialId) {
+                shakufPatches.set(officialId, data);
+                report.shakuf_applied.push(`${holder.name} — ${s.ministry}`);
+            } else {
+                // השר חדש — נוצר מיד; הנתון יחובר אחרי היצירה
+                const idx = toCreate.findIndex((e) => e.personId === holder.personId);
+                if (idx >= 0) {
+                    shakufPatches.set(`create:${holder.personId}`, data);
+                    report.shakuf_applied.push(`${holder.name} — ${s.ministry}`);
+                }
+            }
+        }
+    }
+
+    // ---- כתיבות: יצירות חדשות ----
+    await mapLimit(toCreate, 4, async (entry) => {
+        try {
+            const id = await createOfficial(
+                {
+                    name: entry.name,
+                    group: 'knesset',
+                    position: entry.position,
+                    org: entry.org,
+                    bio: entry.bio,
+                    knessetPersonId: entry.personId,
+                },
+                { approved: true },
+            );
+            officialIdByPersonId.set(entry.personId, id);
+            report.added.push(entry.name);
+            const pendingShakuf = shakufPatches.get(`create:${entry.personId}`);
+            if (pendingShakuf) {
+                shakufPatches.delete(`create:${entry.personId}`);
+                shakufPatches.set(id, pendingShakuf);
+            }
+        } catch (e) {
+            report.errors.push(`הוספת ${entry.name}: ${e instanceof Error ? e.message : e}`);
+        }
+    });
+
+    // ---- כתיבות: עדכוני מכהנים (תפקיד/סיעה/ביו אוטומטי/מזהה) ----
+    await mapLimit(toPatch, 4, async ({ row, patch, entry }) => {
+        try {
+            await applyOfficialSync(row.id, patch);
+            report.updated.push(entry.name);
+        } catch (e) {
+            report.errors.push(`עדכון ${entry.name}: ${e instanceof Error ? e.message : e}`);
+        }
+    });
+
+    // ---- כתיבות: נתוני שקוף (רק כשהשתנו) + ניקוי ממי שכבר לא שר בתיק מוערך ----
+    if (shakuf) {
+        const writes: { id: string; data: ShakufData | null; name: string }[] = [];
+        for (const [id, data] of shakufPatches) {
+            if (id.startsWith('create:')) continue; // יצירה שנכשלה — אין למי לחבר
+            const current = officials.find((o) => o.id === id)?.shakuf ?? null;
+            const same =
+                current &&
+                current.ministry === data.ministry &&
+                current.summary === data.summary &&
+                current.report_url === data.report_url;
+            if (!same) writes.push({ id, data, name: '' });
+        }
+        for (const o of officials) {
+            if (o.shakuf && !shakufPatches.has(o.id)) writes.push({ id: o.id, data: null, name: o.name });
+        }
+        await mapLimit(writes, 4, async (w) => {
+            try {
+                await applyOfficialSync(w.id, { shakuf: w.data });
+            } catch (e) {
+                report.errors.push(`נתון שקוף (${w.name || w.id}): ${e instanceof Error ? e.message : e}`);
+            }
+        });
+    }
+
+    // ---- עוזבים: בקבוצת הכנסת, מאושרים, ולא הותאמו לאף מכהן — דיווח בלבד ----
+    if (roster.length >= 100) {
+        for (const o of officials) {
+            if (o.group === 'knesset' && o.approved && !matchedOfficialIds.has(o.id)) {
+                report.departed.push(o.name);
+            }
+        }
+    }
+
+    report.ok = true;
+    invalidateRating();
+    try {
+        await saveSyncLog({
+            ran_at: report.ran_at,
+            ran_by: report.ran_by,
+            roster_count: report.roster_count,
+            added: report.added,
+            updated: report.updated,
+            departed: report.departed,
+            shakuf_applied: report.shakuf_applied,
+            errors: report.errors,
+        });
+    } catch (e) {
+        report.errors.push(`שמירת יומן הסנכרון נכשלה: ${e instanceof Error ? e.message : e}`);
+    }
+    return report;
+}

@@ -4,9 +4,14 @@
 	import { GROUPS, PROMISE_STATUSES, groupByKey, type GroupKey, type RatedOfficial } from '$lib/rating/types';
 	import { heMatches } from '$lib/rating/heSearch';
 	import { fmtScore } from '$lib/rating/aggregate';
+	import { absDate } from '$lib/rating/time';
 	import Avatar from '$lib/components/rating/Avatar.svelte';
 
 	let { data, form } = $props();
+
+	// סנכרון חיצוני — ריצה ארוכה (עד דקה), לכן מצב "מסנכרן..." על הכפתור
+	let syncing = $state(false);
+	let showSyncDetails = $state(false);
 
 	const inputCls =
 		'bg-[#1e293b] border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors';
@@ -104,6 +109,82 @@
 				<p class="text-red-400 text-sm font-medium">{form.error}</p>
 			</div>
 		{/if}
+
+		<!-- 🔄 סנכרון נתונים חיצוני (כנסת + שקוף) -->
+		<section class="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
+			<div class="flex flex-wrap items-center gap-3">
+				<div class="flex-1 min-w-[240px]">
+					<h2 class="font-bold">🔄 סנכרון נתונים חיצוני</h2>
+					<p class="text-xs text-gray-400 mt-1 leading-relaxed">
+						מצבת חברי הכנסת והשרים המכהנים מה-OData הרשמי של הכנסת + מדד המיניסטרמטר של
+						"שקוף". מוסיף חדשים, מעדכן תפקיד/סיעה ומדווח על מי שכבר לא מכהן — בלי לדרוס
+						שדות שמולאו ידנית ובלי למחוק אף אחד.
+					</p>
+					{#if data.syncLog}
+						<p class="text-xs text-gray-500 mt-1.5">
+							סנכרון אחרון: {absDate(data.syncLog.ran_at)}
+							{#if data.syncLog.ran_by}· ע"י {data.syncLog.ran_by}{/if}
+							· {data.syncLog.roster_count} מכהנים
+						</p>
+					{/if}
+				</div>
+				<form
+					method="POST"
+					action="?/sync"
+					use:enhance={() => {
+						syncing = true;
+						return async ({ update }) => {
+							syncing = false;
+							showSyncDetails = true;
+							await update();
+						};
+					}}
+				>
+					<button
+						type="submit"
+						disabled={syncing}
+						class="px-5 py-2 text-sm font-bold rounded-xl bg-gradient-to-l from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+					>
+						{syncing ? '⏳ מסנכרן... (עד דקה)' : '🔄 סנכרון עכשיו'}
+					</button>
+				</form>
+			</div>
+
+			{#if data.syncLog && (data.syncLog.added.length || data.syncLog.updated.length || data.syncLog.departed.length || data.syncLog.shakuf_applied.length || data.syncLog.errors.length)}
+				<button
+					type="button"
+					onclick={() => (showSyncDetails = !showSyncDetails)}
+					class="mt-3 text-xs text-blue-400 hover:text-blue-300 cursor-pointer"
+				>
+					{showSyncDetails ? '▲ הסתרת פירוט' : '▼ פירוט הסנכרון האחרון'}
+				</button>
+				{#if showSyncDetails}
+					<div class="mt-2 flex flex-col gap-1.5 text-xs leading-relaxed border-t border-white/10 pt-3">
+						{#if data.syncLog.added.length}
+							<p><span class="font-bold text-green-400">✚ נוספו ({data.syncLog.added.length}):</span>
+								<span class="text-gray-300">{data.syncLog.added.join(', ')}</span></p>
+						{/if}
+						{#if data.syncLog.updated.length}
+							<p><span class="font-bold text-blue-400">✎ עודכנו ({data.syncLog.updated.length}):</span>
+								<span class="text-gray-300">{data.syncLog.updated.join(', ')}</span></p>
+						{/if}
+						{#if data.syncLog.shakuf_applied.length}
+							<p><span class="font-bold text-purple-400">📊 מדד שקוף ({data.syncLog.shakuf_applied.length}):</span>
+								<span class="text-gray-300">{data.syncLog.shakuf_applied.join(' · ')}</span></p>
+						{/if}
+						{#if data.syncLog.departed.length}
+							<p><span class="font-bold text-amber-400">🚪 לא ברשימת המכהנים ({data.syncLog.departed.length}):</span>
+								<span class="text-gray-300">{data.syncLog.departed.join(', ')}</span>
+								<span class="text-gray-500">— לא הוסרו; אם פרשו, הסירו ידנית מהרשימה למטה</span></p>
+						{/if}
+						{#if data.syncLog.errors.length}
+							<p><span class="font-bold text-red-400">⚠ שגיאות ({data.syncLog.errors.length}):</span>
+								<span class="text-gray-300">{data.syncLog.errors.join(' · ')}</span></p>
+						{/if}
+					</div>
+				{/if}
+			{/if}
+		</section>
 
 		<!-- א) הוספת מדורג -->
 		<section class="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
