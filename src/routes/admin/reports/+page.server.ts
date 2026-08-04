@@ -1,17 +1,17 @@
 // ============================================================
-// /admin/reports - תור טיפול בדיווחי תוכן (סופר-אדמין בלבד)
+// /admin/reports - תור טיפול בדיווחי תוכן (צוות הניהול — אדמין ומעלה)
 // הסרת התוכן המדווח או סימון הדיווח כטופל; הדיווח נשמר לתיעוד.
 // ============================================================
 
 import { fail, redirect } from '@sveltejs/kit';
-import { requireSuperAdmin } from '$lib/server/auth';
+import { isAdmin, requireAdmin } from '$lib/server/auth';
 import { listReports, markReportHandled, softDeleteRatingItem } from '$lib/server/rating';
 import type { ContentReport } from '$lib/rating/types';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
     const session = await event.locals.auth();
-    if (session?.user?.role !== 'super_admin') redirect(303, '/');
+    if (!isAdmin(session)) redirect(303, '/');
 
     let reports: ContentReport[] = [];
     try {
@@ -33,7 +33,7 @@ export const actions: Actions = {
     // הסרת התוכן המדווח + סגירת הדיווח
     remove_content: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const reportId = String(fd.get('report_id') ?? '');
@@ -52,7 +52,7 @@ export const actions: Actions = {
     // הדיווח נבדק ונדחה — התוכן נשאר
     dismiss: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const reportId = String(fd.get('report_id') ?? '');

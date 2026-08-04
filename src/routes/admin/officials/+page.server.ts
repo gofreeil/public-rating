@@ -1,11 +1,11 @@
 // ============================================================
-// /admin/officials - ניהול מדורגים (סופר-אדמין בלבד)
+// /admin/officials - ניהול מדורגים (צוות הניהול — אדמין ומעלה)
 // הוספה ידנית, אישור/דחיית הצעות משתמשים, עריכה והסרה
 // ============================================================
 
 import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { requireSuperAdmin } from '$lib/server/auth';
+import { isAdmin, requireAdmin } from '$lib/server/auth';
 import {
     listPendingOfficials,
     getRatedOfficials,
@@ -48,7 +48,7 @@ function parsePromiseLines(raw: string): OfficialPromise[] {
 
 export const load: PageServerLoad = async (event) => {
     const session = await event.locals.auth();
-    if (session?.user?.role !== 'super_admin') redirect(303, '/');
+    if (!isAdmin(session)) redirect(303, '/');
 
     let pending: Official[] = [];
     let officials: RatedOfficial[] = [];
@@ -71,7 +71,7 @@ export const actions: Actions = {
     // הוספת מדורג חדש (מאושר מיד)
     create: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const name = String(fd.get('name') ?? '').trim();
@@ -95,7 +95,7 @@ export const actions: Actions = {
     // אישור הצעת משתמש
     approve: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const id = String(fd.get('id') ?? '');
@@ -112,7 +112,7 @@ export const actions: Actions = {
     // דחיית הצעת משתמש (הסרה רכה)
     reject: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const id = String(fd.get('id') ?? '');
@@ -129,7 +129,7 @@ export const actions: Actions = {
     // עריכת פרטי מדורג קיים (כולל שדות הפרופיל המלא)
     update: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const id = String(fd.get('id') ?? '');
@@ -192,7 +192,7 @@ export const actions: Actions = {
     // הסרת מדורג (הסרה רכה)
     remove: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const id = String(fd.get('id') ?? '');

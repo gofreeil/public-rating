@@ -4,20 +4,20 @@
 
 	let { data, form } = $props();
 
-	let activeTab = $state<'users' | 'items'>('users');
+	// רשימת המשתמשים נשלחת רק למנהל הראשי — אדמין רגיל מקבל את טאב הפרסומים
+	// svelte-ignore state_referenced_locally
+	let activeTab = $state<'users' | 'items'>(data.superAdmin ? 'users' : 'items');
 	let searchQuery = $state('');
-	let roleFilter = $state<'all' | 'user' | 'neighborhood_admin' | 'super_admin'>('all');
+	let roleFilter = $state<'all' | 'user' | 'rating_admin' | 'super_admin'>('all');
 
 	// מינוי אדמין - מודל
 	let showRoleModal = $state(false);
-	let roleModalUser = $state<{ id: string; name: string | null; role: string; neighborhood: string } | null>(null);
+	let roleModalUser = $state<{ id: string; name: string | null; role: string } | null>(null);
 	let newRole = $state('user');
-	let newNeighborhood = $state('');
 
 	function openRoleModal(user: typeof roleModalUser) {
 		roleModalUser = user;
 		newRole = user?.role ?? 'user';
-		newNeighborhood = user?.neighborhood ?? '';
 		showRoleModal = true;
 	}
 
@@ -53,7 +53,7 @@
 	function roleBadge(role: string) {
 		switch (role) {
 			case 'super_admin': return { text: 'מנהל ראשי', color: 'bg-red-500/20 text-red-400 border-red-500/30' };
-			case 'neighborhood_admin': return { text: 'אדמין שכונתי', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
+			case 'rating_admin': return { text: 'אדמין האתר', color: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
 			default: return { text: 'משתמש', color: 'bg-gray-500/20 text-gray-400 border-gray-500/30' };
 		}
 	}
@@ -120,16 +120,18 @@
 			</div>
 		{/if}
 
-		<!-- טאבים -->
+		<!-- טאבים — ניהול משתמשים למנהל הראשי בלבד -->
 		<div class="flex gap-2 mb-6">
-			<button
-				onclick={() => (activeTab = 'users')}
-				class="px-5 py-2.5 rounded-xl font-bold transition-all cursor-pointer {activeTab === 'users'
-					? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-					: 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'}"
-			>
-				👥 משתמשים ({data.users?.length ?? 0})
-			</button>
+			{#if data.superAdmin}
+				<button
+					onclick={() => (activeTab = 'users')}
+					class="px-5 py-2.5 rounded-xl font-bold transition-all cursor-pointer {activeTab === 'users'
+						? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
+						: 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'}"
+				>
+					👥 משתמשים ({data.users?.length ?? 0})
+				</button>
+			{/if}
 			<button
 				onclick={() => (activeTab = 'items')}
 				class="px-5 py-2.5 rounded-xl font-bold transition-all cursor-pointer {activeTab === 'items'
@@ -157,14 +159,14 @@
 				>
 					<option value="all">כל התפקידים</option>
 					<option value="user">משתמשים</option>
-					<option value="neighborhood_admin">אדמינים שכונתיים</option>
+					<option value="rating_admin">אדמיני האתר</option>
 					<option value="super_admin">מנהלים ראשיים</option>
 				</select>
 			{/if}
 		</div>
 
-		<!-- טאב משתמשים -->
-		{#if activeTab === 'users'}
+		<!-- טאב משתמשים — למנהל הראשי בלבד -->
+		{#if data.superAdmin && activeTab === 'users'}
 			<div class="space-y-3">
 				{#each filteredUsers() as user (user.id)}
 					{@const badge = roleBadge(user.role)}
@@ -201,15 +203,17 @@
 
 						<!-- פעולות -->
 						<div class="flex gap-2 flex-shrink-0">
-							<!-- שינוי תפקיד -->
-							<button
-								onclick={() => openRoleModal({ id: user.id, name: user.name, role: user.role, neighborhood: user.neighborhood })}
-								class="px-3 py-1.5 text-xs rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/30
-								       hover:bg-purple-500/20 transition-all cursor-pointer"
-								title="שנה תפקיד"
-							>
-								🛡️ תפקיד
-							</button>
+							<!-- שינוי תפקיד — לא על עצמך (נעילה-עצמית בטעות) -->
+							{#if user.id !== data.currentUserId}
+								<button
+									onclick={() => openRoleModal({ id: user.id, name: user.name, role: user.role })}
+									class="px-3 py-1.5 text-xs rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/30
+									       hover:bg-purple-500/20 transition-all cursor-pointer"
+									title="שנה תפקיד"
+								>
+									🛡️ תפקיד
+								</button>
+							{/if}
 
 							<!-- חסימה/ביטול חסימה -->
 							{#if user.id !== data.currentUserId}
@@ -328,21 +332,14 @@
 					       focus:outline-none focus:border-purple-500 transition-colors cursor-pointer"
 				>
 					<option value="user">משתמש רגיל</option>
-					<option value="neighborhood_admin">אדמין שכונתי</option>
+					<option value="rating_admin">אדמין האתר</option>
 					<option value="super_admin">מנהל ראשי</option>
 				</select>
 
-				{#if newRole === 'neighborhood_admin'}
-					<label class="block text-sm font-medium text-gray-400 mb-2">שכונה</label>
-					<input
-						name="neighborhood"
-						type="text"
-						bind:value={newNeighborhood}
-						placeholder="שם השכונה..."
-						class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-2.5 text-white mb-4
-						       placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
-					/>
-				{/if}
+				<p class="text-xs text-gray-500 mb-4">
+					אדמין האתר: אישור ודחייה של מדורגים, הצעות, דיווחים ופרסומות. מנהל ראשי: גם ניהול
+					משתמשים ומחיקות לצמיתות.
+				</p>
 
 				<div class="flex gap-3 mt-4">
 					<button

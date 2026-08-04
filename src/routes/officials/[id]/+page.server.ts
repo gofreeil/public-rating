@@ -3,6 +3,7 @@
 // ============================================================
 
 import { error, fail } from '@sveltejs/kit';
+import { isAdmin as isSiteAdmin } from '$lib/server/auth';
 import { CRITERIA, sanitizeScores } from '$lib/rating/criteria';
 import {
     computeStats,
@@ -113,7 +114,7 @@ export const load: PageServerLoad = async (event) => {
         stats: computeStats(reviews),
         // גם הדירוג "שלי" עובר ניקוי — helpful_by שבתוכו הוא רשימת מזהים של אחרים
         myReview: myReview ? toMyReview(myReview) : null,
-        isAdmin: session?.user?.role === 'super_admin',
+        isAdmin: isSiteAdmin(session),
         isOfficialUser,
         me: meId ? { id: meId, name: session?.user?.name ?? '' } : null,
     };
@@ -267,7 +268,7 @@ export const actions: Actions = {
             return fail(404, { commentError: 'התגובה לא נמצאה' });
         }
 
-        const isAdmin = session.user.role === 'super_admin';
+        const isAdmin = isSiteAdmin(session);
         if (!isAdmin && comment.user_id !== session.user.id) {
             return fail(403, { commentError: 'אין הרשאה למחוק תגובה זו' });
         }
@@ -480,7 +481,7 @@ export const actions: Actions = {
             return fail(404, { inquiryError: 'הפנייה לא נמצאה' });
         }
 
-        const isAdmin = session.user.role === 'super_admin';
+        const isAdmin = isSiteAdmin(session);
         if (!isAdmin && inquiry.user_id !== session.user.id) {
             return fail(403, { inquiryError: 'אין הרשאה למחוק פנייה זו' });
         }
@@ -513,7 +514,7 @@ export const actions: Actions = {
         } catch {}
         if (!review) return fail(404, { error: 'הדירוג לא נמצא' });
 
-        const isAdmin = session.user.role === 'super_admin';
+        const isAdmin = isSiteAdmin(session);
         if (!isAdmin && review.user_id !== session.user.id) {
             return fail(403, { error: 'אין הרשאה למחוק דירוג זה' });
         }

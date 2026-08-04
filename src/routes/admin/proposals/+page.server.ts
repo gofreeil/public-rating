@@ -1,11 +1,11 @@
 // ============================================================
-// /admin/proposals - ניהול מרחב ההצעות (סופר-אדמין בלבד)
+// /admin/proposals - ניהול מרחב ההצעות (צוות הניהול — אדמין ומעלה)
 // אישור/דחייה, סטטוס, קישור מדורגים ועדכוני ציר זמן
 // ============================================================
 
 import { redirect, fail } from '@sveltejs/kit';
 import type { PageServerLoad, Actions } from './$types';
-import { requireSuperAdmin } from '$lib/server/auth';
+import { isAdmin, requireAdmin } from '$lib/server/auth';
 import {
     listPendingProposals,
     listProposals,
@@ -17,7 +17,7 @@ import { proposalStatusOf, type CivicProposal, type Official } from '$lib/rating
 
 export const load: PageServerLoad = async (event) => {
     const session = await event.locals.auth();
-    if (session?.user?.role !== 'super_admin') redirect(303, '/');
+    if (!isAdmin(session)) redirect(303, '/');
 
     let pending: CivicProposal[] = [];
     let proposals: CivicProposal[] = [];
@@ -50,7 +50,7 @@ export const actions: Actions = {
     // אישור הצעה — עולה למרחב הציבורי
     approve: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const id = String(fd.get('id') ?? '');
@@ -67,7 +67,7 @@ export const actions: Actions = {
     // דחיית הצעה (הסרה רכה)
     reject: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const id = String(fd.get('id') ?? '');
@@ -84,7 +84,7 @@ export const actions: Actions = {
     // עדכון הצעה קיימת: סטטוס, מדורגים מקושרים, עדכון חדש בציר הזמן
     update: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const id = String(fd.get('id') ?? '');
@@ -108,7 +108,7 @@ export const actions: Actions = {
     // הסרת הצעה מפורסמת (הסרה רכה)
     remove: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const id = String(fd.get('id') ?? '');

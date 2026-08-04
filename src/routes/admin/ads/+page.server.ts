@@ -1,5 +1,5 @@
 // ============================================================
-// /admin/ads — ניהול הפרסומות (סופר-אדמין בלבד)
+// /admin/ads — ניהול הפרסומות (צוות הניהול — אדמין ומעלה)
 //
 // אישור, דחייה, הארכה, הסרה והזנה ידנית. ההזנה הידנית היא מה שהופך
 // את המערכת לשמישה מהיום הראשון: בעל האתר מזין מודעה של מפרסם שסגר
@@ -9,7 +9,7 @@
 // ============================================================
 
 import { fail, redirect } from '@sveltejs/kit';
-import { requireSuperAdmin } from '$lib/server/auth';
+import { isAdmin, requireAdmin } from '$lib/server/auth';
 import { AD_SLOTS } from '$lib/ads/slots';
 import { adPlans } from '$lib/ads/plans';
 import {
@@ -28,7 +28,7 @@ import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
     const session = await event.locals.auth();
-    if (session?.user?.role !== 'super_admin') redirect(303, '/');
+    if (!isAdmin(session)) redirect(303, '/');
 
     let ads: SubmittedAd[] = [];
     let backendUnavailable = false;
@@ -77,7 +77,7 @@ export const load: PageServerLoad = async (event) => {
 /** כל פעולה מאמתת הרשאה בעצמה ומחזירה את המזהה של המבצע */
 async function adminOf(event: Parameters<Actions[string]>[0]): Promise<string> {
     const session = await event.locals.auth();
-    requireSuperAdmin(session);
+    requireAdmin(session);
     return session?.user?.email ?? session?.user?.name ?? 'admin';
 }
 
@@ -138,7 +138,7 @@ export const actions: Actions = {
     // כתיבה אחד בלבד (submitAd) ולא שני נתיבי יצירה שיכולים להיפרד
     create: async (event) => {
         const session = await event.locals.auth();
-        requireSuperAdmin(session);
+        requireAdmin(session);
 
         const fd = await event.request.formData();
         const title = String(fd.get('title') ?? '').trim();

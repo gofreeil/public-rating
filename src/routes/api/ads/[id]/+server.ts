@@ -14,6 +14,7 @@
 // ============================================================
 
 import { json } from '@sveltejs/kit';
+import { isAdmin as isSiteAdmin } from '$lib/server/auth';
 import { AdTooLargeError, getAd, updateAdContent } from '$lib/server/ads';
 import { TOO_MANY, allowAction } from '$lib/server/rateLimit';
 import type { RequestHandler } from './$types';
@@ -38,7 +39,7 @@ export const PUT: RequestHandler = async (event) => {
     }
     if (!ad) return json({ ok: false, error: 'הפרסומת לא נמצאה' }, { status: 404 });
 
-    const isAdmin = session?.user?.role === 'super_admin';
+    const isAdmin = isSiteAdmin(session);
     if (ad.ownerId !== userId && !isAdmin) {
         return json({ ok: false, error: 'אין הרשאה לערוך פרסומת זו' }, { status: 403 });
     }

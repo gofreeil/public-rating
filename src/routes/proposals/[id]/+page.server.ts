@@ -3,6 +3,7 @@
 // ============================================================
 
 import { error, fail } from '@sveltejs/kit';
+import { isAdmin as isSiteAdmin } from '$lib/server/auth';
 import { getProposal, listOfficials, softDeleteRatingItem, toggleSupportProposal } from '$lib/server/rating';
 import { toPublicProposal } from '$lib/rating/aggregate';
 import { TOO_MANY, allowAction } from '$lib/server/rateLimit';
@@ -24,7 +25,7 @@ export const load: PageServerLoad = async (event) => {
         session = await event.locals.auth();
     } catch {}
     const meId = session?.user?.id ?? null;
-    const isAdmin = session?.user?.role === 'super_admin';
+    const isAdmin = isSiteAdmin(session);
 
     // הצעה ממתינה גלויה רק למציע ולאדמין — לציבור היא לא קיימת
     if (!proposal.approved && !isAdmin && proposal.user_id !== meId) {
@@ -87,7 +88,7 @@ export const actions: Actions = {
         } catch {}
         if (!proposal) return fail(404, { error: 'ההצעה לא נמצאה' });
 
-        const isAdmin = session.user.role === 'super_admin';
+        const isAdmin = isSiteAdmin(session);
         if (!isAdmin && proposal.user_id !== session.user.id) {
             return fail(403, { error: 'אין הרשאה למחוק הצעה זו' });
         }

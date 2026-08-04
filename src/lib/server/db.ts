@@ -61,7 +61,8 @@ export interface DbUser {
     gender: string;
     birth_date: string;
     balance: number;
-    role: 'user' | 'neighborhood_admin' | 'super_admin';
+    // neighborhood_admin — ערך ישן של אדמין האתר (לפני rating_admin)
+    role: 'user' | 'rating_admin' | 'neighborhood_admin' | 'super_admin';
     banned: boolean;
     created_at: string;
 }

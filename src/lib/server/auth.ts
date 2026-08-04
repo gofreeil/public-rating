@@ -1,38 +1,37 @@
 // ============================================================
 // auth.ts - פונקציות הרשאה
+//
+// שני תפקידים: rating_admin (אדמין האתר — כל פעולות המודרציה) מעל
+// super_admin (מנהל ראשי — גם מינוי אדמינים ומחיקות לצמיתות).
+// התפקיד נשמר בשדה role של community-users, שהאתר הזה בלבד קורא.
 // ============================================================
 
 import type { Session } from '@auth/core/types';
 import { error } from '@sveltejs/kit';
 
-type UserRole = 'user' | 'neighborhood_admin' | 'super_admin';
+type UserRole = 'user' | 'rating_admin' | 'super_admin';
+
+// בעל האתר — סופר-אדמין תמיד, גם אם הרשומה ב-DB עוד בלי תפקיד
+const OWNER_EMAIL = 'yahavanter@gmail.com';
 
 /** האם המשתמש סופר-אדמין */
 export function isSuperAdmin(session: Session | null): boolean {
-    return session?.user?.role === 'super_admin';
+    if (session?.user?.role === 'super_admin') return true;
+    return (session?.user?.email ?? '').trim().toLowerCase() === OWNER_EMAIL;
 }
 
-/** האם המשתמש אדמין של שכונה מסוימת */
-export function isNeighborhoodAdmin(session: Session | null, neighborhood?: string): boolean {
-    if (!session?.user) return false;
-    if (session.user.role === 'super_admin') return true;
-    if (session.user.role === 'neighborhood_admin') {
-        // אם לא צוינה שכונה - מספיק שהוא אדמין
-        if (!neighborhood) return true;
-        // אחרת - רק אם השכונה שלו תואמת
-        return session.user.neighborhood === neighborhood;
-    }
-    return false;
-}
-
-/** האם למשתמש יש הרשאות אדמין כלשהן */
+/** האם למשתמש יש הרשאות אדמין כלשהן (אדמין האתר או מנהל ראשי) */
 export function isAdmin(session: Session | null): boolean {
-    return isNeighborhoodAdmin(session) || isSuperAdmin(session);
+    if (isSuperAdmin(session)) return true;
+    const role = session?.user?.role as string | undefined;
+    // neighborhood_admin — ערך שנשמר ממינויים ישנים בפאנל הזה (לפני שהתפקיד
+    // קיבל שם משלו); ממשיכים לכבד אותו, ועדכון הבא מהפאנל כותב rating_admin.
+    return role === 'rating_admin' || role === 'neighborhood_admin';
 }
 
 /** דרוש הרשאת אדמין - זורק 403 אם אין */
-export function requireAdmin(session: Session | null, neighborhood?: string): void {
-    if (!isNeighborhoodAdmin(session, neighborhood)) {
+export function requireAdmin(session: Session | null): void {
+    if (!isAdmin(session)) {
         throw error(403, 'אין לך הרשאה לבצע פעולה זו');
     }
 }
@@ -48,7 +47,8 @@ export function requireSuperAdmin(session: Session | null): void {
 export function getRoleLabel(role: UserRole | string | undefined): string {
     switch (role) {
         case 'super_admin':        return 'מנהל ראשי';
-        case 'neighborhood_admin': return 'אדמין שכונתי';
+        case 'rating_admin':
+        case 'neighborhood_admin': return 'אדמין האתר';
         default:                   return 'משתמש';
     }
 }
