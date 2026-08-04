@@ -16,14 +16,17 @@
 import {
     applyOfficialSync,
     createOfficial,
+    getOfficialForSync,
     invalidateRating,
     listOfficialsForSync,
+    saveRecordLog,
     saveSyncLog,
     type OfficialSyncPatch,
+    type RecordSyncLog,
     type SyncLog,
     type SyncOfficialRow,
 } from './rating.js';
-import type { ShakufData } from '$lib/rating/types';
+import type { KnessetRecord, RecordRole, ShakufData } from '$lib/rating/types';
 
 const ODATA = 'https://knesset.gov.il/Odata/ParliamentInfo.svc';
 const SHAKUF_BASE = 'https://shakuf.co.il';
@@ -136,11 +139,15 @@ async function fetchJson<T>(url: string): Promise<T> {
 interface P2PRow {
     PersonID: number;
     PositionID: number;
+    KnessetNum: number;
     StartDate: string | null;
+    FinishDate: string | null;
+    GovMinistryID: number | null;
     GovMinistryName: string | null;
     DutyDesc: string | null;
     FactionID: number | null;
     FactionName: string | null;
+    IsCurrent: boolean;
 }
 
 interface PersonRow {
@@ -201,17 +208,25 @@ function factionDisplay(factionId: number | null, factionName: string | null): s
     return String(factionName ?? '').replace(/ בראשות .*$/, '').trim();
 }
 
-export async function fetchKnessetRoster(): Promise<RosterEntry[]> {
-    // מספר הכנסת הנוכחית — עמיד לחילופי כנסות בלי שינוי קוד
-    let knessetNum = FALLBACK_KNESSET_NUM;
+/**
+ * מספר הכנסת המכהנת — עמיד לחילופי כנסות בלי שינוי קוד.
+ * KNS_KnessetDates מחזיק שורה לכל מושב; המכהנת היא הגבוהה שבהן.
+ */
+export async function currentKnessetNum(): Promise<number> {
     try {
         const cur = await fetchJson<{ value?: { KnessetNum: number }[] }>(
-            `${ODATA}/KNS_Knesset?$filter=${encodeURIComponent('IsCurrent eq true')}&$format=json`,
+            `${ODATA}/KNS_KnessetDates?$filter=${encodeURIComponent('IsCurrent eq true')}&$top=100&$format=json`,
         );
-        if (cur.value?.[0]?.KnessetNum) knessetNum = cur.value[0].KnessetNum;
+        const nums = (cur.value ?? []).map((r) => Number(r.KnessetNum)).filter((n) => Number.isInteger(n) && n > 0);
+        if (nums.length) return Math.max(...nums);
     } catch {
         // נופלים לברירת המחדל — לא מפילים סנכרון שלם על שאילתת עזר
     }
+    return FALLBACK_KNESSET_NUM;
+}
+
+export async function fetchKnessetRoster(): Promise<RosterEntry[]> {
+    const knessetNum = await currentKnessetNum();
 
     const p2p = await odataAll<P2PRow>(
         'KNS_PersonToPosition',
@@ -402,6 +417,237 @@ function ministryKeyword(title: string): string {
         if (n.startsWith(prefix)) return n.slice(prefix.length).trim();
     }
     return n;
+}
+
+// ============================================================
+// ---- רזומה פרלמנטרית מהקדנציה (per-MK, מה-OData) ----
+//
+// מה נשאב לכל מכהן: ציר התפקידים בקדנציה (KNS_PersonToPosition), ותק
+// (באילו כנסות כיהן/ה), מאזן החקיקה (KNS_BillInitiator + KNS_Bill לפי
+// סטטוס), שאילתות והצעות לסדר, ולשרים — השאילתות שהופנו למשרד ומועדי
+// המענה בפועל. הכל ספירות מנתוני מקור, בלי פרשנות.
+// ============================================================
+
+interface BillRow {
+    BillID: number;
+    StatusID: number;
+}
+interface QueryRow {
+    ReplyMinisterDate: string | null;
+    ReplyDatePlanned: string | null;
+}
+
+/** תיאור סטטוס → דלי תצוגה. עדיף על מיפוי StatusID קשיח: 35 סטטוסים משתנים */
+function billBucket(desc: string): 'passed' | 'merged' | 'stopped' | 'in_progress' {
+    if (desc.includes('התקבלה בקריאה שלישית')) return 'passed';
+    if (desc.includes('מוזגה')) return 'merged';
+    if (desc.includes('נעצרה') || desc.includes('נדחתה')) return 'stopped';
+    return 'in_progress';
+}
+
+/** מפת StatusID→תיאור — נשלפת פעם אחת לריצה ומועברת לכל המכהנים */
+export async function fetchStatusMap(): Promise<Map<number, string>> {
+    const rows = await odataAll<{ StatusID: number; Desc: string | null }>('KNS_Status', 'StatusID gt 0');
+    return new Map(rows.map((r) => [r.StatusID, r.Desc ?? '']));
+}
+
+/** תפקיד לתצוגה בציר הזמן; ריק = שורה שלא מציגים (חבר סיעה בלי שם סיעה) */
+function roleTitle(row: P2PRow): string {
+    const duty = (row.DutyDesc ?? '').trim();
+    const ministry = (row.GovMinistryName ?? '').trim();
+    if (POS.PM.includes(row.PositionID)) return 'ראש הממשלה';
+    if (POS.MINISTER.includes(row.PositionID)) return duty || (ministry ? `שר/ה — ${ministry}` : 'שר/ה');
+    if (POS.DEPUTY_MINISTER.includes(row.PositionID)) return duty || (ministry ? `סגן/ית שר ב${ministry}` : 'סגן/ית שר');
+    if (POS.MK.includes(row.PositionID)) return 'חבר/ת הכנסת';
+    if (POS.FACTION_MEMBER.includes(row.PositionID)) {
+        const faction = factionDisplay(row.FactionID, row.FactionName);
+        return faction ? `סיעת ${faction}` : '';
+    }
+    return duty;
+}
+
+/** שליפת שורות KNS_Bill לפי מזהים — אצוות של 45 (מעל ~50 ה-URL נחתך ל-404) */
+async function billsByIds(ids: number[], knessetNum: number): Promise<BillRow[]> {
+    const batches: number[][] = [];
+    for (let i = 0; i < ids.length; i += 45) batches.push(ids.slice(i, i + 45));
+    const pages = await mapLimit(batches, 3, (batch) =>
+        fetchJson<{ value?: BillRow[] }>(
+            `${ODATA}/KNS_Bill?$filter=${encodeURIComponent(
+                `KnessetNum eq ${knessetNum} and (${batch.map((id) => `BillID eq ${id}`).join(' or ')})`,
+            )}&$top=100&$format=json`,
+        ).then((j) => j.value ?? []),
+    );
+    return pages.flat();
+}
+
+export async function fetchKnessetRecord(
+    personId: number,
+    knessetNum: number,
+    statusMap: Map<number, string>,
+): Promise<KnessetRecord> {
+    const [positions, initiator, queries, agenda] = await Promise.all([
+        odataAll<P2PRow>('KNS_PersonToPosition', `PersonID eq ${personId}`),
+        odataAll<{ BillID: number; IsInitiator: boolean }>('KNS_BillInitiator', `PersonID eq ${personId}`),
+        odataAll<QueryRow>('KNS_Query', `PersonID eq ${personId} and KnessetNum eq ${knessetNum}`),
+        odataAll<{ AgendaID: number }>(
+            'KNS_Agenda',
+            `InitiatorPersonID eq ${personId} and KnessetNum eq ${knessetNum}`,
+        ),
+    ]);
+
+    const leadIds = initiator.filter((r) => r.IsInitiator).map((r) => r.BillID);
+    const coIds = initiator.filter((r) => !r.IsInitiator).map((r) => r.BillID);
+    const [lead, cosigned] = await Promise.all([
+        billsByIds(leadIds, knessetNum),
+        billsByIds(coIds, knessetNum),
+    ]);
+
+    const counts = { passed: 0, merged: 0, stopped: 0, in_progress: 0 };
+    for (const b of lead) counts[billBucket(statusMap.get(b.StatusID) ?? '')]++;
+
+    // ותק: באילו כנסות כיהן/ה כח"כ
+    const knessets = [
+        ...new Set(positions.filter((p) => POS.MK.includes(p.PositionID)).map((p) => p.KnessetNum)),
+    ].sort((a, b) => a - b);
+
+    // ציר הזמן של הקדנציה הנוכחית — לפי סדר תחילת הכהונה
+    const roles: RecordRole[] = positions
+        .filter((p) => p.KnessetNum === knessetNum && WANTED.has(p.PositionID))
+        .map((p) => ({
+            title: roleTitle(p),
+            from: (p.StartDate ?? '').slice(0, 10),
+            to: (p.FinishDate ?? '').slice(0, 10) || null,
+        }))
+        .filter((r) => r.title && r.from)
+        .sort((a, b) => a.from.localeCompare(b.from));
+
+    // לשרים: השאילתות שהופנו למשרד — כמה נענו וכמה אחרי המועד שנקבע
+    const ministryRow = positions.find(
+        (p) => p.KnessetNum === knessetNum && p.IsCurrent && p.GovMinistryID && POS.MINISTER.includes(p.PositionID),
+    );
+    let ministryQueries: KnessetRecord['ministry_queries'] = null;
+    if (ministryRow?.GovMinistryID) {
+        const rows = await odataAll<QueryRow>(
+            'KNS_Query',
+            `KnessetNum eq ${knessetNum} and GovMinistryID eq ${ministryRow.GovMinistryID}`,
+        );
+        ministryQueries = {
+            ministry: (ministryRow.GovMinistryName ?? '').trim(),
+            total: rows.length,
+            answered: rows.filter((q) => q.ReplyMinisterDate).length,
+            late: rows.filter(
+                (q) => q.ReplyMinisterDate && q.ReplyDatePlanned && q.ReplyMinisterDate > q.ReplyDatePlanned,
+            ).length,
+        };
+    }
+
+    return {
+        person_id: personId,
+        knesset_num: knessetNum,
+        knessets,
+        roles,
+        bills: { lead: lead.length, cosigned: cosigned.length, ...counts },
+        queries: queries.length,
+        agenda: agenda.length,
+        ministry_queries: ministryQueries,
+        synced_at: new Date().toISOString(),
+    };
+}
+
+/** רזומה ישנה מ-14 יום נחשבת "לרענון" בריצה המרוכזת */
+const RECORD_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+/** תקציב זמן לריצה מרוכזת — מתחת לתקרת ה-60ש' של הפונקציה */
+const RECORD_BUDGET_MS = 40_000;
+
+export interface RecordSyncResult extends RecordSyncLog {
+    ok: boolean;
+    names: string[];
+}
+
+/**
+ * משיכת רזומות במנות: מטפל קודם במי שאין לו רזומה, אחר כך בישנות ביותר,
+ * ועוצר בתקציב הזמן. האדמין לוחץ שוב כדי להמשיך — עדיף על ריצה שנחתכת
+ * באמצע ע"י תקרת הזמן של הפלטפורמה.
+ */
+export async function runRecordSync(ranBy: string): Promise<RecordSyncResult> {
+    const started = Date.now();
+    const result: RecordSyncResult = {
+        ok: false,
+        ran_at: new Date().toISOString(),
+        ran_by: ranBy,
+        done: 0,
+        remaining: 0,
+        errors: [],
+        names: [],
+    };
+
+    let officials: SyncOfficialRow[];
+    let knessetNum: number;
+    let statusMap: Map<number, string>;
+    try {
+        [officials, knessetNum, statusMap] = await Promise.all([
+            listOfficialsForSync(),
+            currentKnessetNum(),
+            fetchStatusMap(),
+        ]);
+    } catch (e) {
+        result.errors.push(`הכנת הנתונים נכשלה: ${e instanceof Error ? e.message : e}`);
+        return result;
+    }
+
+    const now = Date.now();
+    const queue = officials
+        .filter((o) => o.knessetPersonId && o.approved)
+        .map((o) => {
+            const rec = o.knessetRecord;
+            const age = rec?.synced_at ? now - new Date(rec.synced_at).getTime() : Infinity;
+            const stale = !rec || rec.knesset_num !== knessetNum || age > RECORD_TTL_MS;
+            return { o, age, stale };
+        })
+        .filter((x) => x.stale)
+        .sort((a, b) => b.age - a.age);
+
+    for (const { o } of queue) {
+        if (Date.now() - started > RECORD_BUDGET_MS) break;
+        try {
+            const record = await fetchKnessetRecord(o.knessetPersonId as number, knessetNum, statusMap);
+            await applyOfficialSync(o.id, { knessetRecord: record });
+            result.done++;
+            result.names.push(o.name);
+        } catch (e) {
+            result.errors.push(`${o.name}: ${e instanceof Error ? e.message : e}`);
+        }
+    }
+
+    result.remaining = Math.max(0, queue.length - result.done - result.errors.length);
+    result.ok = true;
+    if (result.done) invalidateRating();
+    try {
+        await saveRecordLog({
+            ran_at: result.ran_at,
+            ran_by: result.ran_by,
+            done: result.done,
+            remaining: result.remaining,
+            errors: result.errors,
+        });
+    } catch (e) {
+        result.errors.push(`שמירת יומן הרזומות נכשלה: ${e instanceof Error ? e.message : e}`);
+    }
+    return result;
+}
+
+/** רענון רזומה של מדורג בודד — הכפתור שליד השורה באדמין */
+export async function syncOneRecord(officialId: string): Promise<{ name: string; record: KnessetRecord }> {
+    const official = await getOfficialForSync(officialId);
+    if (!official) throw new Error('המדורג לא נמצא');
+    if (!official.knessetPersonId) {
+        throw new Error('למדורג אין מזהה כנסת — הריצו קודם "סנכרון מצבת המכהנים"');
+    }
+    const [knessetNum, statusMap] = await Promise.all([currentKnessetNum(), fetchStatusMap()]);
+    const record = await fetchKnessetRecord(official.knessetPersonId, knessetNum, statusMap);
+    await applyOfficialSync(official.id, { knessetRecord: record });
+    invalidateRating();
+    return { name: official.name, record };
 }
 
 // ============================================================

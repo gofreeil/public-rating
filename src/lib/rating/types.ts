@@ -132,6 +132,64 @@ export interface ShakufData {
     synced_at: string;
 }
 
+/** תפקיד בציר הזמן של הקדנציה (מ-KNS_PersonToPosition) */
+export interface RecordRole {
+    /** "חבר הכנסת" · "שר החקלאות וביטחון המזון" · "חבר/ת סיעה" */
+    title: string;
+    /** תאריך תחילת הכהונה בתפקיד (ISO, יום בלבד) */
+    from: string;
+    /** תאריך סיום; null = מכהן/ת */
+    to: string | null;
+}
+
+/** מאזן החקיקה בקדנציה — הצעות שהמדורג יזם כיוזם ראשי */
+export interface RecordBills {
+    /** סה"כ הצעות חוק כיוזם ראשי */
+    lead: number;
+    /** הצעות שהוא חתום עליהן אך אינו היוזם */
+    cosigned: number;
+    /** התקבלו בקריאה שלישית — הפכו לחוק */
+    passed: number;
+    /** בהליכי חקיקה כרגע */
+    in_progress: number;
+    /** נעצרו או נדחו */
+    stopped: number;
+    /** מוזגו עם הצעה אחרת */
+    merged: number;
+}
+
+/** פיקוח על המשרד שבראשות המדורג — שאילתות שהופנו אליו */
+export interface RecordMinistryQueries {
+    ministry: string;
+    total: number;
+    answered: number;
+    /** נענו אחרי המועד שנקבע */
+    late: number;
+}
+
+/**
+ * רזומה פרלמנטרית מהקדנציה — נבנית מה-OData הרשמי של הכנסת בסנכרון האדמין.
+ * כל שדה הוא ספירה מנתוני מקור, לא פרשנות.
+ */
+export interface KnessetRecord {
+    /** PersonID בכנסת — לאימות מול המקור */
+    person_id: number;
+    /** מספר הכנסת שאליה מתייחסים הנתונים */
+    knesset_num: number;
+    /** מספרי הכנסות שבהן כיהן/ה כח"כ (ותק) */
+    knessets: number[];
+    /** ציר הזמן של התפקידים בקדנציה הנוכחית */
+    roles: RecordRole[];
+    bills: RecordBills;
+    /** שאילתות שהגיש/ה */
+    queries: number;
+    /** הצעות לסדר היום שהגיש/ה */
+    agenda: number;
+    /** רק לשרים — הפיקוח על המשרד */
+    ministry_queries: RecordMinistryQueries | null;
+    synced_at: string;
+}
+
 export interface Official {
     /** documentId ב-Strapi */
     id: string;
@@ -166,6 +224,8 @@ export interface Official {
     attendance_score: number | null;
     /** מדד המיניסטרמטר של שקוף למשרד שבראשות המדורג; null = אין */
     shakuf: ShakufData | null;
+    /** רזומה פרלמנטרית מה-OData של הכנסת; null = טרם נמשכה (או לא ח"כ) */
+    knesset_record: KnessetRecord | null;
 }
 
 // ---- דירוג (ביקורת של משתמש בודד) ----

@@ -13,9 +13,10 @@ import {
     updateOfficial,
     softDeleteRatingItem,
     getSyncLog,
+    type RecordSyncLog,
     type SyncLog,
 } from '$lib/server/rating';
-import { runKnessetSync } from '$lib/server/knessetSync';
+import { runKnessetSync, runRecordSync, syncOneRecord } from '$lib/server/knessetSync';
 
 // הסנכרון מדבר עם ה-OData של הכנסת + שקוף + עשרות כתיבות ל-Strapi —
 // יותר מ-10 שניות ברירת המחדל של Vercel (נקרא ע"י adapter-vercel, מיותר ב-node)
@@ -60,6 +61,7 @@ export const load: PageServerLoad = async (event) => {
     let pending: Official[] = [];
     let officials: RatedOfficial[] = [];
     let syncLog: SyncLog | null = null;
+    let recordLog: RecordSyncLog | null = null;
 
     try {
         pending = await listPendingOfficials();
@@ -72,12 +74,14 @@ export const load: PageServerLoad = async (event) => {
         console.warn('[admin/officials] getRatedOfficials failed:', e);
     }
     try {
-        syncLog = await getSyncLog();
+        const logs = await getSyncLog();
+        syncLog = logs.roster;
+        recordLog = logs.records;
     } catch (e) {
         console.warn('[admin/officials] getSyncLog failed:', e);
     }
 
-    return { pending, officials, syncLog };
+    return { pending, officials, syncLog, recordLog };
 };
 
 export const actions: Actions = {
@@ -102,6 +106,50 @@ export const actions: Actions = {
             return { success: true, message: `הסנכרון הושלם (${report.roster_count} מכהנים): ${parts.join(' · ')}` };
         } catch (e) {
             return fail(500, { error: `שגיאה בסנכרון: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // משיכת רזומות פרלמנטריות במנות (מי שאין לו / הישנות ביותר קודם)
+    records: async (event) => {
+        const session = await event.locals.auth();
+        requireAdmin(session);
+
+        try {
+            const ranBy = session?.user?.name || session?.user?.email || 'admin';
+            const res = await runRecordSync(ranBy);
+            if (!res.ok) {
+                return fail(502, { error: `משיכת הרזומות נכשלה: ${res.errors.join(' · ') || 'שגיאה לא ידועה'}` });
+            }
+            if (!res.done && !res.remaining) {
+                return { success: true, message: 'כל הרזומות מעודכנות — אין מה למשוך' };
+            }
+            const tail = res.remaining ? ` · נותרו ${res.remaining} — לחצו שוב להמשך` : ' · הושלם';
+            const errs = res.errors.length ? ` · ${res.errors.length} שגיאות` : '';
+            return { success: true, message: `נמשכו ${res.done} רזומות${tail}${errs}` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה במשיכת רזומות: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // רענון רזומה של מדורג בודד
+    record: async (event) => {
+        const session = await event.locals.auth();
+        requireAdmin(session);
+
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה מדורג' });
+
+        try {
+            const { name, record } = await syncOneRecord(id);
+            const bits = [
+                `${record.bills.lead} הצעות חוק`,
+                `${record.bills.passed} עברו`,
+                `${record.queries} שאילתות`,
+            ];
+            return { success: true, message: `רזומה עודכנה — ${name}: ${bits.join(' · ')}` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה ברזומה: ${e instanceof Error ? e.message : e}` });
         }
     },
 

@@ -14,6 +14,7 @@
     import RateForm from '$lib/components/rating/RateForm.svelte';
     import ReviewList from '$lib/components/rating/ReviewList.svelte';
     import ProfileDetails from '$lib/components/rating/ProfileDetails.svelte';
+    import KnessetRecord from '$lib/components/rating/KnessetRecord.svelte';
     import InquiryPanel from '$lib/components/rating/InquiryPanel.svelte';
     import type { PageData, ActionData } from './$types';
 
@@ -120,6 +121,11 @@
 
     <!-- תעודת זהות ציבורית: קשר, שקיפות בפועל, התמחויות והבטחות -->
     <ProfileDetails {official} lastResponseAt={data.lastResponseAt} />
+
+    <!-- רזומה פרלמנטרית מהקדנציה — נתוני הכנסת עצמם, לפני דעות הגולשים -->
+    {#if official.knesset_record}
+        <KnessetRecord record={official.knesset_record} name={official.name} />
+    {/if}
 
     <!-- סיכום ציון: ממוצע + היסטוגרמה + מדדים -->
     <section class="rounded-2xl border border-white/10 bg-white/5 p-4">

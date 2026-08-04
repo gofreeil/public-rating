@@ -11,7 +11,10 @@
 
 	// סנכרון חיצוני — ריצה ארוכה (עד דקה), לכן מצב "מסנכרן..." על הכפתור
 	let syncing = $state(false);
+	let fetchingRecords = $state(false);
 	let showSyncDetails = $state(false);
+	/** id המדורג שהרזומה שלו נמשכת כרגע (כפתור השורה) */
+	let recordingId = $state<string | null>(null);
 
 	const inputCls =
 		'bg-[#1e293b] border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors';
@@ -128,27 +131,57 @@
 						</p>
 					{/if}
 				</div>
-				<form
-					method="POST"
-					action="?/sync"
-					use:enhance={() => {
-						syncing = true;
-						return async ({ update }) => {
-							syncing = false;
-							showSyncDetails = true;
-							await update();
-						};
-					}}
-				>
-					<button
-						type="submit"
-						disabled={syncing}
-						class="px-5 py-2 text-sm font-bold rounded-xl bg-gradient-to-l from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+				<div class="flex flex-wrap gap-2">
+					<form
+						method="POST"
+						action="?/sync"
+						use:enhance={() => {
+							syncing = true;
+							return async ({ update }) => {
+								syncing = false;
+								showSyncDetails = true;
+								await update();
+							};
+						}}
 					>
-						{syncing ? '⏳ מסנכרן... (עד דקה)' : '🔄 סנכרון עכשיו'}
-					</button>
-				</form>
+						<button
+							type="submit"
+							disabled={syncing || fetchingRecords}
+							class="px-5 py-2 text-sm font-bold rounded-xl bg-gradient-to-l from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+						>
+							{syncing ? '⏳ מסנכרן... (עד דקה)' : '🔄 מצבת מכהנים + שקוף'}
+						</button>
+					</form>
+					<form
+						method="POST"
+						action="?/records"
+						use:enhance={() => {
+							fetchingRecords = true;
+							return async ({ update }) => {
+								fetchingRecords = false;
+								await update();
+							};
+						}}
+					>
+						<button
+							type="submit"
+							disabled={syncing || fetchingRecords}
+							title="רזומה פרלמנטרית לכל מכהן: חקיקה, שאילתות, ציר תפקידים. רץ במנות — לוחצים שוב עד שנגמר"
+							class="px-5 py-2 text-sm font-bold rounded-xl bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+						>
+							{fetchingRecords ? '⏳ מושך רזומות...' : '📜 משיכת רזומות'}
+						</button>
+					</form>
+				</div>
 			</div>
+
+			{#if data.recordLog}
+				<p class="text-xs text-gray-500 mt-2">
+					רזומות: עדכון אחרון {absDate(data.recordLog.ran_at)} · {data.recordLog.done} נמשכו
+					{#if data.recordLog.remaining}· נותרו {data.recordLog.remaining}{:else}· הושלם{/if}
+					{#if data.recordLog.errors.length}· {data.recordLog.errors.length} שגיאות{/if}
+				</p>
+			{/if}
 
 			{#if data.syncLog && (data.syncLog.added.length || data.syncLog.updated.length || data.syncLog.departed.length || data.syncLog.shakuf_applied.length || data.syncLog.errors.length)}
 				<button
@@ -272,6 +305,33 @@
 								⭐ {fmtScore(o.stats.average)} ({o.stats.count})
 							</span>
 							<div class="flex gap-2">
+								{#if o.group === 'knesset'}
+									<form
+										method="POST"
+										action="?/record"
+										use:enhance={() => {
+											recordingId = o.id;
+											return async ({ update }) => {
+												recordingId = null;
+												await update();
+											};
+										}}
+									>
+										<input type="hidden" name="id" value={o.id} />
+										<button
+											type="submit"
+											disabled={recordingId === o.id}
+											title={o.knesset_record
+												? `רזומה מעודכנת ל-${absDate(o.knesset_record.synced_at)} — לחיצה תרענן`
+												: 'משיכת הרזומה הפרלמנטרית מה-OData של הכנסת'}
+											class="px-3 py-1.5 text-xs rounded-lg border transition-all cursor-pointer disabled:cursor-wait {o.knesset_record
+												? 'bg-purple-500/10 text-purple-300 border-purple-500/30 hover:bg-purple-500/20'
+												: 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'}"
+										>
+											{recordingId === o.id ? '⏳' : '📜'} רזומה
+										</button>
+									</form>
+								{/if}
 								<button
 									onclick={() => (editingId === o.id ? (editingId = null) : startEdit(o))}
 									class="px-3 py-1.5 text-xs rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 transition-all cursor-pointer"

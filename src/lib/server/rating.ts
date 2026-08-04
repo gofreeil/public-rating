@@ -24,6 +24,7 @@ import {
     type CivicProposal,
     type ContentReport,
     type GroupKey,
+    type KnessetRecord,
     type Official,
     type OfficialComment,
     type OfficialInquiry,
@@ -110,6 +111,53 @@ function parseUpdates(v: unknown): ProposalUpdate[] {
         .filter((u) => u.text);
 }
 
+function num(v: unknown): number {
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 0 ? Math.round(n) : 0;
+}
+
+/** רזומת הכנסת מ-extra_fields — בלי person_id הנתון חסר משמעות ולא מוצג */
+function parseKnessetRecord(v: unknown): KnessetRecord | null {
+    if (!v || typeof v !== 'object') return null;
+    const r = v as Record<string, unknown>;
+    const personId = num(r.person_id);
+    if (!personId) return null;
+    const bills = (r.bills && typeof r.bills === 'object' ? r.bills : {}) as Record<string, unknown>;
+    const mq = r.ministry_queries;
+    const mqObj = (mq && typeof mq === 'object' ? mq : null) as Record<string, unknown> | null;
+    return {
+        person_id: personId,
+        knesset_num: num(r.knesset_num),
+        knessets: Array.isArray(r.knessets) ? r.knessets.map(num).filter(Boolean) : [],
+        roles: Array.isArray(r.roles)
+            ? r.roles
+                  .filter((x): x is Record<string, unknown> => Boolean(x) && typeof x === 'object')
+                  .map((x) => ({ title: str(x.title).trim(), from: str(x.from), to: str(x.to) || null }))
+                  .filter((x) => x.title)
+            : [],
+        bills: {
+            lead: num(bills.lead),
+            cosigned: num(bills.cosigned),
+            passed: num(bills.passed),
+            in_progress: num(bills.in_progress),
+            stopped: num(bills.stopped),
+            merged: num(bills.merged),
+        },
+        queries: num(r.queries),
+        agenda: num(r.agenda),
+        ministry_queries:
+            mqObj && str(mqObj.ministry).trim()
+                ? {
+                      ministry: str(mqObj.ministry).trim(),
+                      total: num(mqObj.total),
+                      answered: num(mqObj.answered),
+                      late: num(mqObj.late),
+                  }
+                : null,
+        synced_at: str(r.synced_at),
+    };
+}
+
 /** נתוני שקוף מ-extra_fields — בלי שלושת שדות החובה הנתון לא מוצג */
 function parseShakuf(v: unknown): ShakufData | null {
     if (!v || typeof v !== 'object') return null;
@@ -156,6 +204,7 @@ function mapOfficial(item: StrapiItem): Official {
                 ? Math.min(100, Math.max(0, Math.round(attendance)))
                 : null,
         shakuf: parseShakuf(x.shakuf),
+        knesset_record: parseKnessetRecord(x.knesset_record),
     };
 }
 
@@ -978,6 +1027,7 @@ export interface SyncOfficialRow {
     approved: boolean;
     knessetPersonId: number | null;
     shakuf: ShakufData | null;
+    knessetRecord: KnessetRecord | null;
 }
 
 export async function listOfficialsForSync(): Promise<SyncOfficialRow[]> {
@@ -994,6 +1044,7 @@ export async function listOfficialsForSync(): Promise<SyncOfficialRow[]> {
             approved: o.approved,
             knessetPersonId: Number.isInteger(pid) && pid > 0 ? pid : null,
             shakuf: o.shakuf,
+            knessetRecord: o.knesset_record,
         };
     });
 }
@@ -1008,6 +1059,7 @@ export interface OfficialSyncPatch {
     knessetPersonId?: number;
     /** null = ניקוי הנתון (המשרד כבר לא בידי המדורג) */
     shakuf?: ShakufData | null;
+    knessetRecord?: KnessetRecord | null;
 }
 
 export async function applyOfficialSync(id: string, patch: OfficialSyncPatch): Promise<void> {
@@ -1026,10 +1078,38 @@ export async function applyOfficialSync(id: string, patch: OfficialSyncPatch): P
                     ? { knesset_person_id: patch.knessetPersonId }
                     : {}),
                 ...(patch.shakuf !== undefined ? { shakuf: patch.shakuf } : {}),
+                ...(patch.knessetRecord !== undefined ? { knesset_record: patch.knessetRecord } : {}),
             },
         },
     });
     // invalidateRating() נקרא פעם אחת בסוף הסנכרון, לא על כל כתיבה
+}
+
+/** מדורג בודד לרענון רזומה — בלי לשלוף את כל הרשימה */
+export async function getOfficialForSync(id: string): Promise<SyncOfficialRow | undefined> {
+    let res: { data: StrapiItem };
+    try {
+        res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
+    } catch (e) {
+        if (String(e).includes('→ 404')) return undefined;
+        throw e;
+    }
+    const item = res.data;
+    if (!item || item.category !== OFFICIAL_CATEGORY || item.status1 !== 'active') return undefined;
+    const o = mapOfficial(item);
+    const pid = Number(ef(item).knesset_person_id);
+    return {
+        id: o.id,
+        name: o.name,
+        group: o.group,
+        position: o.position,
+        org: o.org,
+        bio: o.bio,
+        approved: o.approved,
+        knessetPersonId: Number.isInteger(pid) && pid > 0 ? pid : null,
+        shakuf: o.shakuf,
+        knessetRecord: o.knesset_record,
+    };
 }
 
 /** יומן הסנכרון האחרון — נשמר כרשומה אחת (upsert) לתצוגה באדמין */
@@ -1041,6 +1121,17 @@ export interface SyncLog {
     updated: string[];
     departed: string[];
     shakuf_applied: string[];
+    errors: string[];
+}
+
+/** ריצת הרזומות האחרונה — נשמרת בשדה נפרד כדי שלא תידרס ע"י סנכרון המצבת */
+export interface RecordSyncLog {
+    ran_at: string;
+    ran_by: string;
+    /** כמה רזומות עודכנו בריצה */
+    done: number;
+    /** כמה עוד ממתינות (טרם נמשכו או ישנות) */
+    remaining: number;
     errors: string[];
 }
 
@@ -1062,27 +1153,42 @@ function parseSyncLog(v: unknown): SyncLog | null {
     };
 }
 
-export async function getSyncLog(): Promise<SyncLog | null> {
+function parseRecordLog(v: unknown): RecordSyncLog | null {
+    if (!v || typeof v !== 'object') return null;
+    const s = v as Record<string, unknown>;
+    if (!str(s.ran_at)) return null;
+    return {
+        ran_at: str(s.ran_at),
+        ran_by: str(s.ran_by),
+        done: num(s.done),
+        remaining: num(s.remaining),
+        errors: strArr(s.errors),
+    };
+}
+
+async function findSyncItem(): Promise<StrapiItem | undefined> {
     const res = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
         'filters[category][$eq]': SYNC_CATEGORY,
         'filters[label][$eq]': SYNC_LOG_LABEL,
         'filters[status1][$eq]': 'active',
         'pagination[limit]': '1',
     });
-    const row = res.data?.[0];
-    return row ? parseSyncLog(ef(row).log) : null;
+    return res.data?.[0];
+}
+
+export async function getSyncLog(): Promise<{ roster: SyncLog | null; records: RecordSyncLog | null }> {
+    const row = await findSyncItem();
+    if (!row) return { roster: null, records: null };
+    const x = ef(row);
+    return { roster: parseSyncLog(x.log), records: parseRecordLog(x.record_log) };
 }
 
 export async function saveSyncLog(log: SyncLog): Promise<void> {
-    const existing = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
-        'filters[category][$eq]': SYNC_CATEGORY,
-        'filters[label][$eq]': SYNC_LOG_LABEL,
-        'filters[status1][$eq]': 'active',
-        'pagination[limit]': '1',
-    });
-    const prev = existing.data?.[0];
+    const prev = await findSyncItem();
     if (prev) {
-        await strapiPut(`${ITEMS}/${prev.documentId}`, { data: { extra_fields: { log } } });
+        await strapiPut(`${ITEMS}/${prev.documentId}`, {
+            data: { extra_fields: { ...ef(prev), log } },
+        });
     } else {
         await strapiPost(ITEMS, {
             data: {
@@ -1090,6 +1196,29 @@ export async function saveSyncLog(log: SyncLog): Promise<void> {
                 label: SYNC_LOG_LABEL,
                 description: 'יומן סנכרון הנתונים החיצוני (כנסת + שקוף)',
                 extra_fields: { log },
+                icon: '🔄',
+                color: 'blue',
+                status1: 'active',
+                publishedAt: new Date().toISOString(),
+            },
+        });
+    }
+}
+
+/** יומן ריצת הרזומות — נשמר לצד יומן המצבת באותה רשומה */
+export async function saveRecordLog(log: RecordSyncLog): Promise<void> {
+    const prev = await findSyncItem();
+    if (prev) {
+        await strapiPut(`${ITEMS}/${prev.documentId}`, {
+            data: { extra_fields: { ...ef(prev), record_log: log } },
+        });
+    } else {
+        await strapiPost(ITEMS, {
+            data: {
+                category: SYNC_CATEGORY,
+                label: SYNC_LOG_LABEL,
+                description: 'יומן סנכרון הנתונים החיצוני (כנסת + שקוף)',
+                extra_fields: { record_log: log },
                 icon: '🔄',
                 color: 'blue',
                 status1: 'active',
