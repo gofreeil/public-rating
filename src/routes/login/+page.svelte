@@ -97,6 +97,11 @@
 					<p class="text-gray-400 text-sm">{tFn("login_subtitle")}</p>
 				</div>
 
+				<!-- הודעה ברורה למשתמש חדש: בפעם הראשונה יש להירשם תחילה -->
+				<p class="mb-6 text-center text-amber-200 text-[13px] sm:text-sm font-bold leading-relaxed">
+					{tFn("first_time_register")}
+				</p>
+
 				<!-- הודעת שגיאה -->
 				{#if data.error}
 					<div id="login-error" role="alert" class="mb-6 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-center">
