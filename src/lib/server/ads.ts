@@ -19,6 +19,7 @@
 // ============================================================
 
 import { strapiGet, strapiPost, strapiPut } from './strapiClient.js';
+import { MAX_AD_TOTAL_BYTES } from '$lib/ads/adImage';
 import { normalizeGradientId } from '$lib/ads/gradients';
 import { DEFAULT_PLAN_DAYS, normalizePlanDays } from '$lib/ads/plans';
 import {
@@ -299,8 +300,9 @@ export async function listForOwner(userId: string): Promise<SubmittedAd[]> {
 // ---- כתיבה ----
 // ============================================================
 
-/** תקרת משקל לשורה: מעליה Strapi (koa-body, 1MB לבקשה) מחזיר שגיאה גנרית */
-export const MAX_AD_BYTES = 600 * 1024;
+/** תקרת משקל לשורה: מעליה Strapi (koa-body, 1MB לבקשה) מחזיר שגיאה גנרית.
+ *  מקור האמת ב-$lib/ads/adImage — אותו מספר שהבילדר מציג וחוסם לפיו. */
+export const MAX_AD_BYTES = MAX_AD_TOTAL_BYTES;
 
 export interface SubmitAdInput {
     title: string;

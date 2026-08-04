@@ -10,6 +10,10 @@
 /** תקרה לתמונה בודדת אחרי דחיסה */
 export const MAX_IMAGE_BYTES = 220 * 1024;
 
+/** תקרת המשקל לכל תמונות המודעה יחד — מקור האמת גם לבדיקה בשרת
+ *  (MAX_AD_BYTES ב-$lib/server/ads מיובא מכאן, שלא ייווצר סחף) */
+export const MAX_AD_TOTAL_BYTES = 600 * 1024;
+
 export function dataUrlBytes(dataUrl: string): number {
     const idx = dataUrl.indexOf('base64,');
     if (idx < 0) return 0;

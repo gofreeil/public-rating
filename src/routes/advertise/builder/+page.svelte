@@ -9,7 +9,7 @@
     // ============================================================
     import { goto } from '$app/navigation';
     import AdCardEditor from '$lib/components/rating/AdCardEditor.svelte';
-    import { compressImage, dataUrlBytes, fmtKb } from '$lib/ads/adImage';
+    import { compressImage, dataUrlBytes, fmtKb, MAX_AD_TOTAL_BYTES } from '$lib/ads/adImage';
     import Seo from '$lib/components/rating/Seo.svelte';
     import type { PageData } from './$types';
 
@@ -46,25 +46,32 @@
 
     let sending = $state(false);
     let error = $state('');
-    let imageError = $state('');
+    // השגיאה נקשרת לאזור ההעלאה שבו קרתה — מוצגת שם, לא בסקשן אחר
+    let imageError = $state<{ zone: '' | 'card' | 'landing'; msg: string }>({ zone: '', msg: '' });
 
     const totalBytes = $derived(
         dataUrlBytes(mainImage) + dataUrlBytes(logo) + dataUrlBytes(landingImage),
     );
-    const canSend = $derived(Boolean(title.trim()) && !sending);
+    // מעל התקרה השרת ידחה (413) — לכן חוסמים כבר כאן, עם הסבר, במקום
+    // לתת ללחוץ "שליחה" ולגלות את הבעיה בסוף
+    const overweight = $derived(totalBytes > MAX_AD_TOTAL_BYTES);
+    const canSend = $derived(Boolean(title.trim()) && !sending && !overweight);
 
     async function pickImage(e: Event, target: 'main' | 'logo' | 'landing') {
         const input = e.currentTarget as HTMLInputElement;
         const file = input.files?.[0];
         if (!file) return;
-        imageError = '';
+        imageError = { zone: '', msg: '' };
         try {
             const compressed = await compressImage(file, target === 'logo' ? 90 * 1024 : 220 * 1024);
             if (target === 'main') mainImage = compressed;
             else if (target === 'logo') logo = compressed;
             else landingImage = compressed;
         } catch (err) {
-            imageError = err instanceof Error ? err.message : 'שגיאה בטעינת התמונה';
+            imageError = {
+                zone: target === 'landing' ? 'landing' : 'card',
+                msg: err instanceof Error ? err.message : 'שגיאה בטעינת התמונה',
+            };
         } finally {
             input.value = '';
         }
@@ -179,11 +186,14 @@
                     <input type="file" accept="image/png,image/jpeg,image/webp" onchange={(e) => pickImage(e, 'logo')} class={inputCls} />
                 </label>
             </div>
-            {#if imageError}
-                <p class="mt-2 text-xs text-red-300">{imageError}</p>
+            {#if imageError.zone === 'card'}
+                <p class="mt-2 text-xs text-red-300">{imageError.msg}</p>
             {/if}
-            <p class="mt-2 text-xs text-gray-500">
-                התמונות נדחסות אוטומטית. משקל נוכחי: {fmtKb(totalBytes)} מתוך 600KB המותרים.
+            <p class="mt-2 text-xs {overweight ? 'font-bold text-red-300' : 'text-gray-500'}">
+                התמונות נדחסות אוטומטית. משקל נוכחי: {fmtKb(totalBytes)} מתוך {fmtKb(MAX_AD_TOTAL_BYTES)} המותרים.
+                {#if overweight}
+                    הסירו או החליפו תמונה — אי אפשר לשלוח מעל התקרה.
+                {/if}
             </p>
         </section>
 
@@ -215,6 +225,9 @@
                 <label class="block sm:col-span-2">
                     <span class={labelCls}>תמונה לדף הנחיתה</span>
                     <input type="file" accept="image/png,image/jpeg,image/webp" onchange={(e) => pickImage(e, 'landing')} class={inputCls} />
+                    {#if imageError.zone === 'landing'}
+                        <span class="mt-1 block text-xs text-red-300">{imageError.msg}</span>
+                    {/if}
                 </label>
 
                 <label class="block">
@@ -270,6 +283,11 @@
             </button>
             <a href="/advertise" class="text-sm text-gray-400 hover:text-gray-200">ביטול</a>
         </div>
+        {#if overweight}
+            <p class="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-300">
+                ⚖️ המודעה כבדה מדי ({fmtKb(totalBytes)} מתוך {fmtKb(MAX_AD_TOTAL_BYTES)}) — הקטינו או הסירו תמונה כדי לשלוח.
+            </p>
+        {/if}
     </form>
 
     <!-- ---- עורך הכרטיס: תצוגה מקדימה חיה + פקדי עיצוב ---- -->
