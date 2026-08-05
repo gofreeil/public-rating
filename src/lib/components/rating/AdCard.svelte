@@ -74,7 +74,7 @@
     }
 </script>
 
-<div class="ad-card relative flex h-full w-full flex-col overflow-hidden rounded-2xl shadow-lg" class:is-static={!editable}>
+<div class="promo-card relative flex h-full w-full flex-col overflow-hidden rounded-2xl shadow-lg" class:is-static={!editable}>
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
         bind:this={frame}
@@ -119,7 +119,7 @@
         {/if}
 
         <div
-            class="ad-caption pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-2 pt-8 text-center"
+            class="promo-caption pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-2 pt-8 text-center"
             style="transform: translateY({s.title_offset_y}%)"
         >
             <span class="block text-sm leading-tight font-black" style="color: {s.title_color}">
@@ -171,22 +171,22 @@
         opacity: 0;
         transition: opacity 700ms ease;
     }
-    .ad-card.is-static:hover .ad-hover {
+    .promo-card.is-static:hover .ad-hover {
         opacity: 1;
     }
     .ad-photo,
-    .ad-caption {
+    .promo-caption {
         transition: opacity 700ms ease;
     }
-    .ad-card.is-static:hover .ad-photo,
-    .ad-card.is-static:hover .ad-caption {
+    .promo-card.is-static:hover .ad-photo,
+    .promo-card.is-static:hover .promo-caption {
         opacity: 0;
     }
 
     @media (prefers-reduced-motion: reduce) {
         .ad-hover,
         .ad-photo,
-        .ad-caption {
+        .promo-caption {
             transition-duration: 1ms;
         }
     }
