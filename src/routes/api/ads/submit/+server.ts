@@ -15,6 +15,8 @@
 
 import { json } from '@sveltejs/kit';
 import { AdTooLargeError, submitAd } from '$lib/server/ads';
+import { notifyAdminsNewAd } from '$lib/server/adsNotify';
+import { normalizePlanDays } from '$lib/ads/plans';
 import { TOO_MANY, allowAction } from '$lib/server/rateLimit';
 import type { RequestHandler } from './$types';
 
@@ -64,6 +66,16 @@ export const POST: RequestHandler = async (event) => {
             ownerId: userId,
             ownerName: session?.user?.name ?? '',
             contactEmail: session?.user?.email ?? '',
+            payment: session?.user?.role === 'super_admin' ? 'owner' : 'pending',
+        });
+        // התראה לאדמינים — בלעדיה הפרסומת נשמרה כ"ממתינה לאישור" בשקט
+        // מוחלט, ואיש לא ידע עליה עד שמישהו נכנס במקרה ל-/admin/ads.
+        // best-effort: לעולם לא מפילה את ההגשה עצמה.
+        await notifyAdminsNewAd({
+            adTitle: title,
+            advertiserName: session?.user?.name ?? '',
+            advertiserEmail: session?.user?.email ?? '',
+            durationDays: normalizePlanDays(body.requestedDurationDays),
             payment: session?.user?.role === 'super_admin' ? 'owner' : 'pending',
         });
         return json({ ok: true, id });
