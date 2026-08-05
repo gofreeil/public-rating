@@ -208,6 +208,41 @@
                             </span>
                         </div>
 
+                        {#if ad.status === 'approved' && !ad.expired && ad.slotIndex >= 0}
+                            <!-- משבצת המודעה בטור + החלפת מקום. הסדר כאן הוא בדיוק
+                                 הסדר שהגולש רואה בטור הימני. -->
+                            <div class="flex flex-wrap items-center gap-2 border-t border-white/10 pt-2">
+                                <span class="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-emerald-400/40 bg-emerald-500/15 text-xs font-black text-emerald-200">
+                                    {ad.slotIndex + 1}
+                                </span>
+                                <span class="text-xs font-bold text-gray-400">
+                                    משבצת {ad.slotIndex + 1} מתוך {ad.slotTotal} בטור
+                                </span>
+                                <div class="mr-auto flex items-center gap-1">
+                                    <form method="POST" action="?/move" use:enhance>
+                                        <input type="hidden" name="id" value={ad.id} />
+                                        <input type="hidden" name="dir" value="up" />
+                                        <button
+                                            type="submit"
+                                            disabled={ad.slotIndex === 0}
+                                            title="העלה משבצת אחת"
+                                            class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+                                        >▲ למעלה</button>
+                                    </form>
+                                    <form method="POST" action="?/move" use:enhance>
+                                        <input type="hidden" name="id" value={ad.id} />
+                                        <input type="hidden" name="dir" value="down" />
+                                        <button
+                                            type="submit"
+                                            disabled={ad.slotIndex === ad.slotTotal - 1}
+                                            title="הורד משבצת אחת"
+                                            class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+                                        >▼ למטה</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {/if}
+
                         <!-- פרטי המפרסם: מסך מאחורי הרשאה, ולכן מותר כאן -->
                         <p class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
                             {#if ad.submittedByName}<span>מפרסם: {ad.submittedByName}</span>{/if}
@@ -290,6 +325,26 @@
                                     </select>
                                     <button type="submit" class="cursor-pointer rounded-xl border border-blue-400/40 bg-blue-500/15 px-3 py-1.5 text-xs font-bold text-blue-200 hover:bg-blue-500/25">
                                         ⏱ הארכה
+                                    </button>
+                                </form>
+                            {/if}
+
+                            {#if ad.status === 'approved' && !ad.expired}
+                                <!-- הורדה מהאוויר בלי מחיקה: המודעה חוזרת לממתינות -->
+                                <form
+                                    method="POST"
+                                    action="?/unapprove"
+                                    use:enhance={({ cancel }) => {
+                                        if (!confirm(`להוריד את "${ad.title}" מהאתר ולהחזיר לממתינות?`)) {
+                                            cancel();
+                                            return;
+                                        }
+                                        return async ({ update }) => await update();
+                                    }}
+                                >
+                                    <input type="hidden" name="id" value={ad.id} />
+                                    <button type="submit" class="cursor-pointer rounded-xl border border-amber-400/40 bg-amber-500/15 px-3 py-1.5 text-xs font-bold text-amber-200 hover:bg-amber-500/25">
+                                        ⏸ הורד מהאתר
                                     </button>
                                 </form>
                             {/if}

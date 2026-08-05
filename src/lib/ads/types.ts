@@ -110,6 +110,8 @@ export interface SubmittedAd {
     payment: AdPayment;
     /** סך הבייטים של כל ה-data URI בשורה — נחתם בכתיבה */
     bytes: number;
+    /** מיקום ידני במשבצות הטור (0 = ראשונה); ריק = לפי סדר הרכישה */
+    slotOrder?: number;
 }
 
 /** מה שהטור הימני ופרסומת הנייד מקבלים — בלי שום זהות */

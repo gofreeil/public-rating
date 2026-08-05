@@ -17,10 +17,13 @@ import {
     approveAd,
     extendAd,
     isExpired,
+    bySlotOrder,
     listAllForAdmin,
+    moveApprovedAd,
     rejectAd,
     removeAd,
     submitAd,
+    unapproveAd,
 } from '$lib/server/ads';
 import { getAdStats, type AdStatRow } from '$lib/server/adStats';
 import type { SubmittedAd } from '$lib/ads/types';
@@ -48,6 +51,15 @@ export const load: PageServerLoad = async (event) => {
     }
 
     const now = Date.now();
+    // סדר המשבצות בטור — זהה לסדר שהאתר מציג בו. ממנו נגזר מספר המשבצת
+    // שמוצג ליד כל מודעה וכפתורי החלפת המקום.
+    const slotOrder = ads
+        .filter((a) => a.status === 'approved' && !isExpired(a, now))
+        .slice()
+        .reverse()
+        .sort(bySlotOrder)
+        .map((a) => a.id);
+
     const rows = ads.map((ad) => ({
         ...ad,
         // המפרסם ופרטי הקשר נשארים כאן: זה מסך אדמין מאחורי הרשאה,
@@ -60,6 +72,8 @@ export const load: PageServerLoad = async (event) => {
             ad.editedAt && ad.decidedAt && new Date(ad.editedAt) > new Date(ad.decidedAt),
         ),
         stats: stats[ad.id] ?? { impressions: 0, clicks: 0, landing: 0, leads: 0, ctr: 0 },
+        slotIndex: slotOrder.indexOf(ad.id),
+        slotTotal: slotOrder.length,
     }));
 
     const live = rows.filter((a) => a.status === 'approved' && !a.expired).length;
@@ -131,6 +145,36 @@ export const actions: Actions = {
             return { success: true, message: 'הפרסומת הוסרה' };
         } catch (e) {
             return fail(500, { error: `שגיאה בהסרה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // הורדה מהאוויר בלי מחיקה — המודעה חוזרת לממתינה והמשבצת מתפנה
+    unapprove: async (event) => {
+        const by = await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            await unapproveAd(id, by);
+            return { success: true, message: 'הפרסומת ירדה מהאתר וחזרה לממתינות' };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בהורדה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // החלפת מקום בין משבצות הטור
+    move: async (event) => {
+        await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        const dir = fd.get('dir') === 'down' ? 'down' : 'up';
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            const r = await moveApprovedAd(id, dir);
+            if (!r) return fail(400, { error: 'הפרסומת כבר בקצה הטור' });
+            return { success: true, message: `${r.title} — משבצת ${r.position} מתוך ${r.total}` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בהחלפת המקום: ${e instanceof Error ? e.message : e}` });
         }
     },
 

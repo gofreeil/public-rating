@@ -149,7 +149,14 @@ function mapAd(item: StrapiItem): SubmittedAd {
         rejectionReason: clamp(x.rejection_reason, 300),
         payment,
         bytes: Number.isFinite(Number(x.bytes)) ? Number(x.bytes) : 0,
+        // מיקום ידני שנקבע במסך הניהול (החלפת מקום בין משבצות)
+        slotOrder: typeof x.slot_order === 'number' ? x.slot_order : undefined,
     };
+}
+
+/** סדר המשבצות: קודם מי שקיבל מיקום ידני, אחריו לפי סדר הרכישה */
+export function bySlotOrder(a: { slotOrder?: number }, b: { slotOrder?: number }): number {
+    return (a.slotOrder ?? Number.MAX_SAFE_INTEGER) - (b.slotOrder ?? Number.MAX_SAFE_INTEGER);
 }
 
 /** מודעה פגה? (ריק = ללא תפוגה, למשל מודעה שטרם אושרה) */
@@ -221,6 +228,8 @@ export async function listApproved(): Promise<ApprovedAdPublic[]> {
     const data = rows
         .map(mapAd)
         .filter((ad) => !isExpired(ad, now))
+        // מיקום ידני שנקבע במסך הניהול גובר על סדר הרכישה
+        .sort(bySlotOrder)
         .map(toApprovedPublic);
 
     approvedCache = { at: now, data };
@@ -466,6 +475,58 @@ export async function rejectAd(
  */
 export async function removeAd(id: string, byAdmin: string): Promise<void> {
     await mergeExtra(id, { decided_by: clamp(byAdmin, 120) }, { status1: 'deleted' });
+}
+
+/**
+ * הורדת מודעה מהאוויר בלי למחוק אותה — חוזרת לממתינה והתוקף מתאפס,
+ * כך שהמשבצת מתפנה מיד ואפשר להחזיר אותה באישור מחדש.
+ */
+export async function unapproveAd(id: string, byAdmin: string): Promise<void> {
+    await mergeExtra(
+        id,
+        {
+            decided_at: '',
+            decided_by: clamp(byAdmin, 120),
+            expires_at: '',
+            rejection_reason: '',
+        },
+        { status1: 'pending' },
+    );
+}
+
+/**
+ * מזיזה מודעה שעל האוויר משבצת אחת למעלה/למטה בטור.
+ * המיקום נשמר ב-extra_fields.slot_order — אין עמודה ייעודית, ואותה
+ * עמודת json כבר נושאת את כל שאר שדות המודעה.
+ * מחזירה null אם המודעה לא באוויר או שהיא כבר בקצה הטור.
+ */
+export async function moveApprovedAd(
+    id: string,
+    direction: 'up' | 'down',
+): Promise<{ title: string; position: number; total: number } | null> {
+    const now = Date.now();
+    const list = (await listAllForAdmin())
+        .filter((a) => a.status === 'approved')
+        .filter((a) => !isExpired(a, now))
+        // listAllForAdmin מחזיר חדש→ותיק; סדר המשבצות הוא ותיק→חדש
+        .reverse()
+        .sort(bySlotOrder);
+
+    const from = list.findIndex((a) => a.id === id);
+    if (from === -1) return null;
+    const to = direction === 'up' ? from - 1 : from + 1;
+    if (to < 0 || to >= list.length) return null;
+
+    const reordered = [...list];
+    [reordered[from], reordered[to]] = [reordered[to], reordered[from]];
+
+    // כותבים רק את מי שהמשבצת שלו באמת השתנתה: בפעם הראשונה זה כל הטור
+    // (לאף מודעה אין עדיין slot_order), ומכאן והלאה שתי המודעות שהוחלפו.
+    for (const [i, ad] of reordered.entries()) {
+        if (ad.slotOrder === i) continue;
+        await mergeExtra(ad.id, { slot_order: i });
+    }
+    return { title: reordered[to].title, position: to + 1, total: reordered.length };
 }
 
 /** הארכה ידנית של מודעה קיימת */
