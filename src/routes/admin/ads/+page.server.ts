@@ -20,8 +20,12 @@ import {
     bySlotOrder,
     listAllForAdmin,
     moveApprovedAd,
+    normalizeDurationDays,
+    pauseAd,
     rejectAd,
     removeAd,
+    resumeAd,
+    setAdDuration,
     submitAd,
     unapproveAd,
 } from '$lib/server/ads';
@@ -54,7 +58,7 @@ export const load: PageServerLoad = async (event) => {
     // סדר המשבצות בטור — זהה לסדר שהאתר מציג בו. ממנו נגזר מספר המשבצת
     // שמוצג ליד כל מודעה וכפתורי החלפת המקום.
     const slotOrder = ads
-        .filter((a) => a.status === 'approved' && !isExpired(a, now))
+        .filter((a) => a.status === 'approved' && !isExpired(a, now) && !a.paused)
         .slice()
         .reverse()
         .sort(bySlotOrder)
@@ -159,6 +163,52 @@ export const actions: Actions = {
             return { success: true, message: 'הפרסומת ירדה מהאתר וחזרה לממתינות' };
         } catch (e) {
             return fail(500, { error: `שגיאה בהורדה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // קציבת תקופה — נספרת מיום האישור (extend מוסיף על הקיים, זה קובע מחדש)
+    setDuration: async (event) => {
+        await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            const r = await setAdDuration(id, normalizeDurationDays(fd.get('duration_days')));
+            if (!r) return fail(404, { error: 'הפרסומת לא נמצאה' });
+            const suffix = r.daysLeft < 0 ? ' — התקופה כבר חלפה, המודעה ירדה מהאוויר' : '';
+            return { success: true, message: `${r.title}: ${r.daysLeft} ימים נותרו${suffix}` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בקציבה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // השהיה — יורדת מהאוויר ושומרת את הימים שנותרו
+    pause: async (event) => {
+        await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            const r = await pauseAd(id);
+            if (!r) return fail(404, { error: 'הפרסומת לא נמצאה' });
+            return { success: true, message: `${r.title} הושהתה — ${r.daysLeft} ימים שמורים לה` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בהשהיה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // המשך אחרי השהיה — הימים השמורים נספרים מהיום
+    resume: async (event) => {
+        await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            const r = await resumeAd(id);
+            if (!r) return fail(404, { error: 'הפרסומת לא נמצאה' });
+            return { success: true, message: `${r.title} חזרה לאוויר — ${r.daysLeft} ימים` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בהפעלה מחדש: ${e instanceof Error ? e.message : e}` });
         }
     },
 

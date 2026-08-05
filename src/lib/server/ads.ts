@@ -151,6 +151,8 @@ function mapAd(item: StrapiItem): SubmittedAd {
         bytes: Number.isFinite(Number(x.bytes)) ? Number(x.bytes) : 0,
         // מיקום ידני שנקבע במסך הניהול (החלפת מקום בין משבצות)
         slotOrder: typeof x.slot_order === 'number' ? x.slot_order : undefined,
+        paused: x.paused === true,
+        pausedDaysLeft: typeof x.paused_days_left === 'number' ? x.paused_days_left : undefined,
     };
 }
 
@@ -228,6 +230,8 @@ export async function listApproved(): Promise<ApprovedAdPublic[]> {
     const data = rows
         .map(mapAd)
         .filter((ad) => !isExpired(ad, now))
+        // מודעה מושהית יורדת מהאוויר ושומרת את הימים שנותרו לה
+        .filter((ad) => !ad.paused)
         // מיקום ידני שנקבע במסך הניהול גובר על סדר הרכישה
         .sort(bySlotOrder)
         .map(toApprovedPublic);
@@ -494,6 +498,68 @@ export async function unapproveAd(id: string, byAdmin: string): Promise<void> {
     );
 }
 
+const MIN_DURATION_DAYS = 1;
+const MAX_DURATION_DAYS = 730;
+
+/** מנרמל קלט ימים מהטופס לטווח שפוי (הקציבה הידנית אינה כבולה למסלולים) */
+export function normalizeDurationDays(raw: unknown): number {
+    const n = Math.round(Number(raw));
+    if (!Number.isFinite(n)) return DEFAULT_PLAN_DAYS;
+    return Math.min(MAX_DURATION_DAYS, Math.max(MIN_DURATION_DAYS, n));
+}
+
+/**
+ * קוצב למודעה תקופה חדשה. התקופה נספרת מיום האישור, ולכן קציבה קצרה
+ * מהזמן שכבר רץ מורידה את המודעה מהאוויר מיד — וזו המשמעות של "לקצוב".
+ * בשונה מ-extendAd שמוסיף זמן על הקיים.
+ */
+export async function setAdDuration(
+    id: string,
+    days: number,
+): Promise<{ title: string; expiresAt: string; daysLeft: number } | null> {
+    const ad = await getAd(id);
+    if (!ad) return null;
+    const from = ad.decidedAt || ad.submittedAt || new Date().toISOString();
+    const expires = new Date(new Date(from).getTime() + days * DAY_MS);
+    await mergeExtra(id, { duration_days: days, expires_at: expires.toISOString() });
+    return {
+        title: ad.title,
+        expiresAt: expires.toISOString(),
+        daysLeft: Math.ceil((expires.getTime() - Date.now()) / DAY_MS),
+    };
+}
+
+/**
+ * השהיה: המודעה יורדת מהאוויר אבל שומרת את הימים שנותרו לה. בשונה
+ * מהורדה לממתינות — המפרסם לא מפסיד ימים ששילם עליהם.
+ */
+export async function pauseAd(id: string): Promise<{ title: string; daysLeft: number } | null> {
+    const ad = await getAd(id);
+    if (!ad) return null;
+    if (ad.paused) return { title: ad.title, daysLeft: ad.pausedDaysLeft ?? 0 };
+    const daysLeft = ad.expiresAt
+        ? Math.max(0, Math.ceil((new Date(ad.expiresAt).getTime() - Date.now()) / DAY_MS))
+        : normalizePlanDays(ad.durationDays);
+    await mergeExtra(id, { paused: true, paused_days_left: daysLeft });
+    return { title: ad.title, daysLeft };
+}
+
+/** המשך אחרי השהיה: הימים שנשמרו נספרים מחדש מהיום. */
+export async function resumeAd(
+    id: string,
+): Promise<{ title: string; expiresAt: string; daysLeft: number } | null> {
+    const ad = await getAd(id);
+    if (!ad) return null;
+    const daysLeft = ad.pausedDaysLeft ?? normalizePlanDays(ad.durationDays);
+    const expires = new Date(Date.now() + daysLeft * DAY_MS);
+    await mergeExtra(
+        id,
+        { paused: false, paused_days_left: null, expires_at: expires.toISOString() },
+        { status1: 'active' },
+    );
+    return { title: ad.title, expiresAt: expires.toISOString(), daysLeft };
+}
+
 /**
  * מזיזה מודעה שעל האוויר משבצת אחת למעלה/למטה בטור.
  * המיקום נשמר ב-extra_fields.slot_order — אין עמודה ייעודית, ואותה
@@ -508,6 +574,8 @@ export async function moveApprovedAd(
     const list = (await listAllForAdmin())
         .filter((a) => a.status === 'approved')
         .filter((a) => !isExpired(a, now))
+        // מושהית אינה תופסת משבצת בטור
+        .filter((a) => !a.paused)
         // listAllForAdmin מחזיר חדש→ותיק; סדר המשבצות הוא ותיק→חדש
         .reverse()
         .sort(bySlotOrder);

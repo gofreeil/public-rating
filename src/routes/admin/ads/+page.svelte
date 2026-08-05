@@ -10,6 +10,9 @@
 
     let showCreate = $state(false);
 
+    // תקופות שאפשר לקצוב למודעה שעל האוויר (נספרות מיום האישור)
+    const DURATION_OPTIONS = [7, 14, 30, 60, 90, 180, 365];
+
     const pending = $derived(data.rows.filter((a) => a.status === 'pending'));
     const liveAds = $derived(data.rows.filter((a) => a.status === 'approved' && !a.expired));
     const inactive = $derived(
@@ -202,6 +205,11 @@
                                     {ad.daysLeft} ימים נותרו
                                 </span>
                             {/if}
+                            {#if ad.paused}
+                                <span class="rounded-full border border-blue-400/40 bg-blue-500/15 px-2 py-0.5 text-[11px] font-bold text-blue-300">
+                                    ⏸ מושהית — {ad.pausedDaysLeft ?? 0} ימים שמורים
+                                </span>
+                            {/if}
 
                             <span class="mr-auto text-xs text-gray-500">
                                 {ad.submittedAt ? absDate(ad.submittedAt) : ''}
@@ -327,6 +335,49 @@
                                         ⏱ הארכה
                                     </button>
                                 </form>
+
+                                <!-- קציבה: קובעת תקופה מיום האישור, בשונה מהארכה שמוסיפה על הקיים -->
+                                <form method="POST" action="?/setDuration" use:enhance class="flex items-center gap-1">
+                                    <input type="hidden" name="id" value={ad.id} />
+                                    <select name="duration_days" class="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white">
+                                        {#each DURATION_OPTIONS as d (d)}
+                                            <option value={d} selected={d === ad.durationDays} class="bg-slate-900">{d} ימים</option>
+                                        {/each}
+                                    </select>
+                                    <button type="submit" class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
+                                            title="התקופה נספרת מיום האישור">
+                                        ✂ קצוב
+                                    </button>
+                                </form>
+                            {/if}
+
+                            {#if ad.status === 'approved' && !ad.expired}
+                                {#if ad.paused}
+                                    <form method="POST" action="?/resume" use:enhance>
+                                        <input type="hidden" name="id" value={ad.id} />
+                                        <button type="submit" class="cursor-pointer rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-200 hover:bg-emerald-500/25"
+                                                title="הימים השמורים נספרים מהיום">
+                                            ▶ המשך
+                                        </button>
+                                    </form>
+                                {:else}
+                                    <form
+                                        method="POST"
+                                        action="?/pause"
+                                        use:enhance={({ cancel }) => {
+                                            if (!confirm(`להשהות את "${ad.title}"? היא תרד מהאוויר והימים שנותרו יישמרו לה.`)) {
+                                                cancel();
+                                                return;
+                                            }
+                                            return async ({ update }) => await update();
+                                        }}
+                                    >
+                                        <input type="hidden" name="id" value={ad.id} />
+                                        <button type="submit" class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10">
+                                            ⏸ השהה
+                                        </button>
+                                    </form>
+                                {/if}
                             {/if}
 
                             {#if ad.status === 'approved' && !ad.expired}
