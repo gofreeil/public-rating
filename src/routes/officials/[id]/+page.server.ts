@@ -38,7 +38,11 @@ import {
     toggleJoinInquiry,
     replyToInquiry,
 } from '$lib/server/rating';
+import { syncOneRecord } from '$lib/server/knessetSync';
 import type { PageServerLoad, Actions } from './$types';
+
+// משיכת הרזומה פונה ל-OData של הכנסת — מעבר ל-10ש' ברירת המחדל של Vercel
+export const config = { maxDuration: 60 };
 
 export const load: PageServerLoad = async (event) => {
     // getOfficial מבחין בין 404 אמיתי לבין תקלת באקאנד ומזריק את השנייה הלאה,
@@ -121,6 +125,30 @@ export const load: PageServerLoad = async (event) => {
 };
 
 export const actions: Actions = {
+    // משיכת/רענון הרזומה הפרלמנטרית מה-OData של הכנסת — אדמין בלבד
+    syncRecord: async (event) => {
+        let session = null;
+        try {
+            session = await event.locals.auth();
+        } catch {}
+        if (!isSiteAdmin(session)) return fail(403, { recordError: 'אין לך הרשאה לפעולה זו' });
+
+        try {
+            const { record } = await syncOneRecord(event.params.id);
+            const bits = [
+                record.bills.lead ? `${record.bills.lead} הצעות חוק (${record.bills.passed} עברו)` : '',
+                record.queries ? `${record.queries} שאילתות` : '',
+                record.ministry_queries ? `${record.ministry_queries.total} שאילתות למשרד` : '',
+            ].filter(Boolean);
+            return {
+                recordSuccess: true,
+                recordMessage: `הרזומה עודכנה${bits.length ? ` — ${bits.join(' · ')}` : ''}`,
+            };
+        } catch (e) {
+            return fail(502, { recordError: e instanceof Error ? e.message : String(e) });
+        }
+    },
+
     // פרסום/עדכון דירוג — אחד לכל משתמש למדורג
     rate: async (event) => {
         let session = null;

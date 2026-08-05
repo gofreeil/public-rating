@@ -636,16 +636,32 @@ export async function runRecordSync(ranBy: string): Promise<RecordSyncResult> {
     return result;
 }
 
-/** רענון רזומה של מדורג בודד — הכפתור שליד השורה באדמין */
+/**
+ * רענון רזומה של מדורג בודד — הכפתור בדף המדורג ובשורת האדמין.
+ * כשעוד לא רץ סנכרון מצבת, המזהה נקבע כאן לפי השם מול רשימת המכהנים,
+ * כדי שלחיצה אחת בדף של מדורג תספיק (בלי להריץ קודם סנכרון מלא).
+ */
 export async function syncOneRecord(officialId: string): Promise<{ name: string; record: KnessetRecord }> {
     const official = await getOfficialForSync(officialId);
     if (!official) throw new Error('המדורג לא נמצא');
-    if (!official.knessetPersonId) {
-        throw new Error('למדורג אין מזהה כנסת — הריצו קודם "סנכרון מצבת המכהנים"');
+
+    const patch: OfficialSyncPatch = {};
+    let personId = official.knessetPersonId;
+    if (!personId) {
+        const roster = await fetchKnessetRoster();
+        const entry = matchOneByName(official.name, roster);
+        if (!entry) {
+            throw new Error(`"${official.name}" לא נמצא/ה ברשימת המכהנים בכנסת — אין רזומה למשוך`);
+        }
+        personId = entry.personId;
+        patch.knessetPersonId = personId;
+        if (official.position !== entry.position) patch.position = entry.position;
+        if (official.org !== entry.org) patch.org = entry.org;
     }
+
     const [knessetNum, statusMap] = await Promise.all([currentKnessetNum(), fetchStatusMap()]);
-    const record = await fetchKnessetRecord(official.knessetPersonId, knessetNum, statusMap);
-    await applyOfficialSync(official.id, { knessetRecord: record });
+    const record = await fetchKnessetRecord(personId, knessetNum, statusMap);
+    await applyOfficialSync(official.id, { ...patch, knessetRecord: record });
     invalidateRating();
     return { name: official.name, record };
 }
@@ -658,9 +674,13 @@ export interface SyncReport extends SyncLog {
     ok: boolean;
 }
 
-/** התאמת שמות: שוויון מלא, או תת-קבוצת מילים (שם אמצעי) — רק כשאין דו-משמעות */
-function matchByName(rosterName: string, candidates: SyncOfficialRow[]): SyncOfficialRow | null {
-    const target = norm(rosterName);
+/**
+ * התאמת שם יחיד מתוך רשימה: שוויון מלא, או תת-קבוצת מילים ("יולי יואל
+ * אדלשטיין" ↔ "יולי אדלשטיין") — ורק כשההתאמה חד-משמעית. מחזיר null
+ * כששני מועמדים מתאימים, כדי לא לשייך רזומה לאדם הלא נכון.
+ */
+function matchOneByName<T extends { name: string }>(name: string, candidates: T[]): T | null {
+    const target = norm(name);
     const exact = candidates.filter((c) => norm(c.name) === target);
     if (exact.length === 1) return exact[0];
     if (exact.length > 1) return null;
@@ -728,7 +748,10 @@ export async function runKnessetSync(ranBy: string): Promise<SyncReport> {
     for (const entry of roster) {
         const existing =
             byPersonId.get(entry.personId) ??
-            matchByName(entry.name, officials.filter((o) => !matchedOfficialIds.has(o.id)));
+            matchOneByName(
+                entry.name,
+                officials.filter((o) => !matchedOfficialIds.has(o.id)),
+            );
         if (!existing) {
             toCreate.push(entry);
             continue;
