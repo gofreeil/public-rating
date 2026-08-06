@@ -27,6 +27,24 @@
         return parts.join(', ');
     }
 
+    /**
+     * ח"כ שנכנס, פרש וחזר (חוק הנורבגי) מופיע בכנסת כמה שורות באותו תפקיד.
+     * לתצוגה מאחדים לשורה אחת: הכניסה המוקדמת ביותר, והסיום רק אם כל
+     * הכהונות הסתיימו.
+     */
+    const roles = $derived.by(() => {
+        const merged = new Map<string, { title: string; from: string; to: string | null }>();
+        for (const r of record.roles) {
+            const prev = merged.get(r.title);
+            if (!prev) merged.set(r.title, { ...r });
+            else {
+                if (r.from < prev.from) prev.from = r.from;
+                prev.to = prev.to && r.to ? (r.to > prev.to ? r.to : prev.to) : null;
+            }
+        }
+        return [...merged.values()].sort((a, b) => a.from.localeCompare(b.from));
+    });
+
     const seniority = $derived(record.knessets.length);
     const bills = $derived(record.bills);
     const mq = $derived(record.ministry_queries);
@@ -63,7 +81,7 @@
                     class="rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-300"
                 >🎖️ {seniority === 1 ? 'קדנציה ראשונה' : `${seniority} קדנציות`} · כנסות {knessetRanges(record.knessets)}</span>
             {/if}
-            {#each record.roles as role (role.title + role.from)}
+            {#each roles as role (role.title)}
                 <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-300">
                     {role.title}
                     <span class="text-gray-500">

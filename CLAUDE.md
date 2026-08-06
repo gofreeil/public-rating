@@ -45,6 +45,9 @@ src/routes/              / (בית) · /knesset /judges /public-servants (לוח
                          /top-rated (מצטיינים) · /about (חזון) · /suggest (הצעת מדורג) · /admin/officials (ניהול)
 scripts/seed-officials.mjs  זריעת מדורגים ראשונים: node scripts/seed-officials.mjs --url https://api.gofreeil.com
 scripts/fetch-knesset-members.mjs  משיכת כל הח"כים/השרים המכהנים מ-OData הכנסת אל seed-officials.json (ואז seed + enrich)
+scripts/sync-knesset-records.mjs  ייבוא מרוכז של הכל (מצבת + רזומות + שקוף) בלי מגבלת זמן של פונקציית שרת:
+                             node scripts/sync-knesset-records.mjs --url https://api.gofreeil.com [--only "שם,שם"] [--concurrency 1] [--dry]
+                             הכנסת מחזירה HTTP 481 בעומס — משלימים את הנכשלים בריצה חוזרת עם --concurrency 1
 ```
 
 ## עיצוב ו-RTL
