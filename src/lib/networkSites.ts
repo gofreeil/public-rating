@@ -19,7 +19,7 @@ export const networkSites: NetworkSite[] = [
         id: 1,
         title: 'בתי הפיוס',
         href: 'https://chachmim.gofreeil.com/',
-        image: '/images/bati-hapius.png',
+        image: '/images/bati-hapius.webp',
         color: 'from-orange-600 to-red-600'
     },
     {
@@ -40,49 +40,49 @@ export const networkSites: NetworkSite[] = [
         id: 4,
         title: 'ועדי שכונות',
         href: 'https://neighborhoods.gofreeil.com/',
-        image: '/images/news/vaadei-shchunot.png',
+        image: '/images/news/vaadei-shchunot.webp',
         color: 'from-blue-600 to-cyan-600'
     },
     {
         id: 5,
         title: 'מבקר רשויות המדינה',
         href: 'https://criticism.gofreeil.com/',
-        image: '/images/mevaker-rashuyot.png',
+        image: '/images/mevaker-rashuyot.webp',
         color: 'from-blue-700 to-indigo-700'
     },
     {
         id: 6,
         title: 'דירוג ציבורי',
         href: 'https://rating.gofreeil.com/',
-        image: '/images/public-rating.jpeg',
+        image: '/images/public-rating.webp',
         color: 'from-indigo-600 to-blue-600'
     },
     {
         id: 7,
         title: 'משאלי העם',
         href: 'https://referendum.gofreeil.com/',
-        image: '/images/referendum.png',
+        image: '/images/referendum.webp',
         color: 'from-purple-600 to-indigo-700'
     },
     {
         id: 8,
         title: 'קבוצת רכישה',
         href: 'https://groups.gofreeil.com/',
-        image: '/images/whatsapp_cta.png',
+        image: '/images/whatsapp_cta.webp',
         color: 'from-green-800 to-emerald-900'
     },
     {
         id: 9,
         title: 'בעלי מקצוע כשירים',
         href: 'https://index.gofreeil.com/',
-        image: '/images/professionals.png',
+        image: '/images/professionals.webp',
         color: 'from-yellow-500 to-orange-500'
     },
     {
         id: 10,
         title: 'חנות החירות',
         href: 'https://shop.gofreeil.com/',
-        image: '/images/shop.png',
+        image: '/images/shop.webp',
         color: 'from-emerald-600 to-teal-700'
     }
 ];

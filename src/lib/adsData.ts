@@ -1,3 +1,10 @@
+// ============================================================
+// adsData.ts - טור אתרי הרשת של "יוצאים לחירות" (דסקטופ + מגירת הנייד)
+// עדכן כאן בלבד - יתעדכן אוטומטית בכל המקומות.
+// זהה לרשימה באתר קהילה בשכונה, למעט החלפת המודעה העצמית
+// (דירוג ציבורי) במודעה של קהילה בשכונה.
+// ============================================================
+
 export interface Ad {
     id: number;
     title: string;
@@ -6,26 +13,30 @@ export interface Ad {
     href: string;
     image: string;
     color: string;
+    imageHeight?: string;   // גובה מותאם לתמונה (ברירת מחדל: 160px)
+    imageScale?: number;    // זום יחסית ל-cover (1 = מילוי המשבצת; מעל 1 = תקריב)
+    hover?: string;         // טקסט tooltip בריחוף מעל כפתור ה-CTA
 }
 
 export const ads: Ad[] = [
-    {
-        id: 12,
-        title: "קהילה בשכונה",
-        description: "כל יתרונות השכונה תחת קורת גג אחת",
-        cta: "תהנה מכל היתרונות של הקהילה בשכונה שלך",
-        href: "https://community.gofreeil.com/",
-        image: "/images/community-neighborhood.png",
-        color: "from-blue-500 to-purple-600"
-    },
     {
         id: 1,
         title: "בתי הפיוס",
         description: "מתנדבים לתת לך עזרה מלאה בדין / פיוס בכל סיכסוך",
         cta: "יש לך סיכסוך? לחץ לפתרון",
         href: "https://chachmim.gofreeil.com/",
-        image: "/images/bati-hapius.png",
+        image: "/images/bati-hapius.webp",
         color: "from-orange-600 to-red-600"
+    },
+    {
+        id: 9,
+        title: 'הגמ"ח הארצי',
+        description: 'כל הגמחים תחת קורת גג אחת',
+        cta: 'לאתר הגמ"ח הארצי',
+        hover: 'מצא כל גמח בקלות!',
+        href: "https://gemach.gofreeil.com/",
+        image: "/images/gemach-harzi.webp",
+        color: "from-pink-600 via-fuchsia-600 to-purple-700",
     },
     {
         id: 2,
@@ -33,8 +44,40 @@ export const ads: Ad[] = [
         description: "מהפכת משילות העם על המוסדות",
         cta: "הכר והשתתף במהפכת משילות העם על מוסדותיו",
         href: "https://neighborhoods.gofreeil.com/",
-        image: "/images/news/vaadei-shchunot.png",
-        color: "from-blue-600 to-cyan-600"
+        image: "/images/news/vaadei-shchunot.webp",
+        color: "from-blue-600 to-cyan-600",
+        imageHeight: "110px"
+    },
+    {
+        id: 5,
+        title: "מבקר רשויות המדינה",
+        description: "מבקרים את הרשויות, ממצים את זכות התושב",
+        cta: "מבקרים את הרשויות, ממצים את זכות התושב",
+        href: "https://criticism.gofreeil.com/",
+        image: "/images/mevaker-rashuyot.webp",
+        color: "from-blue-700 to-indigo-700",
+        imageHeight: "120px",
+        imageScale: 1.2,
+    },
+    {
+        id: 10,
+        title: 'קהילה בשכונה',
+        description: 'כל יתרונות השכונה תחת קורת גג אחת',
+        cta: 'לאתר קהילה בשכונה',
+        hover: 'כל היתרונות בשכונה שלך!',
+        href: "https://community.gofreeil.com/",
+        image: "/images/community-neighborhood.png",
+        color: "from-blue-500 to-purple-600",
+    },
+    {
+        id: 8,
+        title: "משאלי העם",
+        description: "הבע דעתך על הסוגיות האקטואליות",
+        cta: "הבע דעתך על הסוגיות האקטואליות",
+        hover: "הבע דעתך על הסוגיות האקטואליות",
+        href: "https://referendum.gofreeil.com/",
+        image: "/images/referendum.webp",
+        color: "from-purple-600 to-indigo-700"
     },
     {
         id: 3,
@@ -42,17 +85,8 @@ export const ads: Ad[] = [
         description: "הוזל את ההוצאות שלך",
         cta: "הצטרף לקבוצת הרכישה שלנו והוזל מיד את ההוצאות!",
         href: "https://groups.gofreeil.com/",
-        image: "/images/whatsapp_cta.png",
+        image: "/images/whatsapp_cta.webp",
         color: "from-green-800 to-emerald-900"
-    },
-    {
-        id: 5,
-        title: "גידול ביתי",
-        description: "מערכת לגידול ביתי (בקרוב)",
-        cta: "מערכת לגידול ביתי - לחץ לפרטים",
-        href: "https://www.melecshop.com/page/free",
-        image: "/images/partners/growing-system.png",
-        color: "from-teal-500 to-teal-600"
     },
     {
         id: 6,
@@ -60,34 +94,19 @@ export const ads: Ad[] = [
         description: "חתמו על תנאי הקהילה ונותנים לנו הנחות והטבות יחודיות",
         cta: "מחפש בעל מקצוע איכותי באזורך?",
         href: "https://index.gofreeil.com/",
-        image: "/images/professionals.png",
-        color: "from-yellow-500 to-orange-500"
+        image: "/images/professionals.webp",
+        color: "from-yellow-500 to-orange-500",
+        imageHeight: "110px"
     },
     {
         id: 7,
-        title: "ביקורת על העיריה",
-        description: "הזכות לחיות - תלונות לעיריה",
-        cta: "יש לך תלונה לעיריה שמזלזלים בה? - לא עוד",
-        href: "https://criticism.gofreeil.com/",
-        image: "/images/bikoret-iriya.png",
-        color: "from-red-600 to-pink-600"
-    },
-    {
-        id: 8,
-        title: "סיוע לנפגעים מינית",
-        description: "תמיכה וסיוע לנפגעים מינית",
-        cta: "לחץ לפרטים",
-        href: "https://www.melecshop.com/page/kids_FNL3",
-        image: "/images/support-victims.jpeg",
-        color: "from-fuchsia-600 to-pink-600"
-    },
-    {
-        id: 11,
-        title: "החנות החברתית",
+        title: "חנות החירות",
         description: "מוצרים נבחרים לבריאות טבעית, חקלאות ביתית, טכנולוגיה ועוד",
         cta: "כנסו לחנות לחיים טובים יותר",
+        hover: "החנות שלנו!",
         href: "https://shop.gofreeil.com/",
-        image: "/images/freedom-store.png",
-        color: "from-emerald-600 to-teal-700"
+        image: "/images/shop.webp",
+        color: "from-emerald-600 to-teal-700",
+        imageHeight: "110px"
     }
 ];

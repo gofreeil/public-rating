@@ -361,6 +361,7 @@
 						alt={ad.title}
 						class="benefit-img"
 						decoding="async"
+						style={ad.imageScale ? `transform: scale(${ad.imageScale});` : ''}
 						onload={(e) => (e.currentTarget as HTMLImageElement).classList.add('loaded')}
 					/>
 				</div>
