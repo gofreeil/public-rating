@@ -116,6 +116,24 @@ function num(v: unknown): number {
     return Number.isFinite(n) && n >= 0 ? Math.round(n) : 0;
 }
 
+function parseBills(v: unknown, limit: number) {
+    if (!Array.isArray(v)) return [];
+    return v
+        .filter((b): b is Record<string, unknown> => Boolean(b) && typeof b === 'object')
+        .map((b) => ({ name: str(b.name).trim(), status: str(b.status).trim(), date: str(b.date) }))
+        .filter((b) => b.name)
+        .slice(0, limit);
+}
+
+function parseQueries(v: unknown, limit: number) {
+    if (!Array.isArray(v)) return [];
+    return v
+        .filter((q): q is Record<string, unknown> => Boolean(q) && typeof q === 'object')
+        .map((q) => ({ name: str(q.name).trim(), submitted: str(q.submitted), replied: str(q.replied) }))
+        .filter((q) => q.name)
+        .slice(0, limit);
+}
+
 /** רזומת הכנסת מ-extra_fields — בלי person_id הנתון חסר משמעות ולא מוצג */
 function parseKnessetRecord(v: unknown): KnessetRecord | null {
     if (!v || typeof v !== 'object') return null;
@@ -152,8 +170,14 @@ function parseKnessetRecord(v: unknown): KnessetRecord | null {
                       total: num(mqObj.total),
                       answered: num(mqObj.answered),
                       late: num(mqObj.late),
+                      recent: parseQueries(mqObj.recent, 8),
                   }
                 : null,
+        email: str(r.email).trim(),
+        passed_bills: parseBills(r.passed_bills, 60),
+        active_bills: parseBills(r.active_bills, 20),
+        recent_queries: parseQueries(r.recent_queries, 20),
+        recent_agenda: strArr(r.recent_agenda).slice(0, 12),
         synced_at: str(r.synced_at),
     };
 }

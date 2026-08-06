@@ -90,6 +90,54 @@
 />
 
 <div class="flex flex-col gap-4 py-6">
+    <!-- פס ניהול (אדמין בלבד): משיכת הרזומה מהכנסת ישירות מדף המדורג -->
+    {#if data.isAdmin}
+        <section class="rounded-2xl border border-dashed border-purple-400/40 bg-purple-500/5 p-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="text-xs font-bold text-purple-300">🛠️ ניהול</span>
+                <span class="min-w-0 flex-1 text-xs leading-relaxed text-gray-400">
+                    {#if official.knesset_record}
+                        הרזומה נמשכה ב-{absDate(official.knesset_record.synced_at)} מהמאגר הרשמי של הכנסת.
+                    {:else}
+                        טרם נמשכה רזומה — לחיצה תמשוך חקיקה, שאילתות, הצעות לסדר וציר תפקידים מהכנסת.
+                    {/if}
+                </span>
+                <form
+                    method="POST"
+                    action="?/syncRecord"
+                    use:enhance={() => {
+                        syncingRecord = true;
+                        return async ({ update }) => {
+                            syncingRecord = false;
+                            await update();
+                        };
+                    }}
+                >
+                    <button
+                        type="submit"
+                        disabled={syncingRecord}
+                        class="cursor-pointer rounded-xl border border-purple-400/40 bg-purple-500/15 px-4 py-2 text-sm font-bold text-purple-200 transition-colors hover:bg-purple-500/25 disabled:cursor-wait disabled:opacity-60"
+                    >
+                        {syncingRecord
+                            ? '⏳ מושך מהכנסת...'
+                            : official.knesset_record
+                              ? '🔄 רענון הרזומה'
+                              : '📜 משיכת הרזומה מהכנסת'}
+                    </button>
+                </form>
+                <a href="/admin/officials" class="text-xs text-blue-400 transition-colors hover:text-blue-300">
+                    לכל המדורגים ←
+                </a>
+            </div>
+            {#if form?.recordSuccess}
+                <p class="mt-2 text-xs font-medium text-green-400">{form.recordMessage}</p>
+            {/if}
+            {#if form?.recordError}
+                <p class="mt-2 text-xs font-medium text-red-400">{form.recordError}</p>
+            {/if}
+        </section>
+    {/if}
+
     <!-- כותרת: מי המדורג -->
     <section class="flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
         <Avatar name={official.name} image={official.image} size={72} />
@@ -132,49 +180,6 @@
         <KnessetRecord record={official.knesset_record} name={official.name} />
     {/if}
 
-    <!-- שליטת אדמין: משיכת הרזומה מהכנסת ישירות מדף המדורג -->
-    {#if data.isAdmin && official.group === 'knesset'}
-        <section class="rounded-2xl border border-dashed border-purple-400/30 bg-purple-500/5 p-3">
-            <div class="flex flex-wrap items-center gap-3">
-                <span class="text-xs font-bold text-purple-300">🛠️ ניהול</span>
-                <span class="min-w-0 flex-1 text-xs leading-relaxed text-gray-400">
-                    {#if official.knesset_record}
-                        הרזומה נמשכה ב-{absDate(official.knesset_record.synced_at)} מהמאגר הרשמי של הכנסת.
-                    {:else}
-                        טרם נמשכה רזומה פרלמנטרית — לחיצה תמשוך חקיקה, שאילתות וציר תפקידים מה-OData של הכנסת.
-                    {/if}
-                </span>
-                <form
-                    method="POST"
-                    action="?/syncRecord"
-                    use:enhance={() => {
-                        syncingRecord = true;
-                        return async ({ update }) => {
-                            syncingRecord = false;
-                            await update();
-                        };
-                    }}
-                >
-                    <button
-                        type="submit"
-                        disabled={syncingRecord}
-                        class="cursor-pointer rounded-xl border border-purple-400/30 bg-purple-500/10 px-4 py-2 text-sm font-bold text-purple-200 transition-colors hover:bg-purple-500/20 disabled:cursor-wait disabled:opacity-60"
-                    >
-                        {syncingRecord ? '⏳ מושך מהכנסת...' : official.knesset_record ? '🔄 רענון הרזומה' : '📜 משיכת הרזומה מהכנסת'}
-                    </button>
-                </form>
-                <a href="/admin/officials" class="text-xs text-blue-400 transition-colors hover:text-blue-300">
-                    לכל המדורגים ←
-                </a>
-            </div>
-            {#if form?.recordSuccess}
-                <p class="mt-2 text-xs font-medium text-green-400">{form.recordMessage}</p>
-            {/if}
-            {#if form?.recordError}
-                <p class="mt-2 text-xs font-medium text-red-400">{form.recordError}</p>
-            {/if}
-        </section>
-    {/if}
 
     <!-- סיכום ציון: ממוצע + היסטוגרמה + מדדים -->
     <section class="rounded-2xl border border-white/10 bg-white/5 p-4">

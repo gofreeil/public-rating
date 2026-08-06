@@ -31,6 +31,9 @@
     const bills = $derived(record.bills);
     const mq = $derived(record.ministry_queries);
 
+    /** "הצעת חוק X (תיקון — ...), התשפ"ה-2025" → מוצג כמו שהוא, רק בלי רווחים כפולים */
+    const clean = (s: string) => s.replace(/\s+/g, ' ').trim();
+
     // מוצג רק מה שיש בו נתון — לשר בלי חקיקה פרטית אין "0 מכל דבר"
     const hasBills = $derived(bills.lead > 0 || bills.cosigned > 0);
     const hasOversight = $derived(record.queries > 0 || record.agenda > 0);
@@ -86,6 +89,40 @@
                         </span>
                     {/each}
                 </div>
+
+                <!-- החוקים שעברו: ההישג הקונקרטי, פתוח כברירת מחדל -->
+                {#if record.passed_bills.length}
+                    <details open class="mt-3">
+                        <summary class="cursor-pointer text-sm font-bold text-emerald-300 marker:text-emerald-400">
+                            ✅ חוקים שהתקבלו ({record.passed_bills.length})
+                        </summary>
+                        <ul class="mt-2 flex flex-col gap-1.5 border-r-2 border-emerald-400/20 pr-3">
+                            {#each record.passed_bills as b (b.name)}
+                                <li class="text-sm leading-relaxed text-gray-300">
+                                    {clean(b.name)}
+                                    {#if b.date}<span class="text-xs text-gray-500"> · פורסם {day(b.date)}</span>{/if}
+                                </li>
+                            {/each}
+                        </ul>
+                    </details>
+                {/if}
+
+                <!-- מה שנמצא כרגע על שולחן הכנסת -->
+                {#if record.active_bills.length}
+                    <details class="mt-2">
+                        <summary class="cursor-pointer text-sm font-bold text-blue-300 marker:text-blue-400">
+                            🔵 הצעות בהליכי חקיקה ({bills.in_progress}{#if bills.in_progress > record.active_bills.length}, מוצגות {record.active_bills.length} האחרונות{/if})
+                        </summary>
+                        <ul class="mt-2 flex flex-col gap-1.5 border-r-2 border-blue-400/20 pr-3">
+                            {#each record.active_bills as b (b.name)}
+                                <li class="text-sm leading-relaxed text-gray-300">
+                                    {clean(b.name)}
+                                    {#if b.status}<span class="text-xs text-gray-500"> · {b.status}</span>{/if}
+                                </li>
+                            {/each}
+                        </ul>
+                    </details>
+                {/if}
             </div>
         {:else}
             <div class="border-t border-white/10 pt-3">
@@ -113,6 +150,38 @@
                         >{record.agenda} הצעות לסדר היום</span>
                     {/if}
                 </div>
+
+                {#if record.recent_queries.length}
+                    <details class="mt-2">
+                        <summary class="cursor-pointer text-sm font-bold text-purple-300 marker:text-purple-400">
+                            ❓ נושאי השאילתות ({record.queries}{#if record.queries > record.recent_queries.length}, מוצגות {record.recent_queries.length} האחרונות{/if})
+                        </summary>
+                        <ul class="mt-2 flex flex-col gap-1.5 border-r-2 border-purple-400/20 pr-3">
+                            {#each record.recent_queries as q (q.name + q.submitted)}
+                                <li class="text-sm leading-relaxed text-gray-300">
+                                    {clean(q.name)}
+                                    <span class="text-xs text-gray-500">
+                                        · הוגשה {day(q.submitted)}
+                                        {#if q.replied}· נענתה {day(q.replied)}{:else}· <span class="text-amber-400/80">טרם נענתה</span>{/if}
+                                    </span>
+                                </li>
+                            {/each}
+                        </ul>
+                    </details>
+                {/if}
+
+                {#if record.recent_agenda.length}
+                    <details class="mt-2">
+                        <summary class="cursor-pointer text-sm font-bold text-purple-300 marker:text-purple-400">
+                            🗣️ נושאי ההצעות לסדר היום ({record.recent_agenda.length})
+                        </summary>
+                        <ul class="mt-2 flex flex-col gap-1.5 border-r-2 border-purple-400/20 pr-3">
+                            {#each record.recent_agenda as topic (topic)}
+                                <li class="text-sm leading-relaxed text-gray-300">{clean(topic)}</li>
+                            {/each}
+                        </ul>
+                    </details>
+                {/if}
             </div>
         {/if}
 
@@ -138,6 +207,36 @@
                         >{mq.late} באיחור מהמועד שנקבע</span>
                     {/if}
                 </div>
+
+                {#if mq.recent.length}
+                    <details class="mt-2">
+                        <summary class="cursor-pointer text-sm font-bold text-gray-300">
+                            📋 השאילתות האחרונות למשרד ({mq.recent.length})
+                        </summary>
+                        <ul class="mt-2 flex flex-col gap-1.5 border-r-2 border-white/10 pr-3">
+                            {#each mq.recent as q (q.name + q.submitted)}
+                                <li class="text-sm leading-relaxed text-gray-300">
+                                    {clean(q.name)}
+                                    <span class="text-xs text-gray-500">
+                                        · הוגשה {day(q.submitted)}
+                                        {#if q.replied}· נענתה {day(q.replied)}{:else}· <span class="text-amber-400/80">טרם נענתה</span>{/if}
+                                    </span>
+                                </li>
+                            {/each}
+                        </ul>
+                    </details>
+                {/if}
+            </div>
+        {/if}
+
+        {#if record.email}
+            <div class="flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+                <span class="text-xs font-bold text-gray-500">לשכה בכנסת:</span>
+                <a
+                    href="mailto:{record.email}"
+                    dir="ltr"
+                    class="record-link rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-300 transition-colors"
+                >📧 {record.email}</a>
             </div>
         {/if}
 
@@ -147,3 +246,15 @@
         </p>
     </div>
 </section>
+
+<style>
+    /* Tailwind v4: group-hover שבור — CSS מפורש */
+    .record-link:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+    /* משולש הפתיחה של details — צמוד לטקסט ב-RTL */
+    details > summary {
+        list-style-position: inside;
+    }
+</style>

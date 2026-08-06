@@ -158,6 +158,23 @@ export interface RecordBills {
     merged: number;
 }
 
+/** פריט חקיקה בודד ברזומה */
+export interface RecordBill {
+    name: string;
+    /** תיאור הסטטוס מהכנסת ("הכנה לקריאה שנייה ושלישית") */
+    status: string;
+    /** תאריך פרסום ברשומות — לחוקים שעברו */
+    date: string;
+}
+
+/** שאילתה בודדת: מתי הוגשה ומתי נענתה בפועל */
+export interface RecordQuery {
+    name: string;
+    submitted: string;
+    /** ריק = טרם נענתה */
+    replied: string;
+}
+
 /** פיקוח על המשרד שבראשות המדורג — שאילתות שהופנו אליו */
 export interface RecordMinistryQueries {
     ministry: string;
@@ -165,6 +182,8 @@ export interface RecordMinistryQueries {
     answered: number;
     /** נענו אחרי המועד שנקבע */
     late: number;
+    /** האחרונות שהופנו למשרד — כולל אלה שטרם נענו */
+    recent: RecordQuery[];
 }
 
 /**
@@ -187,6 +206,16 @@ export interface KnessetRecord {
     agenda: number;
     /** רק לשרים — הפיקוח על המשרד */
     ministry_queries: RecordMinistryQueries | null;
+    /** דוא"ל הלשכה הרשמי מאתר הכנסת */
+    email: string;
+    /** ההצעות שהתקבלו בקריאה שלישית — הרשימה המלאה */
+    passed_bills: RecordBill[];
+    /** ההצעות שנמצאות בהליכי חקיקה — האחרונות שעודכנו */
+    active_bills: RecordBill[];
+    /** השאילתות האחרונות שהגיש/ה */
+    recent_queries: RecordQuery[];
+    /** נושאי ההצעות לסדר היום האחרונות */
+    recent_agenda: string[];
     synced_at: string;
 }
 

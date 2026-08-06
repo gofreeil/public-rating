@@ -431,8 +431,13 @@ function ministryKeyword(title: string): string {
 interface BillRow {
     BillID: number;
     StatusID: number;
+    Name: string | null;
+    PublicationDate: string | null;
+    LastUpdatedDate: string | null;
 }
 interface QueryRow {
+    Name: string | null;
+    SubmitDate: string | null;
     ReplyMinisterDate: string | null;
     ReplyDatePlanned: string | null;
 }
@@ -480,16 +485,34 @@ async function billsByIds(ids: number[], knessetNum: number): Promise<BillRow[]>
     return pages.flat();
 }
 
+/** מיון יורד לפי תאריך (מחרוזות ISO — השוואה לקסיקוגרפית מספיקה) */
+function byDateDesc<T>(rows: T[], date: (r: T) => string | null): T[] {
+    return [...rows].sort((a, b) => String(date(b) ?? '').localeCompare(String(date(a) ?? '')));
+}
+
+const dayOf = (v: string | null | undefined) => String(v ?? '').slice(0, 10);
+
+function toRecordQuery(q: QueryRow) {
+    return {
+        name: (q.Name ?? '').trim(),
+        submitted: dayOf(q.SubmitDate),
+        replied: dayOf(q.ReplyMinisterDate),
+    };
+}
+
 export async function fetchKnessetRecord(
     personId: number,
     knessetNum: number,
     statusMap: Map<number, string>,
 ): Promise<KnessetRecord> {
-    const [positions, initiator, queries, agenda] = await Promise.all([
+    const [person, positions, initiator, queries, agenda] = await Promise.all([
+        fetchJson<{ value?: { Email: string | null }[] }>(
+            `${ODATA}/KNS_Person?$filter=${encodeURIComponent(`PersonID eq ${personId}`)}&$top=1&$format=json`,
+        ).then((j) => j.value?.[0] ?? null),
         odataAll<P2PRow>('KNS_PersonToPosition', `PersonID eq ${personId}`),
         odataAll<{ BillID: number; IsInitiator: boolean }>('KNS_BillInitiator', `PersonID eq ${personId}`),
         odataAll<QueryRow>('KNS_Query', `PersonID eq ${personId} and KnessetNum eq ${knessetNum}`),
-        odataAll<{ AgendaID: number }>(
+        odataAll<{ Name: string | null; LastUpdatedDate: string | null }>(
             'KNS_Agenda',
             `InitiatorPersonID eq ${personId} and KnessetNum eq ${knessetNum}`,
         ),
@@ -503,7 +526,14 @@ export async function fetchKnessetRecord(
     ]);
 
     const counts = { passed: 0, merged: 0, stopped: 0, in_progress: 0 };
-    for (const b of lead) counts[billBucket(statusMap.get(b.StatusID) ?? '')]++;
+    const passedBills: BillRow[] = [];
+    const activeBills: BillRow[] = [];
+    for (const b of lead) {
+        const bucket = billBucket(statusMap.get(b.StatusID) ?? '');
+        counts[bucket]++;
+        if (bucket === 'passed') passedBills.push(b);
+        else if (bucket === 'in_progress') activeBills.push(b);
+    }
 
     // ותק: באילו כנסות כיהן/ה כח"כ
     const knessets = [
@@ -538,8 +568,18 @@ export async function fetchKnessetRecord(
             late: rows.filter(
                 (q) => q.ReplyMinisterDate && q.ReplyDatePlanned && q.ReplyMinisterDate > q.ReplyDatePlanned,
             ).length,
+            recent: byDateDesc(rows, (q) => q.SubmitDate).slice(0, 8).map(toRecordQuery),
         };
     }
+
+    // נושאי ההצעות לסדר חוזרים כמה פעמים (דיון מפוצל) — מציגים כל נושא פעם אחת
+    const agendaNames = [
+        ...new Set(
+            byDateDesc(agenda, (a) => a.LastUpdatedDate)
+                .map((a) => (a.Name ?? '').replace(/^הצעה\s+\S+\s+לסדר\s+(?:ה)?יום\s+בנושא:\s*/, '').trim())
+                .filter(Boolean),
+        ),
+    ].slice(0, 12);
 
     return {
         person_id: personId,
@@ -550,6 +590,25 @@ export async function fetchKnessetRecord(
         queries: queries.length,
         agenda: agenda.length,
         ministry_queries: ministryQueries,
+        email: (person?.Email ?? '').trim(),
+        // החוקים שעברו הם ההישג המרכזי — נשמרים במלואם; השאר נדגמים כדי
+        // לא לנפח את הרשומה ב-Strapi (מאות הצעות לכל ח"כ פעיל)
+        passed_bills: byDateDesc(passedBills, (b) => b.PublicationDate ?? b.LastUpdatedDate)
+            .slice(0, 60)
+            .map((b) => ({
+                name: (b.Name ?? '').trim(),
+                status: statusMap.get(b.StatusID) ?? '',
+                date: dayOf(b.PublicationDate),
+            })),
+        active_bills: byDateDesc(activeBills, (b) => b.LastUpdatedDate)
+            .slice(0, 20)
+            .map((b) => ({
+                name: (b.Name ?? '').trim(),
+                status: statusMap.get(b.StatusID) ?? '',
+                date: dayOf(b.LastUpdatedDate),
+            })),
+        recent_queries: byDateDesc(queries, (q) => q.SubmitDate).slice(0, 20).map(toRecordQuery),
+        recent_agenda: agendaNames,
         synced_at: new Date().toISOString(),
     };
 }
