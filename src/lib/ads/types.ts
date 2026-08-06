@@ -57,6 +57,10 @@ export interface AdCardStyle {
     diag_height: number;
     logo_shape: 'circle' | 'square';
     logo_position: 'top' | 'bottom';
+    /** מרכז הלוגו באחוזי מסגרת הכרטיס, כשהמפרסם גרר אותו בעצמו לנקודה
+     *  משלו. null בשני הצירים = הלוגו יושב על העוגן של logo_position. */
+    logo_x: number | null;
+    logo_y: number | null;
     /** מיקום התמונה בתוך המסגרת, באחוזים (-50..50) */
     image_x: number;
     image_y: number;
@@ -71,10 +75,17 @@ export const DEFAULT_CARD_STYLE: AdCardStyle = {
     diag_height: 0,
     logo_shape: 'circle',
     logo_position: 'top',
+    logo_x: null,
+    logo_y: null,
     image_x: 0,
     image_y: 0,
     image_zoom: 1,
 };
+
+/** האם הלוגו יושב על נקודה חופשית שהמפרסם גרר אליה */
+export function isLogoFree(style: Partial<AdCardStyle>): boolean {
+    return typeof style.logo_x === 'number' && typeof style.logo_y === 'number';
+}
 
 /** הצורה המלאה בשרת — כוללת שדות שלעולם לא עוזבים אותו */
 export interface SubmittedAd {
@@ -116,6 +127,14 @@ export interface SubmittedAd {
     paused?: boolean;
     /** הימים ששמורים לה מרגע ההשהיה — מהם היא ממשיכה בהפעלה מחדש */
     pausedDaysLeft?: number;
+
+    // ---- מפרסם חוזר: גרסה מעודכנת שמחליפה את המודעה הקיימת שלו ----
+    /** המודעה הקודמת של אותו מפרסם שהגרסה הזו באה להחליף */
+    replacesAdId?: string;
+    /** כותרת אותה גרסה קודמת — כדי שהאדמין יראה מה בדיוק מוחלף */
+    replacesTitle?: string;
+    /** מי החליפה אותה. מודעה מסומנת כך היא היסטוריה ולא מועמדת להחלפה */
+    supersededBy?: string;
 }
 
 /** מה שהטור הימני ופרסומת הנייד מקבלים — בלי שום זהות */

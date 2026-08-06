@@ -78,6 +78,14 @@ export const load: PageServerLoad = async (event) => {
         stats: stats[ad.id] ?? { impressions: 0, clicks: 0, landing: 0, leads: 0, ctr: 0 },
         slotIndex: slotOrder.indexOf(ad.id),
         slotTotal: slotOrder.length,
+        // גרסה מעודכנת שהמודעה הקודמת שלה באמת באוויר — רק אז האישור
+        // מחליף אותה, ורק אז יש טעם בכפתור "אישור כמודעה נוספת"
+        replacesLive: Boolean(
+            ad.replacesAdId &&
+                ads.some(
+                    (o) => o.id === ad.replacesAdId && o.status === 'approved' && !isExpired(o, now),
+                ),
+        ),
     }));
 
     const live = rows.filter((a) => a.status === 'approved' && !a.expired).length;
@@ -105,9 +113,21 @@ export const actions: Actions = {
         const fd = await event.request.formData();
         const id = String(fd.get('id') ?? '');
         if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        // ברירת המחדל לגרסה מעודכנת היא החלפה. keepPrevious הוא המקרה ההפוך:
+        // מפרסם שבאמת רוצה שתי מודעות במקביל ולא שדרג את הקיימת.
+        const keepPrevious = String(fd.get('keepPrevious') ?? '') === '1';
         try {
-            await approveAd(id, { durationDays: fd.get('duration_days'), decidedBy: by });
-            return { success: true, message: 'הפרסומת אושרה ועלתה לאוויר' };
+            const { replacedTitle } = await approveAd(id, {
+                durationDays: fd.get('duration_days'),
+                decidedBy: by,
+                keepPrevious,
+            });
+            return {
+                success: true,
+                message: replacedTitle
+                    ? `הפרסומת אושרה ונכנסה במקום "${replacedTitle}", שירדה מהאוויר`
+                    : 'הפרסומת אושרה ועלתה לאוויר',
+            };
         } catch (e) {
             return fail(500, { error: `שגיאה באישור: ${e instanceof Error ? e.message : e}` });
         }

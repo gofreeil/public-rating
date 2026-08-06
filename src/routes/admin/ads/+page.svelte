@@ -211,6 +211,17 @@
                                 </span>
                             {/if}
 
+                            <!-- מפרסם חוזר ששיפר את המודעה שלו: לא בקשה חדשה -->
+                            {#if ad.replacesAdId && ad.status === 'pending'}
+                                <span class="rounded-full border border-blue-400/40 bg-blue-500/15 px-2 py-0.5 text-[11px] font-bold text-blue-200">
+                                    🔄 עדכון למודעה קיימת{ad.replacesTitle ? ` — קודמת: "${ad.replacesTitle}"` : ''}
+                                </span>
+                            {:else if ad.supersededBy}
+                                <span class="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] font-bold text-gray-300">
+                                    🔄 גרסה ישנה — הוחלפה בגרסה מעודכנת
+                                </span>
+                            {/if}
+
                             <span class="mr-auto text-xs text-gray-500">
                                 {ad.submittedAt ? absDate(ad.submittedAt) : ''}
                             </span>
@@ -320,9 +331,24 @@
                                         {/each}
                                     </select>
                                     <button type="submit" class="cursor-pointer rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-200 hover:bg-emerald-500/25">
-                                        ✓ אישור
+                                        {ad.replacesLive ? '✓ אישור והחלפת הישנה' : '✓ אישור'}
                                     </button>
                                 </form>
+                                <!-- מפרסם שבאמת רוצה שתי מודעות במקביל, ולא שדרג את הקיימת -->
+                                {#if ad.replacesLive}
+                                    <form method="POST" action="?/approve" use:enhance class="flex items-center gap-1">
+                                        <input type="hidden" name="id" value={ad.id} />
+                                        <input type="hidden" name="keepPrevious" value="1" />
+                                        <input type="hidden" name="duration_days" value={ad.requestedDurationDays} />
+                                        <button
+                                            type="submit"
+                                            title="הישנה תישאר באוויר וזו תתווסף לידה"
+                                            class="cursor-pointer rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
+                                        >
+                                            ➕ אישור כמודעה נוספת
+                                        </button>
+                                    </form>
+                                {/if}
                             {:else}
                                 <form method="POST" action="?/extend" use:enhance class="flex items-center gap-1">
                                     <input type="hidden" name="id" value={ad.id} />

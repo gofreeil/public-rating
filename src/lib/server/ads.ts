@@ -106,6 +106,13 @@ function normalizeStyle(raw: unknown): Partial<AdCardStyle> {
     if (dh !== undefined) out.diag_height = dh;
     if (s.logo_shape === 'circle' || s.logo_shape === 'square') out.logo_shape = s.logo_shape;
     if (s.logo_position === 'top' || s.logo_position === 'bottom') out.logo_position = s.logo_position;
+    // מיקום חופשי של הלוגו תקף רק כששני הצירים קיימים — אחרת נופלים לעוגן
+    const lx = num(s.logo_x, 0, 100);
+    const ly = num(s.logo_y, 0, 100);
+    if (lx !== undefined && ly !== undefined) {
+        out.logo_x = lx;
+        out.logo_y = ly;
+    }
     const ix = num(s.image_x, -50, 50);
     if (ix !== undefined) out.image_x = ix;
     const iy = num(s.image_y, -50, 50);
@@ -153,6 +160,10 @@ function mapAd(item: StrapiItem): SubmittedAd {
         slotOrder: typeof x.slot_order === 'number' ? x.slot_order : undefined,
         paused: x.paused === true,
         pausedDaysLeft: typeof x.paused_days_left === 'number' ? x.paused_days_left : undefined,
+        // מפרסם חוזר: הקישור לגרסה הקודמת ולמי שהחליפה אותה
+        replacesAdId: typeof x.replaces_ad_id === 'string' ? x.replaces_ad_id : undefined,
+        replacesTitle: typeof x.replaces_title === 'string' ? clamp(x.replaces_title, 35) : undefined,
+        supersededBy: typeof x.superseded_by === 'string' ? x.superseded_by : undefined,
     };
 }
 
@@ -341,14 +352,109 @@ export class AdTooLargeError extends Error {
     }
 }
 
+/** תוצאת השליחה — כולל מה שההתראה לאדמינים צריכה לדעת על מפרסם חוזר */
+export interface SubmitAdResult {
+    id: string;
+    /** כותרת המודעה הקודמת של אותו מפרסם; ריק = מפרסם חדש */
+    replacesTitle: string;
+    /** האם אותה קודמת באמת על האתר (ורק אז האישור מחליף אותה) */
+    replacesLive: boolean;
+}
+
+// ============================================================
+// מפרסם חוזר: זיהוי גרסה מעודכנת של מודעה קיימת
+// ------------------------------------------------------------
+// בבילדר אין "עריכה" של רשומה קיימת — מפרסם ששב לשפר את המודעה שלו
+// שולח רשומה חדשה. בלי הקישור שכאן ההתראה לאדמינים נוסחה כבקשה חדשה,
+// ואישור שלה הוסיף מודעה שנייה לאותו מפרסם במקום להחליף את הישנה.
+// ============================================================
+
+/** טלפון ישראלי מנורמל להשוואה: ספרות בלבד, 972 → 0 */
+function normPhone(raw: string | undefined | null): string {
+    const digits = (raw ?? '').replace(/\D/g, '').replace(/^972/, '0');
+    return digits.length >= 9 ? digits : '';
+}
+
+type AdvertiserIdentity = {
+    ownerId?: string | null;
+    contactEmail?: string;
+    landing?: { email?: string; phone?: string };
+};
+
+/** מפתחות הזהות של מפרסם — מזהה משתמש, אימייל ופרטי הקשר שבדף הנחיתה */
+function identityKeys(ad: AdvertiserIdentity): string[] {
+    const keys: string[] = [];
+    if (ad.ownerId) keys.push(`id:${ad.ownerId}`);
+    const email = (ad.contactEmail || ad.landing?.email || '').trim().toLowerCase();
+    if (email) keys.push(`email:${email}`);
+    const phone = normPhone(ad.landing?.phone);
+    if (phone) keys.push(`phone:${phone}`);
+    return keys;
+}
+
+function sameAdvertiser(a: AdvertiserIdentity, b: AdvertiserIdentity): boolean {
+    const keysB = new Set(identityKeys(b));
+    return identityKeys(a).some((k) => keysB.has(k));
+}
+
+const byNewest = (a: SubmittedAd, b: SubmittedAd) =>
+    Date.parse(b.submittedAt || '') - Date.parse(a.submittedAt || '');
+
+/**
+ * מה כבר יש למפרסם הזה: target = המודעה שהשליחה החדשה היא גרסה מעודכנת
+ * שלה (מאושרת → ממתינה → נדחתה), stalePending = כל בקשותיו הממתינות,
+ * שהשליחה החדשה מייתרת. כשל כאן לא מפיל שליחה.
+ */
+async function findPredecessors(
+    identity: AdvertiserIdentity,
+): Promise<{ target: SubmittedAd | null; stalePending: SubmittedAd[] }> {
+    let all: SubmittedAd[];
+    try {
+        all = await listAllForAdmin();
+    } catch (e) {
+        console.warn('[ads] findPredecessors failed:', e instanceof Error ? e.message : e);
+        return { target: null, stalePending: [] };
+    }
+    const mine = all.filter((a) => !a.supersededBy && sameAdvertiser(a, identity));
+    const live = mine.filter((a) => a.status === 'approved').sort(byNewest);
+    const stalePending = mine.filter((a) => a.status === 'pending').sort(byNewest);
+    const past = mine.filter((a) => a.status === 'rejected').sort(byNewest);
+    return { target: live[0] ?? stalePending[0] ?? past[0] ?? null, stalePending };
+}
+
+/**
+ * מוציא גרסה ישנה מהמחזור אחרי שגרסה מעודכנת נכנסה במקומה. הסטטוס
+ * 'rejected' הוא הארכיון — המודעה יורדת מהאוויר ומהתור אבל נשארת במסך
+ * הניהול עם הסיבה, ואפשר להחזיר אותה. שום דבר לא נמחק.
+ */
+async function supersedeAd(oldId: string, newAdId: string, decidedBy: string, reason: string): Promise<void> {
+    await mergeExtra(
+        oldId,
+        {
+            decided_at: new Date().toISOString(),
+            decided_by: clamp(decidedBy, 120),
+            rejection_reason: reason,
+            superseded_by: newAdId,
+        },
+        { status1: 'rejected' },
+    );
+}
+
 /** יצירת מודעה חדשה — נכנסת תמיד כ-pending */
-export async function submitAd(input: SubmitAdInput): Promise<string> {
+export async function submitAd(input: SubmitAdInput): Promise<SubmitAdResult> {
     const landing = normalizeLanding(input.landing);
     const logo = safeDataImage(input.logo);
     const mainImage = safeDataImage(input.mainImage);
 
     const bytes = dataUriBytes(logo) + dataUriBytes(mainImage) + landingBytes(landing);
     if (bytes > MAX_AD_BYTES) throw new AdTooLargeError(bytes);
+
+    // מפרסם חוזר: מחפשים לפני היצירה, כדי שהרשומה החדשה עצמה לא תיספר
+    const { target: predecessor, stalePending } = await findPredecessors({
+        ownerId: input.ownerId,
+        contactEmail: input.contactEmail,
+        landing,
+    });
 
     const res = await strapiPost<{ data: StrapiItem }>(ITEMS, {
         data: {
@@ -373,13 +479,35 @@ export async function submitAd(input: SubmitAdInput): Promise<string> {
                 requested_duration_days: normalizePlanDays(input.requestedDurationDays),
                 payment: input.payment,
                 bytes,
+                // קישור לגרסה הקודמת של אותו מפרסם: ההתראה מדברת על עדכון,
+                // והאישור מחליף את הישנה במקום להוסיף מודעה שנייה לידה
+                ...(predecessor
+                    ? { replaces_ad_id: predecessor.id, replaces_title: predecessor.title }
+                    : {}),
             },
             publishedAt: new Date().toISOString(),
         },
     });
 
     invalidateAdsCache();
-    return res.data.documentId;
+    const id = res.data.documentId;
+
+    // בקשות ממתינות קודמות של אותו מפרסם יורדות מהתור: האדמין אמור לראות
+    // בקשה אחת לכל מפרסם — האחרונה — ולא שתי בקשות שנראות כפולות.
+    // מודעה מאושרת נשארת באוויר עד שהחדשה תאושר, אחרת המשבצת נשארת ריקה.
+    for (const stale of stalePending) {
+        try {
+            await supersedeAd(stale.id, id, 'system', 'הוחלפה בגרסה מעודכנת שהמפרסם שלח');
+        } catch (e) {
+            console.warn('[ads] retire pending predecessor failed:', e instanceof Error ? e.message : e);
+        }
+    }
+
+    return {
+        id,
+        replacesTitle: predecessor?.title ?? '',
+        replacesLive: predecessor?.status === 'approved',
+    };
 }
 
 /**
@@ -440,22 +568,60 @@ export async function updateAdContent(
     );
 }
 
+/**
+ * אישור ופרסום. גרסה מעודכנת של מפרסם קיים נכנסת *במקום* הישנה: אותה
+ * משבצת ואותו תאריך סיום, ומיד אחרי האישור הישנה יורדת מהאוויר.
+ * keepPrevious הוא המקרה ההפוך — מפרסם שבאמת רוצה שתי מודעות במקביל.
+ * מחזיר את כותרת המודעה שהוחלפה, כדי שהאדמין יראה מה ירד.
+ */
 export async function approveAd(
     id: string,
-    opts: { durationDays: unknown; decidedBy: string },
-): Promise<void> {
+    opts: { durationDays: unknown; decidedBy: string; keepPrevious?: boolean },
+): Promise<{ replacedTitle: string }> {
+    const current = await getAd(id);
+    const replacesId = current?.replacesAdId ?? '';
+    const predecessor = replacesId && !opts.keepPrevious ? await getAd(replacesId) : undefined;
+    const replacing =
+        predecessor && predecessor.status === 'approved' && !predecessor.supersededBy
+            ? predecessor
+            : null;
+
     const days = normalizePlanDays(opts.durationDays);
+    // התקופה שהמפרסם כבר שילם עליה ממשיכה כרגיל: אותו תאריך פקיעה, לא
+    // ספירה חדשה. שדרוג המודעה לא מאריך ולא מקצר את הזמן שנותר לה.
+    const inheritedExpiry =
+        replacing && !replacing.paused && replacing.expiresAt &&
+        Date.parse(replacing.expiresAt) > Date.now()
+            ? replacing.expiresAt
+            : '';
     await mergeExtra(
         id,
         {
             decided_at: new Date().toISOString(),
             decided_by: clamp(opts.decidedBy, 120),
-            duration_days: days,
-            expires_at: new Date(Date.now() + days * DAY_MS).toISOString(),
+            duration_days: inheritedExpiry ? replacing!.durationDays : days,
+            expires_at: inheritedExpiry || new Date(Date.now() + days * DAY_MS).toISOString(),
             rejection_reason: '',
+            // המשבצת בטור עוברת לגרסה החדשה, אחרת היא קופצת לסוף הרשימה
+            ...(replacing && typeof replacing.slotOrder === 'number'
+                ? { slot_order: replacing.slotOrder }
+                : {}),
         },
         { status1: 'active' },
     );
+
+    // סדר הפעולות מכוון: קודם החדשה עולה, רק אחר-כך הישנה יורדת. כשל כאן
+    // משאיר את שתיהן באוויר (מצב שהאדמין רואה ומתקן) — עדיף מלהוריד את
+    // הישנה ואז להיכשל בהעלאת החדשה ולהשאיר את המפרסם בלי מודעה.
+    if (replacing) {
+        try {
+            await supersedeAd(replacing.id, id, opts.decidedBy, 'הוחלפה בגרסה מעודכנת שאישרת');
+            return { replacedTitle: replacing.title };
+        } catch (e) {
+            console.warn('[ads] supersede on approve failed:', e instanceof Error ? e.message : e);
+        }
+    }
+    return { replacedTitle: '' };
 }
 
 export async function rejectAd(

@@ -52,7 +52,7 @@ export const POST: RequestHandler = async (event) => {
     if (!title) return json({ ok: false, error: 'חסרה כותרת לפרסומת' }, { status: 400 });
 
     try {
-        const id = await submitAd({
+        const { id, replacesTitle, replacesLive } = await submitAd({
             title,
             subtitle: String(body.subtitle ?? ''),
             hoverText: String(body.hoverText ?? ''),
@@ -71,12 +71,15 @@ export const POST: RequestHandler = async (event) => {
         // התראה לאדמינים — בלעדיה הפרסומת נשמרה כ"ממתינה לאישור" בשקט
         // מוחלט, ואיש לא ידע עליה עד שמישהו נכנס במקרה ל-/admin/ads.
         // best-effort: לעולם לא מפילה את ההגשה עצמה.
+        // מפרסם ששב לשפר מודעה קיימת מקבל ניסוח "עדכון" ולא "בקשה חדשה"
         await notifyAdminsNewAd({
             adTitle: title,
             advertiserName: session?.user?.name ?? '',
             advertiserEmail: session?.user?.email ?? '',
             durationDays: normalizePlanDays(body.requestedDurationDays),
             payment: session?.user?.role === 'super_admin' ? 'owner' : 'pending',
+            replacesTitle,
+            replacesLive,
         });
         return json({ ok: true, id });
     } catch (e) {

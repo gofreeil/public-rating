@@ -35,6 +35,8 @@
     } = $props();
 
     const s = $derived({ ...DEFAULT_CARD_STYLE, ...style });
+    /** הלוגו הונח בנקודה חופשית שנגררה, ולא על עוגן למעלה/למטה */
+    const logoFree = $derived(typeof s.logo_x === 'number' && typeof s.logo_y === 'number');
 
     function set(patch: Partial<AdCardStyle>) {
         style = { ...style, ...patch };
@@ -74,10 +76,26 @@
                 style={s}
                 editable
                 onmove={(next) => set(next)}
+                onlogomove={(next) => set(next)}
             />
         </div>
         {#if mainImage}
             <p class="text-[11px] text-gray-500">גררו את התמונה כדי למקם אותה</p>
+        {/if}
+        {#if logo}
+            <p class="text-[11px] text-gray-500">
+                🖐️ אפשר לגרור גם את הלוגו לכל מקום בכרטיס
+                {#if typeof s.logo_x === 'number' && typeof s.logo_y === 'number'}
+                    <span class="tabular-nums text-gray-400">({s.logo_x}% · {s.logo_y}%)</span>
+                    <button
+                        type="button"
+                        class="cursor-pointer rounded-md border border-white/15 px-1.5 text-amber-300 hover:border-amber-400/60"
+                        onclick={() => set({ logo_x: null, logo_y: null })}
+                    >
+                        למיקום ברירת המחדל
+                    </button>
+                {/if}
+            </p>
         {/if}
     </div>
 
@@ -200,13 +218,15 @@
                 <div>
                     <p class="mb-1 text-xs font-semibold text-gray-400">מיקום הלוגו</p>
                     <div class="flex gap-2">
+                        <!-- שתי הפינות נשארו קיצורי דרך בלחיצה — והן מבטלות
+                             מיקום חופשי שנגרר, אחרת הלחיצה נראית כאילו לא עשתה כלום -->
                         {#each [{ v: 'top', l: '↑ למעלה' }, { v: 'bottom', l: '↓ למטה' }] as o (o.v)}
                             <button
                                 type="button"
-                                onclick={() => set({ logo_position: o.v as 'top' | 'bottom' })}
-                                aria-pressed={s.logo_position === o.v}
-                                class="h-11 cursor-pointer rounded-xl border px-3 text-xs font-bold transition-colors {s.logo_position ===
-                                o.v
+                                onclick={() => set({ logo_position: o.v as 'top' | 'bottom', logo_x: null, logo_y: null })}
+                                aria-pressed={!logoFree && s.logo_position === o.v}
+                                class="h-11 cursor-pointer rounded-xl border px-3 text-xs font-bold transition-colors {!logoFree &&
+                                s.logo_position === o.v
                                     ? 'border-blue-400/50 bg-blue-500/20 text-blue-200'
                                     : 'border-white/10 bg-white/5 text-gray-300'}"
                             >{o.l}</button>

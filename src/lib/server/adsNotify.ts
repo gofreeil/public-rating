@@ -43,8 +43,11 @@ async function resolveAdminUserIds(): Promise<number[]> {
 }
 
 /**
- * התראה על בקשת פרסום חדשה. best-effort במלוא מובן המילה: הקורא עוטף
+ * התראה על בקשת פרסום. best-effort במלוא מובן המילה: הקורא עוטף
  * ב-try/catch, וגם כאן כל כשל נבלע — פרסומת לא תיפול בגלל התראה.
+ *
+ * מפרסם ששב לשפר מודעה קיימת מקבל ניסוח משלו: "עדכון" ולא "חדשה", כי
+ * האישור יחליף את הישנה במקום להוסיף מודעה שנייה לצידה.
  */
 export async function notifyAdminsNewAd(info: {
     adTitle: string;
@@ -52,6 +55,10 @@ export async function notifyAdminsNewAd(info: {
     advertiserEmail?: string | null;
     durationDays?: number | null;
     payment?: string | null;
+    /** כותרת המודעה הקודמת של אותו מפרסם — קיימת רק כששליחה היא שדרוג */
+    replacesTitle?: string;
+    /** האם אותה קודמת באמת על האתר (ורק אז האישור מחליף אותה) */
+    replacesLive?: boolean;
 }): Promise<void> {
     try {
         const receivers = await resolveAdminUserIds();
@@ -62,12 +69,21 @@ export async function notifyAdminsNewAd(info: {
         const who = info.advertiserEmail
             ? `${info.advertiserName || 'ללא שם'} (${info.advertiserEmail})`
             : (info.advertiserName || 'משתמש לא מזוהה');
+        const isUpdate = Boolean(info.replacesTitle);
         const content =
-            `📢 בקשת פרסום חדשה — ${SITE_NAME}\n` +
+            (isUpdate
+                ? `🔄 עדכון למודעה קיימת — ${SITE_NAME}\n`
+                : `📢 בקשת פרסום חדשה — ${SITE_NAME}\n`) +
             `פרסומת: "${info.adTitle}"\n` +
+            (isUpdate
+                ? `הגרסה הקודמת: "${info.replacesTitle}"${info.replacesLive ? '' : ' (לא על האתר)'}\n`
+                : '') +
             `מי שלח: ${who}\n` +
             (info.durationDays ? `תקופה מבוקשת: ${info.durationDays} ימים\n` : '') +
             `תשלום: ${info.payment === 'owner' ? 'אדמין (ללא חיוב)' : 'ממתין לתשלום'}\n` +
+            (isUpdate && info.replacesLive
+                ? `עם האישור הגרסה החדשה נכנסת במקום הישנה — אותה משבצת, אותו תאריך סיום, והישנה יורדת מהאוויר.\n`
+                : '') +
             `המודעה ממתינה לאישור ב-rating.gofreeil.com/admin/ads`;
         await Promise.all(receivers.map(receiver =>
             strapiPost('/api/messages', { data: { receiver, content, read: false } })
