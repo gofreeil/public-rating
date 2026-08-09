@@ -171,7 +171,9 @@
                 </label>
                 <label class="block sm:col-span-2">
                     <span class={labelCls}>משפט המכירה — מוצג בריחוף על הכרטיס (עד 90)</span>
-                    <input bind:value={hoverText} maxlength="90" class={inputCls} />
+                    <!-- textarea ולא input: אפשר לרדת שורה, וירידות השורה נשמרות
+                         עד ל-tooltip שהגולש רואה -->
+                    <textarea bind:value={hoverText} maxlength="90" rows="3" class={inputCls}></textarea>
                 </label>
                 <label class="block sm:col-span-2">
                     <span class={labelCls}>טקסט הכפתור</span>
