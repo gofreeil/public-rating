@@ -6,16 +6,21 @@
 // ============================================================
 
 export interface Ad {
-    id: number;
+    /** פרסומות הרשת ממוספרות; מודעה של מפרסם משולם נושאת את מזהה המסמך */
+    id: number | string;
     title: string;
     description: string;
     cta: string;
     href: string;
     image: string;
     color: string;
+    /** גרדיאנט CSS מהרשימה הסגורה (מודעה משולמת) - עוקף את מחלקות color */
+    colorCss?: string;
     imageHeight?: string;   // גובה מותאם לתמונה (ברירת מחדל: 160px)
     imageScale?: number;    // זום יחסית ל-cover (1 = מילוי המשבצת; מעל 1 = תקריב)
     hover?: string;         // טקסט tooltip בריחוף מעל כפתור ה-CTA
+    /** יעד פנימי באתר (דף נחיתה של מפרסם) - נפתח באותה לשונית ובלי noopener */
+    internal?: boolean;
 }
 
 export const ads: Ad[] = [

@@ -78,15 +78,22 @@
 
         <!-- Ad content -->
         <div class="bg-[#0f172a] p-4">
-            <h3 class="text-lg font-black bg-gradient-to-r {popup.ad.color} bg-clip-text text-transparent mb-1 leading-tight">
+            <!-- מודעה משולמת נושאת גרדיאנט CSS מהרשימה הסגורה (colorCss);
+                 פרסומות הרשת ממשיכות עם מחלקות ה-Tailwind שב-color -->
+            <h3
+                class="text-lg font-black bg-clip-text text-transparent mb-1 leading-tight {popup.ad.colorCss ? '' : 'bg-gradient-to-r ' + popup.ad.color}"
+                style:background-image={popup.ad.colorCss || undefined}
+            >
                 {popup.ad.title}
             </h3>
             <p class="text-gray-300 text-sm mb-3 leading-snug">{popup.ad.description}</p>
+            <!-- דף נחיתה של מפרסם משולם הוא יעד פנימי (/ads/<id>) ונפתח
+                 באותה לשונית; אתרי הרשת ממשיכים להיפתח בלשונית חדשה. -->
             <a
                 href={popup.ad.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="{popup.ad.cta} – {popup.ad.title} (נפתח בחלון חדש)"
+                target={popup.ad.internal ? undefined : "_blank"}
+                rel={popup.ad.internal ? undefined : "noopener noreferrer"}
+                aria-label="{popup.ad.cta} – {popup.ad.title}{popup.ad.internal ? '' : ' (נפתח בחלון חדש)'}"
                 onclick={() => closeAdPopup()}
                 class="block w-full text-center py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-bold hover:from-purple-500 hover:to-indigo-500 transition-all"
             >

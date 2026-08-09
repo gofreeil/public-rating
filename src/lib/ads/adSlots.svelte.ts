@@ -8,6 +8,8 @@
 
 import { browser } from '$app/environment';
 import { AD_SLOTS, type AdSlotStyle } from './slots';
+import { gradientCss } from './gradients';
+import { registerPaidAds } from '$lib/adPopupStore';
 import type { ApprovedAdPublic } from './types';
 
 export type AdSlot =
@@ -24,11 +26,37 @@ export function loadApprovedAds(): void {
     fetch('/api/ads/approved')
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-            if (Array.isArray(data?.ads)) approved = data.ads;
+            if (Array.isArray(data?.ads)) {
+                approved = data.ads;
+                registerToPopup(approved);
+            }
         })
         .catch(() => {
             /* כשל שקט — המשבצות נשארות פנויות */
         });
+}
+
+/**
+ * המודעות המשולמות נכנסות גם לחפיסת הפופ-אפ בנייד - שם הן העיקר,
+ * ופרסומות הרשת משובצות בדילול (ראו adPopupStore).
+ */
+function registerToPopup(list: ApprovedAdPublic[]): void {
+    registerPaidAds(
+        list
+            .filter((a) => a.mainImage)
+            .map((a) => ({
+                id:          a.id,
+                title:       a.title,
+                description: a.subtitle,
+                cta:         a.cta || a.title,
+                href:        `/ads/${a.id}`,
+                internal:    true,
+                image:       a.mainImage,
+                color:       '',
+                colorCss:    gradientCss(a.gradientId),
+                hover:       a.hoverText,
+            })),
+    );
 }
 
 /**
