@@ -2,8 +2,16 @@
     // פודיום אולימפי לשלושת המצטיינים — סדר חזותי: [שני | ראשון | שלישי]
     import type { RatedOfficial } from '$lib/rating/types';
     import { fmtScore } from '$lib/rating/aggregate';
+    import { triggerAdPopup } from '$lib/adPopupStore';
     import Avatar from './Avatar.svelte';
     import Stars from './Stars.svelte';
+
+    // בנייד: פרסומת ביניים קצרה בדרך לדף הפרטים (כמו באתר הקהילה).
+    // triggerAdPopup מחזיר false בדסקטופ - ואז הקישור מנווט כרגיל.
+    function adThenGo(e: MouseEvent, id: string) {
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+        if (triggerAdPopup(`/officials/${id}`)) e.preventDefault();
+    }
 
     let { officials = [] }: { officials: RatedOfficial[] } = $props();
 
@@ -29,6 +37,7 @@
             {@const first = rank === 1}
             <a
                 href="/officials/{official.id}"
+                onclick={(e) => adThenGo(e, official.id)}
                 class="podium-slot flex w-28 flex-col items-center text-center sm:w-40"
                 style={first ? 'translate: 0 -10px' : ''}
             >

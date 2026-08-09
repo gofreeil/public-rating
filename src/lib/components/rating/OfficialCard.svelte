@@ -2,6 +2,7 @@
     // כרטיס מדורג — משותף לדף הבית, ללוחות ולמצטיינים
     import type { RatedOfficial } from '$lib/rating/types';
     import { fmtScore } from '$lib/rating/aggregate';
+    import { triggerAdPopup } from '$lib/adPopupStore';
     import Avatar from './Avatar.svelte';
     import Stars from './Stars.svelte';
 
@@ -13,10 +14,18 @@
 
     const MEDALS = ['🥇', '🥈', '🥉'];
     const rankBadge = $derived(rank !== null && rank >= 1 && rank <= 3 ? MEDALS[rank - 1] : null);
+
+    // בנייד: פרסומת ביניים קצרה בדרך לדף הפרטים (כמו באתר הקהילה).
+    // triggerAdPopup מחזיר false בדסקטופ - ואז הקישור מנווט כרגיל.
+    function adThenGo(e: MouseEvent) {
+        if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+        if (triggerAdPopup(`/officials/${official.id}`)) e.preventDefault();
+    }
 </script>
 
 <a
     href="/officials/{official.id}"
+    onclick={adThenGo}
     class="official-card relative flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors duration-150 {compact ? '' : 'sm:p-4'}"
 >
     {#if rank !== null}

@@ -13,10 +13,16 @@
 	import MobileAdPopup from "$lib/components/MobileAdPopup.svelte";
 	import WelcomeScreen from "$lib/components/WelcomeScreen.svelte";
 	import { signOut } from "@auth/sveltekit/client";
-	import { goto } from "$app/navigation";
+	import { goto, beforeNavigate } from "$app/navigation";
 	import { page } from "$app/state";
+	import { closeAdPopup } from "$lib/adPopupStore";
 
 	let { children, data } = $props();
+
+	// פרסומת פופ-אפ פתוחה לא שורדת ניווט - נסגרת ולא נתקעת מעל הדף הבא
+	beforeNavigate(() => {
+		closeAdPopup();
+	});
 
 	// ממפה את session.user לצורה שה-Header מצפה לה
 	let currentUser = $derived(
