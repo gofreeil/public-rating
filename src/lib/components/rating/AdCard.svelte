@@ -231,7 +231,8 @@
                         <span class="block text-[11px] leading-tight text-gray-200">{subtitle}</span>
                     {/if}
                     {#if hoverText}
-                        <span class="mt-2 block border-t border-white/20 pt-2 text-[11px] leading-snug font-bold text-amber-200">
+                        <!-- pre-line: ירידות שורה שהמפרסם הקליד בבילדר נשמרות -->
+                        <span class="mt-2 block border-t border-white/20 pt-2 text-[11px] leading-snug font-bold whitespace-pre-line text-amber-200">
                             {hoverText}
                         </span>
                     {/if}
