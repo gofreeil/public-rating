@@ -12,21 +12,24 @@
     import AdCard from '$lib/components/rating/AdCard.svelte';
 
     const PER_VIEW = 4; // כמה משבצות נראות בטור בו-זמנית
-    const VIEW_MS = 14000; // כמה זמן כל קבוצה נשארת על המסך
-    const FADE_MS = 900; // אורך הדעיכה בין קבוצה לקבוצה
+    const VIEW_MS = 7000; // כמה זמן כל קבוצה נשארת על המסך — חצי מהקצב הישן (14 ש׳)
 
     let rotation = $state(0);
-    let fading = $state(false);
 
     const slots = $derived(adSlots());
 
     // הסבב אינסופי. קודם הייתה כאן תקרת החלפות (MAX_SWAPS) שעצרה את
     // הטור על קבוצה אחת אחרי שלושה מחזורים, כך שרוב המשבצות לא קיבלו במה.
-    const displayed = $derived.by(() => {
-        if (slots.length <= PER_VIEW) return slots;
-        const start = (rotation * PER_VIEW) % slots.length;
-        return Array.from({ length: PER_VIEW }, (_, i) => slots[(start + i) % slots.length]);
+    // המשבצות בקבוצות של 4: כל הקבוצות מרונדרות זו על גבי זו ורק הפעילה
+    // נראית, כך שההחלפה היא מיזוג עדין (crossfade) ולא החלפת תוכן מול העין.
+    const groups = $derived.by(() => {
+        if (slots.length <= PER_VIEW) return slots.length ? [slots] : [];
+        return Array.from({ length: Math.ceil(slots.length / PER_VIEW) }, (_, g) =>
+            slots.slice(g * PER_VIEW, (g + 1) * PER_VIEW));
     });
+    const active = $derived(groups.length ? rotation % groups.length : 0);
+    // הקבוצה הנראית כרגע — משמשת את ספירת החשיפות שלמטה
+    const displayed = $derived(groups[active] ?? []);
 
     // כל מודעה שנכנסת לקבוצה המוצגת נספרת כחשיפה — פעם אחת לביקור
     $effect(() => {
@@ -37,21 +40,14 @@
 
     onMount(() => {
         loadApprovedAds();
-        let fadeTimer: ReturnType<typeof setTimeout> | undefined;
-        // דעיכה החוצה → החלפה בזמן שהטור שקוף → דעיכה פנימה, בלי קפיצה
+        // ההחלפה עצמה היא מיזוג שקיפות (crossfade) שקורה כולו ב-CSS —
+        // כאן רק מקדמים את הסבב, בלי מכונת מצבים של דעיכה.
         const interval = setInterval(() => {
             if (slots.length <= PER_VIEW) return;
-            fading = true;
-            fadeTimer = setTimeout(() => {
-                rotation++;
-                fading = false;
-            }, FADE_MS);
+            rotation++;
         }, VIEW_MS);
 
-        return () => {
-            clearInterval(interval);
-            clearTimeout(fadeTimer);
-        };
+        return () => clearInterval(interval);
     });
 </script>
 
@@ -60,8 +56,12 @@
         תוכן שיווקי
     </h4>
 
-    <div class="ads-track space-y-3" class:fading>
-        {#each displayed as item (item.kind === 'real' ? item.ad.id : `v${item.no}`)}
+    <!-- כל הקבוצות שוכבות זו על זו באותו תא grid; ההחלפה היא מיזוג
+         שקיפות איטי בין השכבות — בלי רגע ריק ובלי קפיצות תוכן. -->
+    <div class="ads-stage">
+        {#each groups as grp, gi}
+        <div class="ads-group space-y-3" class:active={gi === active}>
+        {#each grp as item (item.kind === 'real' ? item.ad.id : `v${item.no}`)}
             {#if item.kind === 'real'}
                 <!-- מודעה בתשלום — הקליק נשאר באתר ונוחת בדף הנחיתה המקומי -->
                 <a
@@ -113,17 +113,33 @@
                 </a>
             {/if}
         {/each}
+        </div>
+        {/each}
     </div>
 </aside>
 
 <style>
-    /* דעיכה רכה בין קבוצות המודעות — הערך חייב להתאים ל-FADE_MS שבסקריפט */
-    .ads-track {
-        opacity: 1;
-        transition: opacity 900ms ease-in-out;
+    /* מעבר עדין בין קבוצות הלוח: כל הקבוצות שוכבות זו על זו באותו תא
+       grid, וההחלפה היא מיזוג שקיפות איטי (crossfade) - הקבוצה הנכנסת
+       מופיעה בהדרגה בזמן שהיוצאת נמוגה. אין רגע שבו הטור ריק, אין הבזק
+       ואין שום תזוזה. */
+    .ads-stage {
+        display: grid;
     }
-    .ads-track.fading {
+    .ads-group {
+        grid-area: 1 / 1;
         opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition:
+            opacity 1800ms ease-in-out,
+            visibility 0s linear 1800ms;
+    }
+    .ads-group.active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transition: opacity 1800ms ease-in-out;
     }
 
     /* Tailwind v4: group-hover שבור בפרויקט הזה — CSS מפורש.
@@ -143,7 +159,10 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-        .ads-track,
+        .ads-group,
+        .ads-group.active {
+            transition: none;
+        }
         .real-ad,
         .vacant-icon {
             transition-duration: 1ms;
