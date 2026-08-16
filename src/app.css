@@ -161,3 +161,11 @@ body {
         transition-duration: 0.01ms !important;
     }
 }
+/* גרדיאנט כפתורי ההתחברות: שקיעה - ענבר→אדום→ורוד→סגול→אינדיגו.
+   פריסה על טווח גוונים רחב שומרת על קצב שינוי אחיד לכל הרוחב, בלי קו חיתוך */
+.login-grad {
+    background-image: linear-gradient(to right,
+        #f59e0b, #ef4444 30%, #db2777 55%, #a855f7 80%, #6366f1 100%);
+    background-image: linear-gradient(to right in oklch,
+        #f59e0b, #ef4444 30%, #db2777 55%, #a855f7 80%, #6366f1 100%);
+}
