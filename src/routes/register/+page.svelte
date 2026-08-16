@@ -297,7 +297,7 @@
 							       transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl
 							       disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
 						>
-							<span class="text-xl flex-shrink-0">🕊️</span>
+							<img src="/images/yotzim-lecherut.webp" alt="יוצאים לחירות" class="h-6 w-6 rounded-full object-cover bg-white flex-shrink-0" />
 							<span>המשך דרך "יוצאים לחירות"</span>
 						</button>
 					</div>
