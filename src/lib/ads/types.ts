@@ -100,6 +100,11 @@ export interface SubmittedAd {
     gradientId: string;
     logo: string;
     mainImage: string;
+    /**
+     * חותם התוכן של כל תמונות המודעה — משמש כ-?v= בכתובת שמגישה אותן
+     * (/api/ad-image), כדי שקאש "לנצח" יתחלף ברגע שתמונה מוחלפת.
+     */
+    imgVersion: string;
     style: Partial<AdCardStyle>;
     landing: AdLanding;
 

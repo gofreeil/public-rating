@@ -19,6 +19,7 @@
 // ============================================================
 
 import { strapiGet, strapiPost, strapiPut } from './strapiClient.js';
+import { imageStamp, decodeDataImage } from './inlineImage.js';
 import { MAX_AD_TOTAL_BYTES } from '$lib/ads/adImage';
 import { normalizeGradientId } from '$lib/ads/gradients';
 import { DEFAULT_PLAN_DAYS, normalizePlanDays } from '$lib/ads/plans';
@@ -128,6 +129,9 @@ function mapAd(item: StrapiItem): SubmittedAd {
         const p = String(x.payment ?? '');
         return p === 'paid' || p === 'owner' ? p : 'pending';
     })();
+    const logo = safeDataImage(x.logo);
+    const mainImage = safeDataImage(x.main_image);
+    const landing = normalizeLanding(x.landing);
 
     return {
         id: item.documentId,
@@ -137,10 +141,14 @@ function mapAd(item: StrapiItem): SubmittedAd {
         hoverText: clamp(x.hover_text, 90),
         cta: clamp(x.cta, 30) || 'לפרטים',
         gradientId: normalizeGradientId(x.gradient_id),
-        logo: safeDataImage(x.logo),
-        mainImage: safeDataImage(x.main_image),
+        logo,
+        mainImage,
+        // כל תמונות המודעה נכנסות לחותם: כולן מוגשות מ-/api/ad-image עם אותו
+        // ?v=, ולכן החלפת אחת מהן חייבת להחליף אותו - אחרת קאש ה-immutable
+        // יחזיק ישנה
+        imgVersion: imageStamp(logo, mainImage, landing.image, ...landing.products.map((p) => p.image)),
         style: normalizeStyle(x.style),
-        landing: normalizeLanding(x.landing),
+        landing,
 
         ownerId: item.user_id ?? null,
         submittedByName: clamp((x.submitted_by as Record<string, unknown>)?.name, 60),
@@ -179,7 +187,55 @@ export function isExpired(ad: SubmittedAd, now = Date.now()): boolean {
     return Number.isFinite(t) && t < now;
 }
 
-/** הצורה שמותר לשלוח לטור הימני — בלי שום זהות */
+// ============================================================
+// הגשת תמונות המודעה ככתובת, לא כ-base64 בתוך הנתונים
+// ------------------------------------------------------------
+// התמונות שמורות כ-data:image/...;base64 בתוך הרשומה. כשהן עברו כמות שהן
+// בתוך /api/ads/approved ודף הנחיתה, אותם בייטים יצאו מהשרת מחדש בכל
+// צפייה בלי שום קאש - הדפוס שבאתרי-האח שרף את מכסת ה-Fast Origin
+// Transfer של Vercel. במקום זה מוחזרת כתובת ל-/api/ad-image/<id>/<kind>,
+// והתמונה נשמרת בקאש immutable של הדפדפן ושל הקצה.
+// ============================================================
+
+/** logo/main = כרטיס הטור; landing/product-<n> = דף הנחיתה */
+export type AdImageKind = 'logo' | 'main' | 'landing' | `product-${number}`;
+
+export function isAdImageKind(v: string | undefined): v is AdImageKind {
+    if (!v) return false;
+    return v === 'logo' || v === 'main' || v === 'landing' || /^product-\d+$/.test(v);
+}
+
+function pickImage(ad: SubmittedAd, kind: AdImageKind): string {
+    if (kind === 'logo') return ad.logo;
+    if (kind === 'main') return ad.mainImage;
+    if (kind === 'landing') return ad.landing.image;
+    const idx = Number(kind.slice('product-'.length));
+    return ad.landing.products[idx]?.image ?? '';
+}
+
+/** ריק נשאר ריק (הצרכן בודק אמת/שקר); ערך שאינו data: עובר כמות שהוא */
+export function adImageUrl(ad: SubmittedAd, kind: AdImageKind): string {
+    const raw = pickImage(ad, kind);
+    if (!raw) return '';
+    if (!raw.startsWith('data:')) return raw;
+    return `/api/ad-image/${ad.id}/${kind}?v=${ad.imgVersion}`;
+}
+
+/**
+ * הבייטים עצמם, לנתיב שמגיש אותם. getAd ישיר (לא רשימת האוויר) כדי שגם
+ * דף נחיתה של מודעה מושהית לא יישבר; מאושרות בלבד - תמונות של ממתינה/
+ * נדחית לא נחשפות דרך ניחוש מזהה.
+ */
+export async function getApprovedAdImage(
+    id: string,
+    kind: AdImageKind,
+): Promise<{ mime: string; bytes: ArrayBuffer } | null> {
+    const ad = await getAd(id);
+    if (!ad || ad.status !== 'approved') return null;
+    return decodeDataImage(pickImage(ad, kind));
+}
+
+/** הצורה שמותר לשלוח לטור הימני — בלי שום זהות, והתמונות ככתובת */
 export function toApprovedPublic(ad: SubmittedAd): ApprovedAdPublic {
     return {
         id: ad.id,
@@ -188,8 +244,8 @@ export function toApprovedPublic(ad: SubmittedAd): ApprovedAdPublic {
         hoverText: ad.hoverText,
         cta: ad.cta,
         gradientId: ad.gradientId,
-        logo: ad.logo,
-        mainImage: ad.mainImage,
+        logo: adImageUrl(ad, 'logo'),
+        mainImage: adImageUrl(ad, 'main'),
         style: ad.style,
     };
 }
@@ -198,10 +254,20 @@ export function toApprovedPublic(ad: SubmittedAd): ApprovedAdPublic {
  * הצורה שמותר לשלוח לדף הנחיתה הציבורי.
  * זו הנקודה שמונעת את הדליפה שקיימת במקור: שם נשלח האובייקט המלא,
  * כך שהאימייל של המפרסם ושל האדמין שאישר נכנסו ל-HTML של דף שנשמר
- * בקאש ציבורי.
+ * בקאש ציבורי. גם תמונות דף הנחיתה עוברות כאן ככתובת.
  */
 export function toPublicAd(ad: SubmittedAd): PublicAd {
-    return { ...toApprovedPublic(ad), landing: ad.landing };
+    return {
+        ...toApprovedPublic(ad),
+        landing: {
+            ...ad.landing,
+            image: adImageUrl(ad, 'landing'),
+            products: ad.landing.products.map((p, i) => ({
+                ...p,
+                image: p.image ? adImageUrl(ad, `product-${i}`) : '',
+            })),
+        },
+    };
 }
 
 // ============================================================

@@ -46,12 +46,25 @@ const setStrApiCookie: Handle = async ({ event, resolve }) => {
 };
 
 /**
+ * נתיב תמונות המודעות - ציבורי לחלוטין ולא תלוי-משתמש, ולכן עוקף את
+ * שרשרת ה-auth: @auth/sveltekit מוסיף Set-Cookie לתשובות, ו-Vercel לעולם
+ * לא שומר בקאש הקצה תשובה שנושאת עוגייה. בלי העקיפה ה-CDN היה מחזיר MISS
+ * בכל בקשת תמונה והבייטים היו יוצאים מה-origin מחדש בכל פעם (נמדד ואומת
+ * באתרי-האח).
+ */
+const PUBLIC_IMAGE_PATH = /^\/api\/ad-image\/[^/]+\/[^/]+$/;
+
+/**
  * עוטפים את ה-handle של Auth ב-try/catch.
  * אם ה-JWT קיים בעוגייה אבל לא תקין (למשל AUTH_SECRET שונה),
  * @auth/sveltekit עלול לזרוק - ואז כל הדפים מקבלים 500.
  * הפתרון: אם handle זורק, נמשיך ב-resolve רגיל (משתמש אנונימי).
  */
 export const handle: Handle = async ({ event, resolve }) => {
+    if (PUBLIC_IMAGE_PATH.test(event.url.pathname)) {
+        (event.locals as unknown as Record<string, unknown>).auth = async () => null;
+        return await resolve(event);
+    }
     try {
         return await sequence(authHandle, checkBanned, setStrApiCookie)({ event, resolve });
     } catch (err) {
