@@ -37,6 +37,15 @@
 		}
 	}
 
+	// כבר רשום באחד מאתרי "יוצאים לחירות"? מפנים לקהילה שקובעת את העוגייה
+	// המשותפת gofreeil-auth ומחזירה ל-callback שמקים סשן דרך ספק gofreeil-sso.
+	function continueWithCommunity() {
+		isLoading = true;
+		const returnTo = data.redirectTo || '/';
+		const callback = `${window.location.origin}/auth/community-callback?returnTo=${encodeURIComponent(returnTo)}`;
+		window.location.href = `https://community.gofreeil.com/sso?callback=${encodeURIComponent(callback)}`;
+	}
+
 	// tFn: תרגום reactive - $t אסור ב-Svelte 5
 	let _loc = $state(get(locale));
 	$effect(() => locale.subscribe(l => (_loc = l)));
@@ -144,8 +153,8 @@
 						};
 					}}
 				>
-					<div class="mb-4">
-						<label for="username" class="block text-sm font-medium text-gray-400 mb-2">{tFn("username_label")}</label>
+					<div class="mb-3 flex items-center gap-3">
+						<label for="username" class="w-28 shrink-0 text-sm font-medium text-gray-400">{tFn("username_label")}</label>
 						<input
 							id="username"
 							name="username"
@@ -153,15 +162,15 @@
 							required
 							autocomplete="username"
 							value={form?.username ?? ''}
-							class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3
+							class="flex-1 min-w-0 bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3
 							       text-white placeholder-gray-500 focus:outline-none focus:border-purple-500
 							       focus:ring-1 focus:ring-purple-500 transition-colors"
 							placeholder={tFn("username_placeholder")}
 						/>
 					</div>
 
-					<div class="mb-4">
-						<label for="email" class="block text-sm font-medium text-gray-400 mb-2">{tFn("email")}</label>
+					<div class="mb-3 flex items-center gap-3">
+						<label for="email" class="w-28 shrink-0 text-sm font-medium text-gray-400">{tFn("email")}</label>
 						<input
 							id="email"
 							name="email"
@@ -169,16 +178,16 @@
 							required
 							autocomplete="email"
 							value={form?.email ?? ''}
-							class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3
+							class="flex-1 min-w-0 bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3
 							       text-white placeholder-gray-500 focus:outline-none focus:border-purple-500
 							       focus:ring-1 focus:ring-purple-500 transition-colors"
 							placeholder="your@email.com"
 						/>
 					</div>
 
-					<div class="mb-4">
-						<label for="password" class="block text-sm font-medium text-gray-400 mb-2">{tFn("password_label")}</label>
-						<div class="relative">
+					<div class="mb-3 flex items-center gap-3">
+						<label for="password" class="w-28 shrink-0 text-sm font-medium text-gray-400">{tFn("password_label")}</label>
+						<div class="relative flex-1 min-w-0">
 							<input
 								id="password"
 								name="password"
@@ -211,9 +220,9 @@
 						</div>
 					</div>
 
-					<div class="mb-6">
-						<label for="confirmPassword" class="block text-sm font-medium text-gray-400 mb-2">{tFn("confirm_password_label")}</label>
-						<div class="relative">
+					<div class="mb-6 flex items-center gap-3">
+						<label for="confirmPassword" class="w-28 shrink-0 text-sm font-medium text-gray-400">{tFn("confirm_password_label")}</label>
+						<div class="relative flex-1 min-w-0">
 							<input
 								id="confirmPassword"
 								name="confirmPassword"
@@ -271,6 +280,25 @@
 						{tFn("login_here")}
 					</a>
 				</p>
+
+					<!-- יוצאים לחירות (SSO) — אחרון -->
+					<div class="mt-6 pt-6 border-t border-white/10">
+						<p class="text-center text-sm text-gray-400 mb-3 leading-relaxed">
+							כבר נרשמת לאחד מאתרי <b class="text-amber-300">"יוצאים לחירות"</b>? רק לחץ כאן להמשך:
+						</p>
+						<button
+							type="button"
+							onclick={continueWithCommunity}
+							disabled={isLoading}
+							class="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-pink-600
+							       hover:from-amber-400 hover:to-pink-500 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg
+							       transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl
+							       disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+						>
+							<span class="text-xl flex-shrink-0">🕊️</span>
+							<span>המשך דרך "יוצאים לחירות"</span>
+						</button>
+					</div>
 
 			</div>
 		</div>
