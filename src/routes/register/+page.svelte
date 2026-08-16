@@ -71,9 +71,11 @@
 				<!-- לוגו + כותרת -->
 				<div class="text-center mb-8">
 					<div class="flex justify-center mb-4">
-						<div class="h-16 w-16 rounded-2xl bg-gradient-to-br from-green-600 to-blue-700 flex items-center justify-center shadow-xl">
-							<span class="text-3xl">🏘️</span>
-						</div>
+						<img
+							src="/images/public-rating-logo.png"
+							alt="דירוג ציבורי"
+							class="h-16 w-16 rounded-2xl object-cover bg-white shadow-xl"
+						/>
 					</div>
 					<h1 class="text-2xl font-black text-white mb-2">{tFn("join_community")}</h1>
 					<p class="text-gray-400 text-sm">{tFn("create_account")}</p>
