@@ -23,7 +23,7 @@
             color: 'from-blue-600 to-cyan-600'
         },
         {
-            title: 'קבוצת רכישה',
+            title: 'רכישות קבוצתיות',
             summary: 'הוזל את ההוצאות החודשיות',
             url: 'https://groups.gofreeil.com/',
             color: 'from-green-600 to-emerald-600'
