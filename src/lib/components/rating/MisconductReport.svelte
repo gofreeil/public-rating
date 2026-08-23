@@ -41,7 +41,7 @@
                 <a
                     href={gratitudeHref}
                     class="rounded-xl border border-emerald-400 bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-950/50 transition-colors hover:bg-emerald-500"
-                >🌻 הכרת הטוב</a>
+                >🌻 פרסם הכרת הטוב לדמות זו</a>
             {/if}
             <button
                 type="button"
