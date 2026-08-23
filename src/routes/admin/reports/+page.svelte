@@ -64,7 +64,7 @@
                                 {reportReasonLabel(r.reason)}
                             </span>
                             <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-400">
-                                {r.target_type === 'comment' ? 'תגובה' : 'דירוג'}
+                                {r.target_type === 'official' ? 'התנהלות המדורג' : r.target_type === 'comment' ? 'תגובה' : 'דירוג'}
                             </span>
                             {#if r.official_id}
                                 <a
@@ -96,6 +96,7 @@
 
                         {#if r.status === 'pending'}
                             <div class="flex flex-wrap items-center gap-2 border-t border-white/5 pt-2">
+                                {#if r.target_type !== 'official'}
                                 <form
                                     method="POST"
                                     action="?/remove_content"
@@ -114,13 +115,14 @@
                                         class="cursor-pointer rounded-xl border border-red-400/40 bg-red-500/15 px-3 py-1.5 text-xs font-bold text-red-200 transition-colors hover:bg-red-500/25"
                                     >🗑 הסרת התוכן</button>
                                 </form>
+                                {/if}
 
                                 <form method="POST" action="?/dismiss" use:enhance>
                                     <input type="hidden" name="report_id" value={r.id} />
                                     <button
                                         type="submit"
                                         class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 transition-colors hover:bg-white/10"
-                                    >✓ נבדק — התוכן תקין</button>
+                                    >{r.target_type === 'official' ? '✓ טופל — סגירת הדיווח' : '✓ נבדק — התוכן תקין'}</button>
                                 </form>
                             </div>
                         {/if}

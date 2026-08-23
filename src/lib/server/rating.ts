@@ -655,7 +655,7 @@ function mapReport(item: StrapiItem): ContentReport {
     return {
         id: item.documentId,
         target_id: item.label ?? '',
-        target_type: x.target_type === 'comment' ? 'comment' : 'review',
+        target_type: x.target_type === 'comment' || x.target_type === 'official' ? x.target_type : 'review',
         official_id: typeof x.official_id === 'string' ? x.official_id : '',
         official_name: typeof x.official_name === 'string' ? x.official_name : '',
         reason: (typeof x.reason === 'string' ? x.reason : 'other') as ReportReason,
@@ -669,7 +669,7 @@ function mapReport(item: StrapiItem): ContentReport {
 
 export interface ReportInput {
     targetId: string;
-    targetType: 'review' | 'comment';
+    targetType: 'review' | 'comment' | 'official';
     officialId: string;
     officialName: string;
     reason: ReportReason;

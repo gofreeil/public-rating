@@ -351,7 +351,17 @@ export interface PublicComment {
 
 // ---- דיווח על תוכן פוגעני ----
 
-export type ReportReason = 'defamation' | 'wrong_person' | 'spam' | 'abusive' | 'other';
+export type ReportReason =
+    | 'defamation'
+    | 'wrong_person'
+    | 'spam'
+    | 'abusive'
+    // דיווח על התנהלות המדורג עצמו (לא על תוכן באתר)
+    | 'breach_of_trust'
+    | 'corruption'
+    | 'abuse_of_power'
+    | 'offensive_conduct'
+    | 'other';
 
 export const REPORT_REASONS: { key: ReportReason; label: string }[] = [
     { key: 'defamation', label: 'לשון הרע או השמצה' },
@@ -361,16 +371,29 @@ export const REPORT_REASONS: { key: ReportReason; label: string }[] = [
     { key: 'other', label: 'אחר' },
 ];
 
+/** סיבות לדיווח על התנהלות המדורג עצמו — הפרת אמונים והתנהלות פוגענית */
+export const MISCONDUCT_REASONS: { key: ReportReason; label: string }[] = [
+    { key: 'breach_of_trust', label: 'הפרת אמונים או ניגוד עניינים' },
+    { key: 'corruption', label: 'שחיתות, שוחד או טובות הנאה' },
+    { key: 'abuse_of_power', label: 'ניצול לרעה של הסמכות או הפעלת לחץ' },
+    { key: 'offensive_conduct', label: 'התנהלות פוגענית, הטרדה או השפלה' },
+    { key: 'other', label: 'אחר' },
+];
+
 export function reportReasonLabel(key: string): string {
-    return REPORT_REASONS.find((r) => r.key === key)?.label ?? 'אחר';
+    return (
+        REPORT_REASONS.find((r) => r.key === key)?.label ??
+        MISCONDUCT_REASONS.find((r) => r.key === key)?.label ??
+        'אחר'
+    );
 }
 
 export interface ContentReport {
     /** documentId ב-Strapi */
     id: string;
-    /** documentId של הפריט המדווח (ביקורת או תגובה) */
+    /** documentId של הפריט המדווח (ביקורת, תגובה או המדורג עצמו) */
     target_id: string;
-    target_type: 'review' | 'comment';
+    target_type: 'review' | 'comment' | 'official';
     /** המדורג שבדף שלו נמצא התוכן — לניווט מהאדמין */
     official_id: string;
     official_name: string;

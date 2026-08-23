@@ -14,6 +14,7 @@ import {
 } from '$lib/rating/aggregate';
 import { TOO_FAST, TOO_MANY, allowAction, botCheck } from '$lib/server/rateLimit';
 import {
+    MISCONDUCT_REASONS,
     REPORT_REASONS,
     type OfficialComment,
     type OfficialInquiry,
@@ -326,22 +327,34 @@ export const actions: Actions = {
         const bot = botCheck(fd);
         if (bot.trap) return { reportSuccess: true };
 
-        const targetId = fd.get('target_id')?.toString() ?? '';
-        const targetType = fd.get('target_type')?.toString() === 'comment' ? 'comment' : 'review';
+        const rawType = fd.get('target_type')?.toString() ?? '';
+        const targetType: 'review' | 'comment' | 'official' =
+            rawType === 'comment' || rawType === 'official' ? rawType : 'review';
+        // דיווח על התנהלות המדורג מכוון תמיד למדורג שבכתובת
+        const targetId = targetType === 'official' ? event.params.id : (fd.get('target_id')?.toString() ?? '');
         const reason = (fd.get('reason')?.toString() ?? '') as ReportReason;
         const details = (fd.get('details')?.toString() ?? '').trim().slice(0, 1000);
         const contact = (fd.get('contact')?.toString() ?? '').trim().slice(0, 200);
 
         if (!targetId) return fail(400, { reportError: 'התוכן המדווח לא נמצא' });
-        if (!REPORT_REASONS.some((r) => r.key === reason)) {
+        const allowedReasons = targetType === 'official' ? MISCONDUCT_REASONS : REPORT_REASONS;
+        if (!allowedReasons.some((r) => r.key === reason)) {
             return fail(400, { reportError: 'יש לבחור סיבת דיווח' });
+        }
+        // דיווח על התנהלות הוא טענה עובדתית — בלי פירוט אין מה לבדוק
+        if (targetType === 'official' && details.length < 20) {
+            return fail(400, { reportError: 'יש לפרט מה קרה — לפחות 20 תווים' });
         }
 
         // אימות שהתוכן קיים ושייך למדורג שבכתובת, ושמירת עותק שלו:
         // הדיווח חייב להישאר מובן גם אם התוכן נמחק לפני הטיפול
         let snapshot = '';
         try {
-            if (targetType === 'review') {
+            if (targetType === 'official') {
+                const o = await getOfficial(event.params.id);
+                if (!o) return fail(404, { reportError: 'המדורג לא נמצא' });
+                snapshot = [o.name, o.position, o.org].filter(Boolean).join(' · ');
+            } else if (targetType === 'review') {
                 const r = (await getReviewsFor(event.params.id)).find((x) => x.id === targetId);
                 if (!r) return fail(404, { reportError: 'הדירוג לא נמצא או שכבר הוסר' });
                 snapshot = r.text;

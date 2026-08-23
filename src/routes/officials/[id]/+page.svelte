@@ -18,6 +18,7 @@
     import ProfileDetails from '$lib/components/rating/ProfileDetails.svelte';
     import KnessetRecord from '$lib/components/rating/KnessetRecord.svelte';
     import InquiryPanel from '$lib/components/rating/InquiryPanel.svelte';
+    import MisconductReport from '$lib/components/rating/MisconductReport.svelte';
     import type { PageData, ActionData } from './$types';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -308,6 +309,9 @@
         isAdmin={data.isAdmin}
         isOfficialUser={data.isOfficialUser}
     />
+
+    <!-- דיווח על התנהלות המדורג — סוגר את הדף -->
+    <MisconductReport officialName={official.name} />
 
     <div class="text-center">
         {#if group}
