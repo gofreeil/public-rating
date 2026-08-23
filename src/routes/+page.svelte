@@ -117,7 +117,7 @@
         </section>
     {:else}
         <section>
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+            <div class="py-6 text-center">
                 <p class="font-bold text-white">עוד לא דורג אף אחד — היו הראשונים!</p>
                 <p class="mt-1 text-sm text-gray-400">בחרו לוח, מצאו את המדורג ושתפו את דעתכם</p>
                 <div class="mt-3 flex flex-wrap justify-center gap-2">
