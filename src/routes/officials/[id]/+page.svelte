@@ -153,7 +153,7 @@
     <!-- כותרת: מי המדורג + הפרמטרים שלו, הכול בראש הדף ליד התמונה -->
     <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
         <div class="flex flex-wrap items-center gap-4">
-            <Avatar name={official.name} image={official.image} size={72} />
+            <Avatar name={official.name} image={official.image} size={72} mdSize={132} />
             <div class="min-w-0 flex-1">
                 <h1 class="flex flex-wrap items-center gap-2 text-2xl font-black text-white sm:text-3xl">
                     {official.name}
