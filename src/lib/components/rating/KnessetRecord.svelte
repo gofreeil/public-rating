@@ -60,13 +60,13 @@
         [
             { label: 'עברו קריאה שלישית', n: bills.passed, cls: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300' },
             { label: 'בהליכי חקיקה', n: bills.in_progress, cls: 'border-blue-400/30 bg-blue-500/10 text-blue-300' },
-            { label: 'נעצרו או נדחו', n: bills.stopped, cls: 'border-white/10 bg-white/5 text-gray-400' },
-            { label: 'מוזגו עם הצעה אחרת', n: bills.merged, cls: 'border-white/10 bg-white/5 text-gray-400' },
+            { label: 'נעצרו או נדחו', n: bills.stopped, cls: 'border-white/10 bg-slate-800/80 text-gray-400' },
+            { label: 'מוזגו עם הצעה אחרת', n: bills.merged, cls: 'border-white/10 bg-slate-800/80 text-gray-400' },
         ].filter((c) => c.n > 0),
     );
 </script>
 
-<section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+<section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
     <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h2 class="text-lg font-bold text-white">
             🏛️ הרזומה בכנסת ה-{record.knesset_num}<span class="align-super text-sm text-gray-400">*</span>
@@ -212,7 +212,7 @@
                     📨 מענה לשאילתות <span class="font-normal text-gray-400">· {mq.ministry}</span>
                 </h3>
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-300 tabular-nums">
+                    <span class="rounded-full border border-white/10 bg-slate-800/80 px-2.5 py-1 text-xs text-gray-300 tabular-nums">
                         {mq.total} שאילתות הופנו למשרד
                     </span>
                     <span
@@ -255,7 +255,7 @@
                 <a
                     href="mailto:{record.email}"
                     dir="ltr"
-                    class="record-link rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-300 transition-colors"
+                    class="record-link rounded-full border border-white/10 bg-slate-800/80 px-2.5 py-1 text-xs text-gray-300 transition-colors"
                 >📧 {record.email}</a>
             </div>
         {/if}

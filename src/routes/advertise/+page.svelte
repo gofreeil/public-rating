@@ -75,7 +75,7 @@
     </header>
 
     <!-- הקהל -->
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-5">
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-5">
         <h2 class="mb-3 text-lg font-black text-white">למי אתם מגיעים</h2>
         <ul class="flex flex-col gap-2">
             {#each audience as a (a.text)}
@@ -90,7 +90,7 @@
     <!-- המקומות -->
     <section class="grid gap-3 sm:grid-cols-2">
         {#each placements as p (p.title)}
-            <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div class="rounded-2xl border border-white/10 bg-slate-800/80 p-5">
                 <div class="mb-1 text-3xl" aria-hidden="true">{p.icon}</div>
                 <h2 class="text-lg font-black text-white">{p.title}</h2>
                 <p class="mt-0.5 text-xs text-gray-500">{p.where}</p>
@@ -107,7 +107,7 @@
     </section>
 
     <!-- איך מפרסמים -->
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-5">
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-5">
         <h2 class="mb-4 text-lg font-black text-white">איך מפרסמים?</h2>
         <ol class="flex flex-col gap-3">
             {#each steps as s (s.n)}
@@ -134,7 +134,7 @@
             </a>
             <a
                 href={mailto}
-                class="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10"
+                class="rounded-xl border border-white/10 bg-slate-800/80 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10"
             >✉️ שליחת פנייה</a>
         </div>
         <p class="mt-3 text-xs text-gray-500">

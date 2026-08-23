@@ -14,7 +14,7 @@
         </div>
 
         <!-- תיאור כללי -->
-        <section class="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6" aria-labelledby="general-heading">
+        <section class="bg-slate-800/80 border border-white/10 rounded-2xl p-6 mb-6" aria-labelledby="general-heading">
             <h3 id="general-heading" class="text-xl font-bold text-white mb-3">על הנגישות באתר</h3>
             <p class="text-gray-300 leading-relaxed mb-3">
                 אתר "קהילה בשכונה" מחויב לנגישות דיגיטלית מלאה לכלל המשתמשים, לרבות אנשים עם מוגבלויות.
@@ -26,7 +26,7 @@
         </section>
 
         <!-- ההתאמות שבוצעו -->
-        <section class="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6" aria-labelledby="adaptations-heading">
+        <section class="bg-slate-800/80 border border-white/10 rounded-2xl p-6 mb-6" aria-labelledby="adaptations-heading">
             <h3 id="adaptations-heading" class="text-xl font-bold text-white mb-4">התאמות שבוצעו</h3>
             <ul class="space-y-3 text-gray-300">
                 <li class="flex items-start gap-2">
@@ -85,7 +85,7 @@
         </section>
 
         <!-- תקלות ידועות -->
-        <section class="bg-white/5 border border-white/10 rounded-2xl p-6 mb-6" aria-labelledby="issues-heading">
+        <section class="bg-slate-800/80 border border-white/10 rounded-2xl p-6 mb-6" aria-labelledby="issues-heading">
             <h3 id="issues-heading" class="text-xl font-bold text-white mb-3">מגבלות ידועות</h3>
             <ul class="space-y-2 text-gray-300">
                 <li class="flex items-start gap-2">

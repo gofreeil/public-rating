@@ -41,13 +41,13 @@
     {#if data.top3.length}
         <Podium officials={data.top3} />
     {:else}
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+        <div class="rounded-2xl border border-white/10 bg-slate-800/80 p-6 text-center">
             <p class="font-bold text-gray-300">הפודיום עדיין ריק — היו הראשונים לדרג</p>
             <div class="mt-3 flex flex-wrap justify-center gap-2">
                 {#each data.perGroup as g (g.key)}
                     <a
                         href={g.route}
-                        class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10"
+                        class="rounded-full border border-white/10 bg-slate-800/80 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10"
                     >{g.icon} {g.title}</a>
                 {/each}
             </div>
@@ -79,7 +79,7 @@
             <h2 class="mb-3 text-lg font-black text-white">מובילים לפי קטגוריה</h2>
             <div class="grid gap-4 md:grid-cols-3">
                 {#each data.perGroup as g (g.key)}
-                    <div class="rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <div class="rounded-2xl border border-white/10 bg-slate-800/80 p-3">
                         <a href={g.route} class="mb-2 flex items-center gap-1.5 text-sm font-bold text-blue-400 hover:text-blue-300">
                             <span>{g.icon}</span><span>{g.title}</span>
                         </a>
@@ -102,7 +102,7 @@
 
     <!-- תחתית הדירוג -->
     {#if data.bottom3.length}
-        <section class="rounded-2xl border border-red-400/20 bg-white/5 p-4">
+        <section class="rounded-2xl border border-red-400/20 bg-slate-800/80 p-4">
             <h2 class="text-base font-black text-white">📉 בתחתית הדירוג</h2>
             <p class="mb-3 mt-0.5 text-xs text-gray-400">דורשים שיפור — הציבור מצפה ליותר</p>
             <div class="grid gap-2 sm:grid-cols-3">
@@ -114,7 +114,7 @@
     {/if}
 
     <!-- פס הסבר + קריאה לפעולה -->
-    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-slate-800/80 p-4">
         <p class="min-w-56 flex-1 text-xs leading-relaxed text-gray-400">
             בדירוג ההוגן נכללים מדורגים עם {data.minReviews} דירוגים לפחות; הציון משוקלל כך שדירוג בודד לא יקפיץ לצמרת.
         </p>
@@ -123,7 +123,7 @@
             {#each data.perGroup as g (g.key)}
                 <a
                     href={g.route}
-                    class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-white transition-colors hover:bg-white/10"
+                    class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-xs font-bold text-white transition-colors hover:bg-white/10"
                 >{g.icon} {g.title}</a>
             {/each}
         </span>

@@ -32,7 +32,7 @@
     const now = Date.now();
 </script>
 
-<section id="inquiries" class="scroll-mt-20 rounded-2xl border border-white/10 bg-white/5 p-4">
+<section id="inquiries" class="scroll-mt-20 rounded-2xl border border-white/10 bg-slate-800/80 p-4">
     <div class="flex flex-wrap items-baseline gap-2">
         <h2 class="text-lg font-bold text-white">📨 פניות ציבור ({inquiries.length})</h2>
         {#if answeredCount > 0}
@@ -104,7 +104,7 @@
     {#if inquiries.length}
         <div class="mt-4 flex flex-col gap-3">
             {#each inquiries as inq (inq.id)}
-                <article class="rounded-2xl border border-white/10 bg-white/5 p-3">
+                <article class="rounded-2xl border border-white/10 bg-slate-800/80 p-3">
                     <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                         <span class="font-bold text-gray-300">
                             {inq.anonymous || !inq.author_name ? 'אזרח/ית' : inq.author_name}
@@ -117,7 +117,7 @@
                                 🟢 נענתה
                             </span>
                         {:else}
-                            <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-gray-400">
+                            <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">
                                 ⏳ ממתינה למענה
                             </span>
                         {/if}
@@ -136,12 +136,12 @@
                                     type="submit"
                                     class="cursor-pointer rounded-full border px-3 py-1 text-xs font-bold transition-colors {inq.joinedByMe
                                         ? 'border-purple-400/40 bg-purple-500/15 text-purple-300'
-                                        : 'join-btn border-white/10 bg-white/5 text-gray-300'}"
+                                        : 'join-btn border-white/10 bg-slate-800/80 text-gray-300'}"
                                     title={inq.joinedByMe ? 'ביטול ההצטרפות' : 'הצטרפות לפנייה — חיזוק הדרישה למענה'}
                                 >🤝 {inq.joinedByMe ? 'הצטרפתם' : 'מצטרף/ת'} ({inq.joinCount})</button>
                             </form>
                         {:else}
-                            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-400">
+                            <span class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-xs text-gray-400">
                                 🤝 {inq.joinCount} הצטרפו
                             </span>
                         {/if}
@@ -166,7 +166,7 @@
                                 <input type="hidden" name="inquiry_id" value={inq.id} />
                                 <button
                                     type="submit"
-                                    class="del-btn cursor-pointer rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-500 transition-colors"
+                                    class="del-btn cursor-pointer rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-xs text-gray-500 transition-colors"
                                 >🗑️ מחיקה</button>
                             </form>
                         {/if}
@@ -221,7 +221,7 @@
                                 <button
                                     type="button"
                                     onclick={() => (replyingTo = null)}
-                                    class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-1.5 text-xs text-gray-400 transition-colors hover:bg-white/10"
+                                    class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-4 py-1.5 text-xs text-gray-400 transition-colors hover:bg-white/10"
                                 >ביטול</button>
                             </div>
                         </form>
@@ -230,7 +230,7 @@
             {/each}
         </div>
     {:else}
-        <p class="mt-4 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-500">
+        <p class="mt-4 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-gray-500">
             עוד אין פניות ציבור — היו הראשונים לפנות.
         </p>
     {/if}

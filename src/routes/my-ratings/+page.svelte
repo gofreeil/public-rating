@@ -52,7 +52,7 @@
     {/if}
 
     {#if data.mine.length === 0}
-        <div class="rounded-2xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
+        <div class="rounded-2xl border border-dashed border-white/10 bg-slate-800/80 p-8 text-center">
             <div class="text-4xl">⭐</div>
             <p class="mt-2 font-bold text-white">עוד לא דירגתם אף אחד</p>
             <p class="mt-1 text-sm text-gray-400">
@@ -62,7 +62,7 @@
                 {#each ['knesset', 'judges', 'public_servants'] as key (key)}
                     {@const g = groupByKey(key)}
                     {#if g}
-                        <a href={g.route} class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10">
+                        <a href={g.route} class="rounded-full border border-white/10 bg-slate-800/80 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10">
                             {g.icon} {g.title}
                         </a>
                     {/if}
@@ -73,7 +73,7 @@
         <div class="flex flex-col gap-3">
             {#each data.mine as m (m.reviewId)}
                 {@const g = gap(m.overall, m.official.publicAverage)}
-                <article class="rounded-2xl border border-white/10 bg-white/5 p-3">
+                <article class="rounded-2xl border border-white/10 bg-slate-800/80 p-3">
                     <div class="flex flex-wrap items-center gap-3">
                         <Avatar name={m.official.name} image={m.official.image} size={44} />
                         <div class="min-w-0 flex-1">
@@ -111,7 +111,7 @@
                     <div class="mt-2 flex flex-wrap gap-1">
                         {#each CRITERIA as c (c.key)}
                             {#if typeof m.scores[c.key] === 'number'}
-                                <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-gray-400">
+                                <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-[11px] text-gray-400">
                                     {c.short} <b class="text-amber-300 tabular-nums">{m.scores[c.key]}</b>
                                 </span>
                             {/if}
@@ -159,7 +159,7 @@
 
     <!-- הצעות שממתינות לאישור -->
     {#if data.mySuggestions.length}
-        <section class="rounded-2xl border border-white/10 bg-white/5 p-3">
+        <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-3">
             <h2 class="mb-2 font-black text-white">ההצעות שלי ({data.mySuggestions.length})</h2>
             <ul class="flex flex-col gap-1.5">
                 {#each data.mySuggestions as s (s.id)}

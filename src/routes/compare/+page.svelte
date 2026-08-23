@@ -130,7 +130,7 @@
     ]);
 
     const inputCls =
-        'w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none';
+        'w-full rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none';
 
     /** רוחב עמודה אחיד — הטבלה נגללת אופקית בנייד במקום להישבר */
     const gridCols = $derived(`minmax(6.5rem, 9rem) repeat(${selected.length}, minmax(8rem, 1fr))`);
@@ -154,7 +154,7 @@
     </header>
 
     <!-- ---- בורר: צ'יפים של הנבחרים + חיפוש ---- -->
-    <section class="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+    <section class="flex flex-col gap-2 rounded-2xl border border-white/10 bg-slate-800/80 p-3">
         {#if selected.length}
             <div class="flex flex-wrap items-center gap-2">
                 {#each selected as o (o.id)}
@@ -224,7 +224,7 @@
                     <button
                         type="button"
                         onclick={() => add(o.id)}
-                        class="suggest-chip cursor-pointer rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-300 transition-colors"
+                        class="suggest-chip cursor-pointer rounded-full border border-white/10 bg-slate-800/80 px-2.5 py-1 text-xs text-gray-300 transition-colors"
                     >➕ {o.name}</button>
                 {/each}
             </div>
@@ -233,7 +233,7 @@
 
     {#if selected.length < 2}
         <!-- ---- מצב ריק: הסבר + קיצור ללוחות ---- -->
-        <div class="rounded-2xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
+        <div class="rounded-2xl border border-dashed border-white/10 bg-slate-800/80 p-8 text-center">
             <div class="text-4xl">⚖️</div>
             <p class="mt-2 font-bold text-white">
                 {selected.length === 0 ? 'בחרו שני מדורגים כדי להתחיל' : 'בחרו מדורג נוסף כדי להשוות'}
@@ -245,7 +245,7 @@
                 {#each ['knesset', 'judges', 'public_servants'] as key (key)}
                     {@const g = groupByKey(key)}
                     {#if g}
-                        <a href={g.route} class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10">
+                        <a href={g.route} class="rounded-full border border-white/10 bg-slate-800/80 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10">
                             {g.icon} {g.title}
                         </a>
                     {/if}
@@ -259,7 +259,7 @@
         </div>
 
         <!-- ---- טבלת ההשוואה ---- -->
-        <section class="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 p-3">
+        <section class="overflow-x-auto rounded-2xl border border-white/10 bg-slate-800/80 p-3">
             <div class="min-w-fit">
                 <!-- כותרות: מי מול מי -->
                 <div class="grid items-end gap-2" style="grid-template-columns: {gridCols}">
@@ -283,7 +283,7 @@
                     {#each CRITERIA as c (c.key)}
                         {@const best = bestByCriterion[c.key]}
                         <div
-                            class="grid items-center gap-2 rounded-xl border border-white/5 bg-white/[0.03] p-2"
+                            class="grid items-center gap-2 rounded-xl border border-white/5 bg-slate-800/55 p-2"
                             style="grid-template-columns: {gridCols}"
                         >
                             <span class="text-xs font-bold text-gray-300" title={c.description}>

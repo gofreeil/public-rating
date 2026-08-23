@@ -20,12 +20,12 @@
     );
 
     const inputCls =
-        'w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none';
+        'w-full rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none';
 
     const TONE: Record<string, string> = {
         pending: 'border-amber-400/30 bg-amber-500/[0.06]',
         approved: 'border-emerald-400/25 bg-emerald-500/[0.05]',
-        rejected: 'border-white/10 bg-white/5 opacity-70',
+        rejected: 'border-white/10 bg-slate-800/80 opacity-70',
     };
 </script>
 
@@ -40,9 +40,9 @@
     </header>
 
     <nav class="flex flex-wrap gap-2 text-sm">
-        <a href="/admin" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-gray-300 hover:text-white">← ניהול</a>
-        <a href="/admin/officials" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-gray-300 hover:text-white">מדורגים</a>
-        <a href="/admin/reports" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-gray-300 hover:text-white">דיווחים</a>
+        <a href="/admin" class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 hover:text-white">← ניהול</a>
+        <a href="/admin/officials" class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 hover:text-white">מדורגים</a>
+        <a href="/admin/reports" class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 hover:text-white">דיווחים</a>
     </nav>
 
     {#if data.backendUnavailable}
@@ -62,7 +62,7 @@
     {/if}
 
     <!-- ---- הזנה ידנית ---- -->
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
         <button
             type="button"
             onclick={() => (showCreate = !showCreate)}
@@ -166,7 +166,7 @@
     </section>
 
     {#if data.rows.length === 0 && !data.backendUnavailable}
-        <div class="rounded-2xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
+        <div class="rounded-2xl border border-dashed border-white/10 bg-slate-800/80 p-8 text-center">
             <div class="text-4xl">📢</div>
             <p class="mt-2 font-bold text-white">אין עדיין פרסומות</p>
             <p class="mt-1 text-sm text-gray-400">כל {data.slotCount} המשבצות בטור הימני פנויות</p>
@@ -197,7 +197,7 @@
                                 </span>
                             {/if}
                             {#if ad.expired}
-                                <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-gray-400">
+                                <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-[11px] text-gray-400">
                                     פג תוקף
                                 </span>
                             {:else if ad.status === 'approved'}
@@ -217,7 +217,7 @@
                                     🔄 עדכון למודעה קיימת{ad.replacesTitle ? ` — קודמת: "${ad.replacesTitle}"` : ''}
                                 </span>
                             {:else if ad.supersededBy}
-                                <span class="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] font-bold text-gray-300">
+                                <span class="rounded-full border border-white/15 bg-slate-800/80 px-2 py-0.5 text-[11px] font-bold text-gray-300">
                                     🔄 גרסה ישנה — הוחלפה בגרסה מעודכנת
                                 </span>
                             {/if}
@@ -245,7 +245,7 @@
                                             type="submit"
                                             disabled={ad.slotIndex === 0}
                                             title="העלה משבצת אחת"
-                                            class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+                                            class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
                                         >▲ למעלה</button>
                                     </form>
                                     <form method="POST" action="?/move" use:enhance>
@@ -255,7 +255,7 @@
                                             type="submit"
                                             disabled={ad.slotIndex === ad.slotTotal - 1}
                                             title="הורד משבצת אחת"
-                                            class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
+                                            class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
                                         >▼ למטה</button>
                                     </form>
                                 </div>
@@ -272,13 +272,13 @@
 
                         {#if ad.status === 'approved' && ad.stats.impressions > 0}
                             <p class="flex flex-wrap gap-2 text-[11px]">
-                                <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-gray-400">
+                                <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">
                                     👁 {ad.stats.impressions} חשיפות
                                 </span>
-                                <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-gray-400">
+                                <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">
                                     🖱 {ad.stats.clicks} קליקים ({(ad.stats.ctr * 100).toFixed(1)}%)
                                 </span>
-                                <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-gray-400">
+                                <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">
                                     📄 {ad.stats.landing} צפיות בנחיתה
                                 </span>
                                 <span class="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">
@@ -317,13 +317,13 @@
                                 href="/ads/{ad.id}"
                                 target="_blank"
                                 rel="noopener"
-                                class="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
+                                class="rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
                             >👁 תצוגה מקדימה</a>
 
                             {#if ad.status !== 'approved' || ad.expired}
                                 <form method="POST" action="?/approve" use:enhance class="flex items-center gap-1">
                                     <input type="hidden" name="id" value={ad.id} />
-                                    <select name="duration_days" class="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white">
+                                    <select name="duration_days" class="rounded-lg border border-white/10 bg-slate-800/80 px-2 py-1 text-xs text-white">
                                         {#each data.plans as p (p.days)}
                                             <option value={p.days} selected={p.days === ad.requestedDurationDays} class="bg-slate-900">
                                                 {p.label}
@@ -343,7 +343,7 @@
                                         <button
                                             type="submit"
                                             title="הישנה תישאר באוויר וזו תתווסף לידה"
-                                            class="cursor-pointer rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
+                                            class="cursor-pointer rounded-xl border border-white/15 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
                                         >
                                             ➕ אישור כמודעה נוספת
                                         </button>
@@ -352,7 +352,7 @@
                             {:else}
                                 <form method="POST" action="?/extend" use:enhance class="flex items-center gap-1">
                                     <input type="hidden" name="id" value={ad.id} />
-                                    <select name="duration_days" class="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white">
+                                    <select name="duration_days" class="rounded-lg border border-white/10 bg-slate-800/80 px-2 py-1 text-xs text-white">
                                         {#each data.plans as p (p.days)}
                                             <option value={p.days} class="bg-slate-900">{p.label}</option>
                                         {/each}
@@ -365,12 +365,12 @@
                                 <!-- קציבה: קובעת תקופה מיום האישור, בשונה מהארכה שמוסיפה על הקיים -->
                                 <form method="POST" action="?/setDuration" use:enhance class="flex items-center gap-1">
                                     <input type="hidden" name="id" value={ad.id} />
-                                    <select name="duration_days" class="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white">
+                                    <select name="duration_days" class="rounded-lg border border-white/10 bg-slate-800/80 px-2 py-1 text-xs text-white">
                                         {#each DURATION_OPTIONS as d (d)}
                                             <option value={d} selected={d === ad.durationDays} class="bg-slate-900">{d} ימים</option>
                                         {/each}
                                     </select>
-                                    <button type="submit" class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
+                                    <button type="submit" class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
                                             title="התקופה נספרת מיום האישור">
                                         ✂ קצוב
                                     </button>
@@ -399,7 +399,7 @@
                                         }}
                                     >
                                         <input type="hidden" name="id" value={ad.id} />
-                                        <button type="submit" class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10">
+                                        <button type="submit" class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10">
                                             ⏸ השהה
                                         </button>
                                     </form>
@@ -433,9 +433,9 @@
                                         name="reason"
                                         placeholder="סיבה (לא חובה)"
                                         maxlength="300"
-                                        class="w-36 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-white placeholder-gray-600"
+                                        class="w-36 rounded-lg border border-white/10 bg-slate-800/80 px-2 py-1 text-xs text-white placeholder-gray-600"
                                     />
-                                    <button type="submit" class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10">
+                                    <button type="submit" class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10">
                                         ✕ דחייה
                                     </button>
                                 </form>

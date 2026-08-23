@@ -113,7 +113,7 @@
 							target="_blank"
 							rel="noopener noreferrer"
 							title={site.title}
-							class="group flex flex-col items-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 {kind === 'new' ? 'hover:border-purple-400/40' : 'hover:border-emerald-400/40'} p-2 sm:p-3 transition-all hover:-translate-y-0.5 grow-0 basis-[calc(33.333%-0.34rem)] sm:basis-[calc(25%-0.57rem)] lg:basis-[calc(20%-0.6rem)]"
+							class="group flex flex-col items-center gap-2 rounded-xl bg-slate-800/80 hover:bg-white/10 border border-white/10 {kind === 'new' ? 'hover:border-purple-400/40' : 'hover:border-emerald-400/40'} p-2 sm:p-3 transition-all hover:-translate-y-0.5 grow-0 basis-[calc(33.333%-0.34rem)] sm:basis-[calc(25%-0.57rem)] lg:basis-[calc(20%-0.6rem)]"
 						>
 							<div class="w-full aspect-[4/3] overflow-hidden rounded-lg bg-gradient-to-br {site.color}">
 								<img

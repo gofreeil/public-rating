@@ -55,7 +55,7 @@
 
     const TITLE_COLORS = ['#ffffff', '#fbbf24', '#34d399', '#60a5fa', '#f472b6', '#0f172a'];
     const btn =
-        'flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-white/5 text-lg text-gray-200 transition-colors hover:bg-white/10 active:bg-white/20';
+        'flex h-11 w-11 cursor-pointer items-center justify-center rounded-xl border border-white/10 bg-slate-800/80 text-lg text-gray-200 transition-colors hover:bg-white/10 active:bg-white/20';
 </script>
 
 <div class="flex flex-col gap-4">
@@ -101,7 +101,7 @@
 
     <!-- ---- מיקום התמונה ---- -->
     {#if mainImage}
-        <section class="rounded-2xl border border-white/10 bg-white/5 p-3">
+        <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-3">
             <h3 class="mb-2 text-sm font-black text-white">מיקום התמונה</h3>
 
             <div class="flex flex-wrap items-center gap-3">
@@ -139,7 +139,7 @@
     {/if}
 
     <!-- ---- הכותרת ---- -->
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-3">
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-3">
         <h3 class="mb-2 text-sm font-black text-white">הכותרת</h3>
 
         <label class="block">
@@ -177,7 +177,7 @@
     </section>
 
     <!-- ---- הפס והלוגו ---- -->
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-3">
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-3">
         <h3 class="mb-2 text-sm font-black text-white">הפס והלוגו</h3>
 
         <label class="block">
@@ -210,7 +210,7 @@
                                 class="h-11 cursor-pointer rounded-xl border px-3 text-xs font-bold transition-colors {s.logo_shape ===
                                 o.v
                                     ? 'border-blue-400/50 bg-blue-500/20 text-blue-200'
-                                    : 'border-white/10 bg-white/5 text-gray-300'}"
+                                    : 'border-white/10 bg-slate-800/80 text-gray-300'}"
                             >{o.l}</button>
                         {/each}
                     </div>
@@ -228,7 +228,7 @@
                                 class="h-11 cursor-pointer rounded-xl border px-3 text-xs font-bold transition-colors {!logoFree &&
                                 s.logo_position === o.v
                                     ? 'border-blue-400/50 bg-blue-500/20 text-blue-200'
-                                    : 'border-white/10 bg-white/5 text-gray-300'}"
+                                    : 'border-white/10 bg-slate-800/80 text-gray-300'}"
                             >{o.l}</button>
                         {/each}
                     </div>
@@ -238,7 +238,7 @@
     </section>
 
     <!-- ---- צבע הכרטיס ---- -->
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-3">
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-3">
         <h3 class="mb-2 text-sm font-black text-white">צבע הכפתור והפס</h3>
         <div class="flex flex-wrap gap-2" role="group" aria-label="בחירת צבע הכרטיס">
             {#each AD_GRADIENTS as g (g.id)}

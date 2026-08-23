@@ -46,7 +46,7 @@
             bind:value={query}
             placeholder="שם, תפקיד, סיעה, ערכאה או משרד…"
             aria-label="חיפוש מדורגים"
-            class="min-w-40 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none"
+            class="min-w-40 flex-1 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none"
         />
         <button type="submit" class="btn-premium rounded-xl px-5 py-2 text-sm font-bold text-white">
             חיפוש
@@ -54,18 +54,18 @@
     </form>
 
     {#if !data.q}
-        <div class="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center">
+        <div class="rounded-2xl border border-dashed border-white/10 bg-slate-800/80 p-6 text-center">
             <p class="text-sm text-gray-400">הקלידו שם של נבחר או עובד ציבור, או עיינו בלוחות:</p>
             <div class="mt-3 flex flex-wrap justify-center gap-2">
                 {#each GROUPS as g (g.key)}
-                    <a href={g.route} class="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10">
+                    <a href={g.route} class="rounded-full border border-white/10 bg-slate-800/80 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10">
                         {g.icon} {g.title}
                     </a>
                 {/each}
             </div>
         </div>
     {:else if data.results.length === 0}
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+        <div class="rounded-2xl border border-white/10 bg-slate-800/80 p-6 text-center">
             <p class="mb-1 font-bold text-white">לא נמצאו תוצאות עבור "{data.q}"</p>
             <p class="mb-3 text-sm text-gray-400">
                 אולי הוא עדיין לא ברשימה — אפשר להציע להוסיף אותו
@@ -80,7 +80,7 @@
                 <li>
                     <a
                         href="/officials/{o.id}"
-                        class="result-card flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors"
+                        class="result-card flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-800/80 p-3 transition-colors"
                     >
                         <Avatar name={o.name} image={o.image} size={48} />
                         <span class="min-w-0 flex-1">

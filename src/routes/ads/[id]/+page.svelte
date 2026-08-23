@@ -64,7 +64,7 @@
 
     <!-- כותרת — הטקסט יושב *ליד* התמונה ולא מתחתיה, כדי שכל העיקר
          ייכנס למסך הראשון בלי גלילה -->
-    <section class="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+    <section class="overflow-hidden rounded-2xl border border-white/10 bg-slate-800/80">
         <div
             class="grid items-center gap-5 p-5 text-center sm:p-6 {heroImage
                 ? 'md:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] md:text-right'
@@ -111,7 +111,7 @@
                     onclick={() => trackAdLead(ad.id)}
                     target={c.href.startsWith('http') ? '_blank' : undefined}
                     rel="noopener noreferrer nofollow"
-                    class="contact-btn flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white transition-colors"
+                    class="contact-btn flex items-center gap-2 rounded-xl border border-white/10 bg-slate-800/80 px-4 py-2.5 text-sm font-bold text-white transition-colors"
                 >
                     <span aria-hidden="true">{c.icon}</span>
                     <span>{c.label}</span>
@@ -122,7 +122,7 @@
 
     <!-- יתרונות — שורה רחבה, לא רשימה גבוהה -->
     {#if advantages.length}
-        <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
             <h2 class="mb-2 text-base font-black text-white">למה אנחנו</h2>
             <ul class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {#each advantages as a (a)}
@@ -143,7 +143,7 @@
     {#if lp.extended || lp.uniqueness}
         <section class="grid gap-3 {lp.extended && lp.uniqueness ? 'md:grid-cols-2' : ''}">
             {#if lp.extended}
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
                     <p class="text-sm leading-relaxed whitespace-pre-line text-gray-300">{lp.extended}</p>
                 </div>
             {/if}
@@ -162,7 +162,7 @@
             <h2 class="mb-2 text-base font-black text-white">מה אנחנו מציעים</h2>
             <div class="grid gap-3 sm:grid-cols-3">
                 {#each products as p (p.id)}
-                    <article class="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                    <article class="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-800/80">
                         {#if safeDataImage(p.image)}
                             <img src={safeDataImage(p.image)} alt="" class="h-24 w-full object-cover" />
                         {/if}
@@ -183,7 +183,7 @@
 
     <!-- פרטים -->
     {#if lp.address || lp.hours}
-        <section class="flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300">
+        <section class="flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-white/10 bg-slate-800/80 p-4 text-sm text-gray-300">
             {#if lp.address}
                 <span><b class="text-white">📍 כתובת:</b> {lp.address}</span>
             {/if}

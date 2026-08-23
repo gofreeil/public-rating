@@ -27,7 +27,7 @@
         <a href="/" class="btn-premium rounded-xl px-5 py-2 text-sm font-bold text-white">לדף הבית</a>
         <a
             href="/top-rated"
-            class="rounded-xl border border-white/10 bg-white/5 px-5 py-2 text-sm text-gray-300 transition-colors hover:bg-white/10"
+            class="rounded-xl border border-white/10 bg-slate-800/80 px-5 py-2 text-sm text-gray-300 transition-colors hover:bg-white/10"
         >🏆 המצטיינים</a>
     </div>
 </div>

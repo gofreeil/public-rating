@@ -151,7 +151,7 @@
     {/if}
 
     <!-- כותרת: מי המדורג + הפרמטרים שלו, הכול בראש הדף ליד התמונה -->
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
         <div class="flex flex-wrap items-center gap-4">
             <Avatar name={official.name} image={official.image} size={72} />
             <div class="min-w-0 flex-1">
@@ -175,7 +175,7 @@
                     {#if group}
                         <a
                             href={group.route}
-                            class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-blue-400 transition-colors duration-150 hover:text-blue-300"
+                            class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-xs text-blue-400 transition-colors duration-150 hover:text-blue-300"
                         >{group.icon} {group.title}</a>
                     {/if}
                 </div>
@@ -198,7 +198,9 @@
         <!-- הפרמטרים: התפלגות הדירוגים וחמשת המדדים — צמוד לדמות, לא בתחתית הדף -->
         <div class="mt-3 flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-white/10 pt-3">
             <div class="min-w-64 flex-1">
-                <CriteriaBars perCriterion={stats.perCriterion} />
+                <CriteriaBars perCriterion={stats.perCriterion} officialId={official.id} />
+                <!-- כל מדד הוא דף בפני עצמו: החומר הפומבי על הדמות באותו מדד והניתוח שלו -->
+                <p class="mt-1 text-xs text-gray-400">לחצו על מדד לחומר ולניתוח שמאחוריו</p>
             </div>
             <div class="min-w-56 flex-1">
                 <Histogram
@@ -221,7 +223,7 @@
 
 
     <!-- אמון ושיתוף -->
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
         {#if stats.count > 0}
             <div class="mb-3 border-b border-white/10 pb-3">
                 <TrustPanel {stats} reviews={data.reviews} />
@@ -234,7 +236,7 @@
     <TrendChart reviews={data.reviews} />
 
     <!-- דרגו בעצמכם -->
-    <section id="rate" class="scroll-mt-20 rounded-2xl border border-white/10 bg-white/5 p-4">
+    <section id="rate" class="scroll-mt-20 rounded-2xl border border-white/10 bg-slate-800/80 p-4">
         <h2 class="mb-3 text-lg font-bold text-white">דרגו בעצמכם</h2>
 
         {#if data.me}
@@ -318,7 +320,11 @@
     />
 
     <!-- דיווח על התנהלות המדורג — סוגר את הדף -->
-    <MisconductReport officialName={official.name} />
+    <MisconductReport
+        officialName={official.name}
+        group={official.group}
+        gratitudeHref="/officials/{official.id}/gratitude"
+    />
 
     <div class="text-center">
         {#if group}

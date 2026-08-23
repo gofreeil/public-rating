@@ -45,7 +45,7 @@
 </script>
 
 {#if trend.points.length >= 2}
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-3">
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-3">
         <div class="mb-1 flex flex-wrap items-center gap-2">
             <h3 class="text-sm font-bold text-white">מגמת הדירוג לאורך זמן</h3>
             <span

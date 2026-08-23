@@ -7,10 +7,19 @@
 // ============================================================
 
 import { strapiGet, strapiPost, strapiPut } from './strapiClient.js';
-import { CRITERIA, sanitizeScores, type Scores } from '$lib/rating/criteria';
+import { CRITERIA, sanitizeScores, type CriterionKey, type Scores } from '$lib/rating/criteria';
+import {
+    EVIDENCE_CATEGORY,
+    evidenceKindOf,
+    isCriterionKey,
+    type CriterionAnalysis,
+    type EvidenceAnalysis,
+    type EvidenceItem,
+} from '$lib/rating/evidence';
 import { overallOf, rankOfficials } from '$lib/rating/aggregate';
 import {
     COMMENT_CATEGORY,
+    GRATITUDE_CATEGORY,
     INQUIRY_CATEGORY,
     OFFICIAL_CATEGORY,
     PROPOSAL_CATEGORY,
@@ -23,6 +32,7 @@ import {
     proposalStatusOf,
     type CivicProposal,
     type ContentReport,
+    type GratitudeNote,
     type GroupKey,
     type KnessetRecord,
     type Official,
@@ -193,6 +203,60 @@ function parseShakuf(v: unknown): ShakufData | null {
     return { ministry, summary, report_url, source_date: str(s.source_date), synced_at: str(s.synced_at) };
 }
 
+/** ציון 1-5 מניתוח AI; כל דבר אחר (חסר/מחוץ לטווח) = אין ציון */
+function parseAiScore(v: unknown): number | null {
+    const n = Number(v);
+    return Number.isFinite(n) && n >= 1 && n <= 5 ? Math.round(n * 10) / 10 : null;
+}
+
+function parseEvidenceAnalysis(v: unknown): EvidenceAnalysis | null {
+    if (!v || typeof v !== 'object') return null;
+    const x = v as Record<string, unknown>;
+    const reasoning = str(x.reasoning);
+    const score = parseAiScore(x.score);
+    if (!reasoning && score === null) return null;
+    return { score, reasoning, model: str(x.model), analyzed_at: str(x.analyzed_at) };
+}
+
+/** ההערכה המסכמת של ה-AI לכל מדד (extra_fields.ai_criteria) — מדד לא חוקי מושמט */
+function parseAiCriteria(v: unknown): Partial<Record<CriterionKey, CriterionAnalysis>> {
+    const out: Partial<Record<CriterionKey, CriterionAnalysis>> = {};
+    if (!v || typeof v !== 'object') return out;
+    for (const [key, raw] of Object.entries(v as Record<string, unknown>)) {
+        if (!isCriterionKey(key) || !raw || typeof raw !== 'object') continue;
+        const x = raw as Record<string, unknown>;
+        out[key] = {
+            score: parseAiScore(x.score),
+            summary: str(x.summary),
+            highlights: strArr(x.highlights),
+            sources: num(x.sources),
+            model: str(x.model),
+            updated_at: str(x.updated_at),
+        };
+    }
+    return out;
+}
+
+/** פריט ראיה בתיק של מדד; מדד לא חוקי ⇒ null (הפריט מושמט) */
+function mapEvidence(item: StrapiItem): EvidenceItem | null {
+    const x = ef(item);
+    const criterion = str(x.criterion);
+    if (!isCriterionKey(criterion)) return null;
+    return {
+        id: item.documentId,
+        official_id: item.label ?? '',
+        criterion,
+        kind: evidenceKindOf(str(x.kind)),
+        title: str(x.title),
+        excerpt: item.description ?? '',
+        url: str(x.url),
+        source: str(x.source),
+        published_at: str(x.published_at),
+        analysis: parseEvidenceAnalysis(x.analysis),
+        created_at: item.createdAt ?? '',
+    };
+}
+
 function mapOfficial(item: StrapiItem): Official {
     const x = ef(item);
     const contacts = (x.contacts && typeof x.contacts === 'object' ? x.contacts : {}) as Record<
@@ -229,6 +293,7 @@ function mapOfficial(item: StrapiItem): Official {
                 : null,
         shakuf: parseShakuf(x.shakuf),
         knesset_record: parseKnessetRecord(x.knesset_record),
+        ai_criteria: parseAiCriteria(x.ai_criteria),
     };
 }
 
@@ -260,6 +325,19 @@ function mapComment(item: StrapiItem): OfficialComment {
         text: item.description ?? '',
         commenter_name: typeof x.commenter_name === 'string' ? x.commenter_name : '',
         official_reply: x.official_reply === true,
+        created_at: item.createdAt ?? '',
+    };
+}
+
+function mapGratitude(item: StrapiItem): GratitudeNote {
+    const x = ef(item);
+    return {
+        id: item.documentId,
+        official_id: item.label ?? '',
+        user_id: item.user_id ?? null,
+        text: item.description ?? '',
+        author_name: str(x.author_name),
+        anonymous: x.anonymous === true,
         created_at: item.createdAt ?? '',
     };
 }
@@ -391,6 +469,25 @@ export async function getCommentsFor(officialId: string): Promise<OfficialCommen
         'pagination[limit]': '1000',
     });
     return (res.data ?? []).map(mapComment).filter((c) => c.review_id && c.text);
+}
+
+/**
+ * תיק הראיות של מדורג — שליפה אחת (label=המדורג) לכל חמשת המדדים,
+ * וסינון בזיכרון למדד המבוקש. חדש ראשון.
+ */
+export async function getEvidenceFor(
+    officialId: string,
+    criterion?: CriterionKey,
+): Promise<EvidenceItem[]> {
+    const res = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
+        'filters[category][$eq]': EVIDENCE_CATEGORY,
+        'filters[label][$eq]': officialId,
+        'filters[status1][$eq]': 'active',
+        'sort': 'createdAt:desc',
+        'pagination[limit]': '500',
+    });
+    const all = (res.data ?? []).map(mapEvidence).filter((e): e is EvidenceItem => e !== null);
+    return criterion ? all.filter((e) => e.criterion === criterion) : all;
 }
 
 /**
@@ -744,6 +841,60 @@ export async function getInquiriesFor(officialId: string): Promise<OfficialInqui
         'pagination[limit]': '1000',
     });
     return (res.data ?? []).map(mapInquiry).filter((i) => i.text);
+}
+
+/** כל המילים הטובות על מדורג — שליפה אחת (label=המדורג), חדש ראשון */
+export async function getGratitudeFor(officialId: string): Promise<GratitudeNote[]> {
+    const res = await strapiGet<{ data: StrapiItem[] }>(ITEMS, {
+        'filters[category][$eq]': GRATITUDE_CATEGORY,
+        'filters[label][$eq]': officialId,
+        'filters[status1][$eq]': 'active',
+        'sort': 'createdAt:desc',
+        'pagination[limit]': '1000',
+    });
+    return (res.data ?? []).map(mapGratitude).filter((g) => g.text);
+}
+
+export interface AddGratitudeInput {
+    officialId: string;
+    userId: string;
+    authorName: string;
+    text: string;
+    anonymous: boolean;
+}
+
+export async function addGratitude(input: AddGratitudeInput): Promise<void> {
+    await strapiPost(ITEMS, {
+        data: {
+            category: GRATITUDE_CATEGORY,
+            label: input.officialId,
+            description: input.text,
+            user_id: input.userId,
+            extra_fields: {
+                author_name: input.authorName,
+                anonymous: input.anonymous,
+            },
+            icon: '🌻',
+            color: 'green',
+            status1: 'active',
+            publishedAt: new Date().toISOString(),
+        },
+    });
+}
+
+/** מילה טובה בודדת — לאימות בעלות לפני מחיקה */
+export async function getGratitude(id: string): Promise<GratitudeNote | undefined> {
+    let res: { data: StrapiItem };
+    try {
+        res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
+    } catch (e) {
+        if (String(e).includes('→ 404')) return undefined;
+        throw e;
+    }
+    if (!res.data || res.data.category !== GRATITUDE_CATEGORY || res.data.status1 !== 'active') {
+        return undefined;
+    }
+    return mapGratitude(res.data);
 }
 
 export interface AddInquiryInput {

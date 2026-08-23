@@ -19,7 +19,7 @@
     const successGroup = $derived(form?.success ? groupByKey(form.group) : undefined);
 
     const inputCls =
-        'w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none';
+        'w-full rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none';
 </script>
 
 <Seo
@@ -39,13 +39,13 @@
                         {successGroup.icon} ללוח {successGroup.title}
                     </a>
                 {/if}
-                <a href="/" class="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-300 transition-colors hover:text-white">
+                <a href="/" class="rounded-xl border border-white/10 bg-slate-800/80 px-4 py-2 text-sm font-semibold text-gray-300 transition-colors hover:text-white">
                     לדף הבית
                 </a>
             </div>
         </div>
     {:else}
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6">
+        <div class="rounded-2xl border border-white/10 bg-slate-800/80 p-4 sm:p-6">
             <h1 class="mb-1 text-xl font-black text-white">➕ הציעו לדירוג</h1>
             <p class="mb-4 text-sm text-gray-400">
                 מכירים {group.singular} שהציבור צריך לדרג? ההצעה תעבור אישור מערכת קצר לפני פרסום.

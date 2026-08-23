@@ -41,7 +41,7 @@
                 <a
                     href="/ads/{ad.id}"
                     onclick={() => trackAdClick(ad.id)}
-                    class="mob-ad flex items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-2 transition-colors"
+                    class="mob-ad flex items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-slate-800/80 p-2 transition-colors"
                 >
                     {#if ad.mainImage}
                         <img

@@ -64,7 +64,7 @@
     id={anchor}
     class="review-card scroll-mt-24 rounded-2xl border p-3 {review.mine
         ? 'border-blue-400/30 bg-blue-500/[0.06]'
-        : 'border-white/10 bg-white/5'}"
+        : 'border-white/10 bg-slate-800/80'}"
     data-official={officialId}
 >
     <div class="flex flex-wrap items-center gap-2">
@@ -94,7 +94,7 @@
     {#if ratedCriteria.length}
         <div class="mt-2 flex flex-wrap gap-1">
             {#each ratedCriteria as c (c.key)}
-                <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] text-gray-400">
+                <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-[11px] text-gray-400">
                     {c.short}
                     <b class="text-amber-300 tabular-nums">{review.scores[c.key]}</b>
                 </span>
@@ -117,7 +117,7 @@
                       : 'יש להתחבר כדי לסמן מועיל'}
                 class="rounded-full border px-2.5 py-1 text-xs transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50 {iMarkedHelpful
                     ? 'border-blue-400/50 bg-blue-500/15 text-blue-300'
-                    : 'border-white/10 bg-white/5 text-gray-400 hover:text-gray-200'}"
+                    : 'border-white/10 bg-slate-800/80 text-gray-400 hover:text-gray-200'}"
             >
                 👍 מועיל ({helpfulCount})
             </button>
@@ -128,7 +128,7 @@
             disabled={!loggedIn}
             onclick={() => (replying = !replying)}
             title={loggedIn ? 'תגובה על הדירוג' : 'רק משתמשים רשומים מגיבים — יש להתחבר'}
-            class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-400 transition-colors duration-150 hover:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+            class="rounded-full border border-white/10 bg-slate-800/80 px-2.5 py-1 text-xs text-gray-400 transition-colors duration-150 hover:text-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
         >
             💬 תגובה{comments.length ? ` (${comments.length})` : ''}
         </button>
@@ -174,7 +174,7 @@
     {#if comments.length}
         <div class="mt-2 flex flex-col gap-1.5 border-r-2 border-white/10 pr-3">
             {#each comments as c (c.id)}
-                <div class="rounded-xl px-3 py-2 {c.official_reply ? 'border border-amber-400/30 bg-amber-500/10' : 'bg-white/5'}">
+                <div class="rounded-xl px-3 py-2 {c.official_reply ? 'border border-amber-400/30 bg-amber-500/10' : 'bg-slate-800/80'}">
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="text-xs font-bold text-white">{c.commenter_name || 'אזרח/ית'}</span>
                         {#if c.official_reply}
@@ -236,7 +236,7 @@
                 placeholder={isOfficialUser
                     ? 'המענה שלכם יסומן כתגובה רשמית…'
                     : 'תגובה עניינית ומכבדת — בלי לשון הרע…'}
-                class="w-full resize-y rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/50 focus:outline-none"
+                class="w-full resize-y rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/50 focus:outline-none"
             ></textarea>
             <div class="flex flex-wrap items-center gap-3">
                 <button

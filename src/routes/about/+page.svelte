@@ -34,7 +34,7 @@
     </header>
 
     <!-- החזון -->
-    <section id="vision" class="rounded-2xl border border-amber-400/25 bg-white/5 p-5 text-center">
+    <section id="vision" class="rounded-2xl border border-amber-400/25 bg-slate-800/80 p-5 text-center">
         <h2 class="text-lg font-black text-white">החזון</h2>
         <p class="mt-2 text-lg font-bold leading-relaxed text-amber-300">
             כיצד יש לעובדי הציבור ולנבחריו אינטרס ליישר קו מהר עם העם?
@@ -43,7 +43,7 @@
     </section>
 
     <!-- מה אנחנו עושים -->
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-5">
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-5">
         <h2 class="text-lg font-black text-white">מה אנחנו עושים</h2>
         <p class="mt-2 text-sm leading-relaxed text-gray-300">
             פלטפורמה לדירוג ציבורי שבה עובדי ציבור, שופטים וחברי כנסת נבחנים בצורה אובייקטיבית לפי
@@ -57,7 +57,7 @@
         <h2 class="mb-3 text-lg font-black text-white">איך זה עובד</h2>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {#each STEPS as step, i (step.title)}
-                <div class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+                <div class="flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-800/80 p-3">
                     <span
                         class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-l from-blue-600 to-purple-600 text-sm font-black text-white"
                     >{i + 1}</span>
@@ -75,7 +75,7 @@
         <h2 class="mb-3 text-lg font-black text-white">חמשת המדדים</h2>
         <div class="grid gap-3 sm:grid-cols-2">
             {#each CRITERIA as c (c.key)}
-                <div class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div class="flex items-start gap-3 rounded-2xl border border-white/10 bg-slate-800/80 p-4">
                     <span class="text-2xl leading-none" aria-hidden="true">{c.icon}</span>
                     <div class="min-w-0">
                         <p class="text-sm font-bold text-white">{c.label}</p>
@@ -92,7 +92,7 @@
     </div>
 
     <!-- השלב הבא -->
-    <section class="rounded-2xl border border-blue-400/25 bg-white/5 p-5">
+    <section class="rounded-2xl border border-blue-400/25 bg-slate-800/80 p-5">
         <h2 class="text-lg font-black text-white">🤖 השלב הבא: התוכנה החכמה</h2>
         <p class="mt-2 text-sm leading-relaxed text-gray-300">
             תוכנה שתקבל גישה לפרוטוקולים ולפעילות הציבורית מכוח חוק חופש המידע וזכות הציבור לדעת,
@@ -102,7 +102,7 @@
     </section>
 
     <!-- הוקרה ותגמול -->
-    <section class="rounded-2xl border border-amber-400/25 bg-white/5 p-5">
+    <section class="rounded-2xl border border-amber-400/25 bg-slate-800/80 p-5">
         <h2 class="text-lg font-black text-white">🎖️ הוקרה ותגמול</h2>
         <p class="mt-2 text-sm leading-relaxed text-gray-300">
             עובדי ציבור מצטיינים יזכו להוקרה ציבורית; מדי שנה, ביום העצמאות, יוענקו תעודות ופרסים
@@ -115,7 +115,7 @@
         {#each GROUPS as g (g.key)}
             <a
                 href={g.route}
-                class="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/10"
+                class="rounded-full border border-white/10 bg-slate-800/80 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-white/10"
             >{g.icon} {g.title}</a>
         {/each}
         <a href="/top-rated" class="btn-premium rounded-full px-4 py-2 text-sm font-bold text-white">

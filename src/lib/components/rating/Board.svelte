@@ -147,7 +147,7 @@
             oninput={resetView}
             placeholder="🔍 חיפוש שם, תפקיד או ארגון..."
             aria-label="חיפוש בלוח {group.title}"
-            class="min-w-40 flex-1 basis-48 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none"
+            class="min-w-40 flex-1 basis-48 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none"
         />
         {#each SORTS as s (s.key)}
             <button
@@ -156,12 +156,12 @@
                 aria-pressed={sort === s.key}
                 class="cursor-pointer rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors {sort === s.key
                     ? 'border-blue-400/50 bg-blue-500/20 text-blue-300'
-                    : 'border-white/10 bg-white/5 text-gray-400 hover:text-gray-200'}"
+                    : 'border-white/10 bg-slate-800/80 text-gray-400 hover:text-gray-200'}"
             >{s.label}</button>
         {/each}
         <a
             href="/suggest?group={group.key}"
-            class="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-blue-400 transition-colors hover:border-blue-400/40 hover:text-blue-300"
+            class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-semibold text-blue-400 transition-colors hover:border-blue-400/40 hover:text-blue-300"
         >➕ הציעו לדירוג</a>
     </div>
 
@@ -174,7 +174,7 @@
                     <select
                         bind:value={orgFilter}
                         onchange={resetView}
-                        class="max-w-56 rounded-xl border border-white/10 bg-white/5 px-2 py-1 text-xs text-white focus:border-blue-400/60 focus:outline-none"
+                        class="max-w-56 rounded-xl border border-white/10 bg-slate-800/80 px-2 py-1 text-xs text-white focus:border-blue-400/60 focus:outline-none"
                     >
                         <option value="" class="bg-slate-900">הכל ({officials.length})</option>
                         {#each orgs as o (o.name)}
@@ -190,7 +190,7 @@
                 aria-pressed={ratedOnly}
                 class="cursor-pointer rounded-full border px-3 py-1 text-xs font-semibold transition-colors {ratedOnly
                     ? 'border-emerald-400/50 bg-emerald-500/15 text-emerald-300'
-                    : 'border-white/10 bg-white/5 text-gray-400 hover:text-gray-200'}"
+                    : 'border-white/10 bg-slate-800/80 text-gray-400 hover:text-gray-200'}"
             >✅ שכבר דורגו</button>
 
             {#if anyFilter}
@@ -206,7 +206,7 @@
 
     {#if officials.length === 0}
         <!-- אין מדורגים כלל -->
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+        <div class="rounded-2xl border border-white/10 bg-slate-800/80 p-8 text-center">
             <div class="mb-2 text-4xl">{group.icon}</div>
             <p class="mb-1 font-bold text-white">עדיין אין מדורגים בקטגוריה זו</p>
             <p class="mb-4 text-sm text-gray-400">מכירים {group.singular} שהציבור צריך לדרג? הציעו אותו!</p>
@@ -216,7 +216,7 @@
         </div>
     {:else if shown.length === 0}
         <!-- סינון ללא תוצאות -->
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+        <div class="rounded-2xl border border-white/10 bg-slate-800/80 p-6 text-center">
             <p class="mb-1 font-bold text-white">
                 {#if query.trim()}
                     לא נמצאו תוצאות עבור "{query}"
@@ -229,7 +229,7 @@
                 <button
                     type="button"
                     onclick={clearFilters}
-                    class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-gray-300 transition-colors hover:bg-white/10"
+                    class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-4 py-2 text-sm font-bold text-gray-300 transition-colors hover:bg-white/10"
                 >ניקוי מסננים</button>
                 <a href="/suggest?group={group.key}" class="btn-premium inline-block rounded-xl px-5 py-2 text-sm font-bold text-white">
                     ➕ הציעו לדירוג
@@ -252,7 +252,7 @@
                 <button
                     type="button"
                     onclick={() => { expanded = true; syncUrl(); }}
-                    class="cursor-pointer rounded-full border border-white/10 bg-white/5 px-6 py-2 text-sm font-bold text-blue-300 transition-colors hover:bg-white/10"
+                    class="cursor-pointer rounded-full border border-white/10 bg-slate-800/80 px-6 py-2 text-sm font-bold text-blue-300 transition-colors hover:bg-white/10"
                 >פתח עוד ({middle.length - featuredCount}) ⌄</button>
             </div>
         {/if}
@@ -263,7 +263,7 @@
                 type="button"
                 onclick={() => { showBottom = !showBottom; syncUrl(); }}
                 aria-expanded={showBottom}
-                class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-bold text-gray-400 transition-colors hover:text-gray-200"
+                class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-white/10 bg-slate-800/55 px-4 py-2.5 text-sm font-bold text-gray-400 transition-colors hover:text-gray-200"
             >{showBottom ? '🔼' : '🔽'} המדורגים נמוך ביותר ({bottom.length})</button>
             {#if showBottom}
                 <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">

@@ -44,7 +44,7 @@
 			</div>
 			<button
 				onclick={() => goto('/admin')}
-				class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+				class="px-4 py-2 rounded-xl bg-slate-800/80 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
 			>
 				← לוח ניהול
 			</button>
@@ -67,7 +67,7 @@
 			<h2 class="font-bold mb-3">⏳ ממתינות לאישור ({data.pending?.length ?? 0})</h2>
 			<div class="space-y-2">
 				{#each data.pending ?? [] as p (p.id)}
-					<div class="bg-white/5 border border-amber-500/20 rounded-2xl px-4 py-3">
+					<div class="bg-slate-800/80 border border-amber-500/20 rounded-2xl px-4 py-3">
 						<div class="flex flex-wrap items-center gap-3">
 							<div class="flex-1 min-w-[200px]">
 								<a href="/proposals/{p.id}" class="font-bold hover:text-blue-300 transition-colors">{p.title}</a>
@@ -100,7 +100,7 @@
 						<p class="text-sm text-gray-300 mt-2 line-clamp-2">{p.text}</p>
 					</div>
 				{:else}
-					<div class="text-gray-500 text-sm bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
+					<div class="text-gray-500 text-sm bg-slate-800/80 border border-white/10 rounded-2xl px-4 py-3">
 						אין הצעות ממתינות
 					</div>
 				{/each}
@@ -113,7 +113,7 @@
 			<div class="space-y-2">
 				{#each data.proposals ?? [] as p (p.id)}
 					{@const status = proposalStatusLabel(p.status)}
-					<div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5">
+					<div class="bg-slate-800/80 border border-white/10 rounded-2xl px-4 py-2.5">
 						<div class="flex flex-wrap items-center gap-3">
 							<div class="flex-1 min-w-[200px]">
 								<a href="/proposals/{p.id}" class="font-bold hover:text-blue-300 transition-colors">{p.title}</a>
@@ -121,7 +121,7 @@
 									{p.anonymous ? 'אנונימי' : p.proposer_name} · {absDate(p.created_at)}
 								</div>
 							</div>
-							<span class="text-xs px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-gray-300 whitespace-nowrap">
+							<span class="text-xs px-2 py-0.5 rounded-full bg-slate-800/80 border border-white/10 text-gray-300 whitespace-nowrap">
 								{status.icon} {status.label}
 							</span>
 							<span class="text-xs text-purple-300 whitespace-nowrap">🤝 {p.supporters.length}</span>
@@ -190,7 +190,7 @@
 								<button
 									type="button"
 									onclick={() => (editingId = null)}
-									class="px-4 py-2 text-sm rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-all cursor-pointer"
+									class="px-4 py-2 text-sm rounded-xl bg-slate-800/80 border border-white/10 text-gray-300 hover:bg-white/10 transition-all cursor-pointer"
 								>
 									ביטול
 								</button>
@@ -198,7 +198,7 @@
 						{/if}
 					</div>
 				{:else}
-					<div class="text-gray-500 text-sm bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
+					<div class="text-gray-500 text-sm bg-slate-800/80 border border-white/10 rounded-2xl px-4 py-3">
 						אין הצעות במרחב עדיין
 					</div>
 				{/each}

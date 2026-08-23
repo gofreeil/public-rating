@@ -130,7 +130,7 @@
     }
 
     const inputCls =
-        'w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none';
+        'w-full rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none';
     const labelCls = 'mb-1 block text-xs font-semibold text-gray-400';
 </script>
 
@@ -158,7 +158,7 @@
             <p class="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">{error}</p>
         {/if}
 
-        <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
             <h2 class="mb-3 font-black text-white">הכרטיס בטור הפרסומות</h2>
             <div class="grid gap-3 sm:grid-cols-2">
                 <label class="block sm:col-span-2">
@@ -199,7 +199,7 @@
             </p>
         </section>
 
-        <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
             <h2 class="mb-3 font-black text-white">דף הנחיתה שלכם באתר</h2>
             <div class="grid gap-3 sm:grid-cols-2">
                 <label class="block sm:col-span-2">
@@ -259,7 +259,7 @@
             </div>
         </section>
 
-        <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
             <h2 class="mb-3 font-black text-white">תקופת הפרסום</h2>
             <div class="flex flex-wrap gap-2">
                 {#each data.plans as p (p.days)}
@@ -270,7 +270,7 @@
                         class="cursor-pointer rounded-xl border px-4 py-2 text-sm font-bold transition-colors {durationDays ===
                         p.days
                             ? 'border-blue-400/50 bg-blue-500/20 text-blue-200'
-                            : 'border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'}"
+                            : 'border-white/10 bg-slate-800/80 text-gray-300 hover:bg-white/10'}"
                     >{p.label} · ₪{p.price}</button>
                 {/each}
             </div>

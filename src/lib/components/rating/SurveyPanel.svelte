@@ -34,7 +34,7 @@
     );
 </script>
 
-<section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+<section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
     <div class="flex flex-wrap items-baseline justify-between gap-2">
         <h2 class="text-lg font-black text-white md:text-xl">📊 מה הכי חשוב לך במשרת ציבור?</h2>
         {#if results.count > 0}
@@ -98,7 +98,7 @@
                 }}
             >
                 {#each CRITERIA as c (c.key)}
-                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2">
                         <span class="w-40 shrink-0 text-sm font-bold text-white" title={c.description}>
                             {c.icon} {c.short}
                         </span>
@@ -114,7 +114,7 @@
                     <button
                         type="button"
                         onclick={() => (open = false)}
-                        class="cursor-pointer rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-white/10"
+                        class="cursor-pointer rounded-xl border border-white/15 bg-slate-800/80 px-4 py-2 text-sm text-gray-200 transition-colors hover:bg-white/10"
                     >ביטול</button>
                 </div>
             </form>

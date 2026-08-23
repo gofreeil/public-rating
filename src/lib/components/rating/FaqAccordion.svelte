@@ -18,7 +18,7 @@
     {/if}
 
     {#each items as item (item.q)}
-        <details class="faq-item rounded-2xl border border-white/10 bg-white/5">
+        <details class="faq-item rounded-2xl border border-white/10 bg-slate-800/80">
             <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-white">
                 <span>{item.q}</span>
                 <span class="faq-marker shrink-0 text-gray-500" aria-hidden="true">⌄</span>

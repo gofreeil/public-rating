@@ -6,12 +6,14 @@ import { CRITERIA, type CriterionKey, type Scores } from './criteria';
 import { leaderOrder } from './leaders';
 import type {
     CivicProposal,
+    GratitudeNote,
     MyReview,
     Official,
     OfficialComment,
     OfficialInquiry,
     OfficialStats,
     PublicComment,
+    PublicGratitude,
     PublicInquiry,
     PublicProposal,
     PublicReview,
@@ -198,6 +200,18 @@ export function toPublicInquiry(i: OfficialInquiry, meId: string | null): Public
         reply_text: i.reply_text,
         replied_at: i.replied_at,
         created_at: i.created_at,
+    };
+}
+
+/** המרת הכרת הטוב לצורה בטוחה לדפדפן — user_id נשאר בשרת, שם אנונימי מוסתר */
+export function toPublicGratitude(g: GratitudeNote, meId: string | null): PublicGratitude {
+    return {
+        id: g.id,
+        text: g.text,
+        author_name: g.anonymous ? '' : g.author_name,
+        anonymous: g.anonymous,
+        mine: meId ? g.user_id === meId : false,
+        created_at: g.created_at,
     };
 }
 

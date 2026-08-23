@@ -27,8 +27,8 @@
     </header>
 
     <nav class="flex flex-wrap gap-2 text-sm">
-        <a href="/admin" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-gray-300 hover:text-white">← ניהול</a>
-        <a href="/admin/officials" class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-gray-300 hover:text-white">מדורגים</a>
+        <a href="/admin" class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 hover:text-white">← ניהול</a>
+        <a href="/admin/officials" class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 hover:text-white">מדורגים</a>
     </nav>
 
     {#if form?.success}
@@ -42,7 +42,7 @@
     {/if}
 
     {#if data.reports.length === 0}
-        <div class="rounded-2xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
+        <div class="rounded-2xl border border-dashed border-white/10 bg-slate-800/80 p-8 text-center">
             <div class="text-4xl">✨</div>
             <p class="mt-2 font-bold text-white">אין דיווחים — התור נקי</p>
         </div>
@@ -57,13 +57,13 @@
                     <article
                         class="flex flex-col gap-2 rounded-2xl border p-3 {r.status === 'pending'
                             ? 'border-red-400/25 bg-red-500/[0.04]'
-                            : 'border-white/10 bg-white/5 opacity-70'}"
+                            : 'border-white/10 bg-slate-800/80 opacity-70'}"
                     >
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="rounded-full border border-red-400/40 bg-red-500/15 px-2 py-0.5 text-xs font-bold text-red-300">
                                 {reportReasonLabel(r.reason)}
                             </span>
-                            <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-gray-400">
+                            <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-xs text-gray-400">
                                 {r.target_type === 'official' ? 'התנהלות המדורג' : r.target_type === 'comment' ? 'תגובה' : 'דירוג'}
                             </span>
                             {#if r.official_id}
@@ -78,7 +78,7 @@
                         </div>
 
                         {#if r.snapshot}
-                            <blockquote class="rounded-xl border-r-2 border-white/15 bg-white/[0.03] px-3 py-2 text-sm leading-relaxed whitespace-pre-line text-gray-300">
+                            <blockquote class="rounded-xl border-r-2 border-white/15 bg-slate-800/55 px-3 py-2 text-sm leading-relaxed whitespace-pre-line text-gray-300">
                                 {r.snapshot}
                             </blockquote>
                         {/if}
@@ -121,7 +121,7 @@
                                     <input type="hidden" name="report_id" value={r.id} />
                                     <button
                                         type="submit"
-                                        class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-gray-300 transition-colors hover:bg-white/10"
+                                        class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 transition-colors hover:bg-white/10"
                                     >{r.target_type === 'official' ? '✓ טופל — סגירת הדיווח' : '✓ נבדק — התוכן תקין'}</button>
                                 </form>
                             </div>

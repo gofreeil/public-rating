@@ -6,7 +6,23 @@
     import { MISCONDUCT_REASONS } from '$lib/rating/types';
     import BotFields from './BotFields.svelte';
 
-    let { officialName }: { officialName: string } = $props();
+    let {
+        officialName,
+        group = '',
+        gratitudeHref = '',
+    }: {
+        officialName: string;
+        group?: string;
+        /** קישור לדף הכרת הטוב — הכפתור החיובי שעומד כאן לצד הדיווח */
+        gratitudeHref?: string;
+    } = $props();
+
+    // עובד ציבור אינו נבחר ואינו נשבע אמונים — החריגה הרלוונטית היא סמכות ותקינות
+    const label = $derived(
+        group === 'public_servants'
+            ? 'דיווח על חריגה מסמכות / התנהלות לא תקינה'
+            : 'דיווח על הפרת אמונים / התנהלות פוגענית'
+    );
 
     let open = $state(false);
     let sending = $state(false);
@@ -20,12 +36,20 @@
             ✓ הדיווח התקבל — צוות האתר יבחן אותו. תודה.
         </p>
     {:else}
-        <button
-            type="button"
-            onclick={() => (open = !open)}
-            aria-expanded={open}
-            class="cursor-pointer rounded-xl border border-red-500/50 bg-red-600/20 px-5 py-2.5 text-sm font-bold text-red-200 transition-colors hover:bg-red-600/35 hover:text-red-100"
-        >🚨 דיווח על הפרת אמונים / התנהלות פוגענית</button>
+        <div class="flex flex-wrap items-center justify-center gap-3">
+            {#if gratitudeHref}
+                <a
+                    href={gratitudeHref}
+                    class="rounded-xl border border-emerald-400 bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-950/50 transition-colors hover:bg-emerald-500"
+                >🌻 הכרת הטוב</a>
+            {/if}
+            <button
+                type="button"
+                onclick={() => (open = !open)}
+                aria-expanded={open}
+                class="cursor-pointer rounded-xl border border-red-400 bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-950/50 transition-colors hover:bg-red-500"
+            >🚨 {label}</button>
+        </div>
 
         {#if open}
             <form
@@ -82,7 +106,7 @@
                     minlength="20"
                     maxlength="1000"
                     placeholder="מה קרה? מתי, היכן, ומה הראיה או המקור (קישור לפרסום, מספר החלטה, עדות)…"
-                    class="w-full resize-y rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-red-400/50 focus:outline-none"
+                    class="w-full resize-y rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-red-400/50 focus:outline-none"
                 ></textarea>
 
                 <input
@@ -90,7 +114,7 @@
                     name="contact"
                     maxlength="200"
                     placeholder="דוא״ל למעקב (לא חובה)"
-                    class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-red-400/50 focus:outline-none"
+                    class="w-full rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-red-400/50 focus:outline-none"
                 />
 
                 {#if error}

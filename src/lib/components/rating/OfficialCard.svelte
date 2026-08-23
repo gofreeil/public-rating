@@ -30,7 +30,7 @@
 <a
     href="/officials/{official.id}"
     onclick={adThenGo}
-    class="official-card relative flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 transition-colors duration-150 {compact ? '' : 'sm:p-4'}"
+    class="official-card relative flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-800/80 p-3 transition-colors duration-150 {compact ? '' : 'sm:p-4'}"
 >
     {#if rank !== null}
         <span

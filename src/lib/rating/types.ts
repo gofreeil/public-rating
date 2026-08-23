@@ -7,12 +7,14 @@
 // ============================================================
 
 import type { CriterionKey, Scores } from './criteria';
+import type { CriterionAnalysis } from './evidence';
 
 export const OFFICIAL_CATEGORY = 'pr_official';
 export const REVIEW_CATEGORY = 'pr_review';
 export const COMMENT_CATEGORY = 'pr_comment';
 export const REPORT_CATEGORY = 'pr_report';
 export const INQUIRY_CATEGORY = 'pr_inquiry';
+export const GRATITUDE_CATEGORY = 'pr_gratitude';
 export const PROPOSAL_CATEGORY = 'pr_proposal';
 export const SURVEY_CATEGORY = 'pr_survey';
 export const SYNC_CATEGORY = 'pr_sync';
@@ -265,6 +267,11 @@ export interface Official {
     shakuf: ShakufData | null;
     /** רזומה פרלמנטרית מה-OData של הכנסת; null = טרם נמשכה (או לא ח"כ) */
     knesset_record: KnessetRecord | null;
+    /**
+     * ההערכה המסכמת של ה-AI לכל מדד, מתוך תיק הראיות שבדף המדד
+     * (/officials/[id]/[criterion]). מדד חסר = טרם נותח.
+     */
+    ai_criteria: Partial<Record<CriterionKey, CriterionAnalysis>>;
 }
 
 // ---- דירוג (ביקורת של משתמש בודד) ----
@@ -437,6 +444,30 @@ export interface PublicInquiry {
     mine: boolean;
     reply_text: string;
     replied_at: string | null;
+    created_at: string;
+}
+
+// ---- הכרת הטוב (מילה טובה על מדורג) ----
+
+export interface GratitudeNote {
+    /** documentId ב-Strapi */
+    id: string;
+    /** documentId של המדורג (label — שליפה אחת לדף) */
+    official_id: string;
+    user_id: string | null;
+    text: string;
+    author_name: string;
+    anonymous: boolean;
+    created_at: string;
+}
+
+/** צורת מילה טובה בטוחה לדפדפן — בלי user_id, ובלי שם כשהיא אנונימית */
+export interface PublicGratitude {
+    id: string;
+    text: string;
+    author_name: string;
+    anonymous: boolean;
+    mine: boolean;
     created_at: string;
 }
 

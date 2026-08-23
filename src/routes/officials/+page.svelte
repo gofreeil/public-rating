@@ -44,7 +44,7 @@
     </header>
 
     {#if data.groups.length === 0}
-        <div class="rounded-2xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
+        <div class="rounded-2xl border border-dashed border-white/10 bg-slate-800/80 p-8 text-center">
             <p class="font-bold text-white">הרשימה ריקה כרגע</p>
             <p class="mt-1 text-sm text-gray-400">נסו שוב בעוד רגע, או הציעו מדורג ראשון</p>
             <a href="/suggest" class="btn-premium mt-3 inline-block rounded-xl px-5 py-2 text-sm font-bold text-white">

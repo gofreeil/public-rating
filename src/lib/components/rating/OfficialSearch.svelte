@@ -83,7 +83,7 @@
         onfocus={() => (open = true)}
         onblur={() => (open = false)}
         onkeydown={onKeydown}
-        class="w-full rounded-full border border-white/15 bg-white/5 py-3 ps-11 pe-5 text-white placeholder-gray-500 outline-none transition-colors focus:border-blue-500/60 focus:bg-white/10"
+        class="w-full rounded-full border border-white/15 bg-slate-800/80 py-3 ps-11 pe-5 text-white placeholder-gray-500 outline-none transition-colors focus:border-blue-500/60 focus:bg-white/10"
     />
 
     {#if showList}

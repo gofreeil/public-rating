@@ -79,6 +79,8 @@ export const LIMITS = {
     orderEmail: { max: 3, windowMs: HOUR },
     /** פנייה ציבורית למדורג */
     inquire: { max: 5, windowMs: HOUR },
+    /** מילת הכרת הטוב על מדורג */
+    gratitude: { max: 10, windowMs: HOUR },
     /** הצטרפות לפנייה / תמיכה בהצעה — פעולות מונה קלות */
     join: { max: 60, windowMs: HOUR },
     /** מענה רשמי לפנייה (חשבון הדמות) */

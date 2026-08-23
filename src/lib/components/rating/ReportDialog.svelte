@@ -81,7 +81,7 @@
             rows="2"
             maxlength="1000"
             placeholder="פרטים נוספים (לא חובה) — מה בדיוק שגוי או פוגעני…"
-            class="w-full resize-y rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-red-400/50 focus:outline-none"
+            class="w-full resize-y rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-red-400/50 focus:outline-none"
         ></textarea>
 
         <input
@@ -89,7 +89,7 @@
             name="contact"
             maxlength="200"
             placeholder="דוא״ל למעקב (לא חובה)"
-            class="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-red-400/50 focus:outline-none"
+            class="w-full rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-red-400/50 focus:outline-none"
         />
 
         {#if error}

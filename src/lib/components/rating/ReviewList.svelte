@@ -125,7 +125,7 @@
                 class="cursor-pointer rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors {sort ===
                 s.key
                     ? 'border-blue-400/50 bg-blue-500/20 text-blue-300'
-                    : 'border-white/10 bg-white/5 text-gray-400 hover:text-gray-200'}"
+                    : 'border-white/10 bg-slate-800/80 text-gray-400 hover:text-gray-200'}"
             >{s.label}</button>
         {/each}
 
@@ -136,14 +136,14 @@
                 aria-pressed={withTextOnly}
                 class="mr-auto cursor-pointer rounded-full border px-2.5 py-1 text-xs font-semibold transition-colors {withTextOnly
                     ? 'border-emerald-400/50 bg-emerald-500/15 text-emerald-300'
-                    : 'border-white/10 bg-white/5 text-gray-400 hover:text-gray-200'}"
+                    : 'border-white/10 bg-slate-800/80 text-gray-400 hover:text-gray-200'}"
             >✍️ עם נימוק בלבד ({withTextTotal})</button>
         {/if}
     </div>
 {/if}
 
 {#if ordered.length === 0}
-    <div class="rounded-2xl border border-dashed border-white/10 bg-white/5 p-6 text-center text-sm text-gray-500">
+    <div class="rounded-2xl border border-dashed border-white/10 bg-slate-800/80 p-6 text-center text-sm text-gray-500">
         {#if starFilter !== null}
             אין דירוגים של {starFilter} כוכבים
         {:else if withTextOnly}
@@ -173,7 +173,7 @@
             <button
                 type="button"
                 onclick={() => (shownCount += PAGE * 2)}
-                class="cursor-pointer rounded-full border border-white/10 bg-white/5 px-6 py-2 text-sm font-bold text-blue-300 transition-colors hover:bg-white/10"
+                class="cursor-pointer rounded-full border border-white/10 bg-slate-800/80 px-6 py-2 text-sm font-bold text-blue-300 transition-colors hover:bg-white/10"
             >הצגת עוד דירוגים ({remaining}) ⌄</button>
         </div>
     {/if}

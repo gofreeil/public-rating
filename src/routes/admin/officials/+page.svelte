@@ -95,7 +95,7 @@
 			</div>
 			<button
 				onclick={() => goto('/admin')}
-				class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+				class="px-4 py-2 rounded-xl bg-slate-800/80 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
 			>
 				← לוח ניהול
 			</button>
@@ -114,7 +114,7 @@
 		{/if}
 
 		<!-- 🔄 סנכרון נתונים חיצוני (כנסת + שקוף) -->
-		<section class="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
+		<section class="bg-slate-800/80 border border-white/10 rounded-2xl p-4 mb-6">
 			<div class="flex flex-wrap items-center gap-3">
 				<div class="flex-1 min-w-[240px]">
 					<h2 class="font-bold">🔄 סנכרון נתונים חיצוני</h2>
@@ -167,7 +167,7 @@
 							type="submit"
 							disabled={syncing || fetchingRecords}
 							title="רזומה פרלמנטרית לכל מכהן: חקיקה, שאילתות, ציר תפקידים. רץ במנות — לוחצים שוב עד שנגמר"
-							class="px-5 py-2 text-sm font-bold rounded-xl bg-white/5 border border-white/10 text-gray-200 hover:bg-white/10 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+							class="px-5 py-2 text-sm font-bold rounded-xl bg-slate-800/80 border border-white/10 text-gray-200 hover:bg-white/10 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
 						>
 							{fetchingRecords ? '⏳ מושך רזומות...' : '📜 משיכת רזומות'}
 						</button>
@@ -220,7 +220,7 @@
 		</section>
 
 		<!-- א) הוספת מדורג -->
-		<section class="bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
+		<section class="bg-slate-800/80 border border-white/10 rounded-2xl p-4 mb-6">
 			<h2 class="font-bold mb-3">➕ הוספת מדורג</h2>
 			<form method="POST" action="?/create" use:enhance class="flex flex-wrap gap-2 items-center">
 				<select name="group" bind:value={newGroup} class="{inputCls} cursor-pointer">
@@ -247,7 +247,7 @@
 			<h2 class="font-bold mb-3">⏳ הצעות ממתינות ({data.pending?.length ?? 0})</h2>
 			<div class="space-y-2">
 				{#each data.pending ?? [] as p (p.id)}
-					<div class="bg-white/5 border border-amber-500/20 rounded-2xl px-4 py-3 flex flex-wrap items-center gap-3">
+					<div class="bg-slate-800/80 border border-amber-500/20 rounded-2xl px-4 py-3 flex flex-wrap items-center gap-3">
 						<span class="text-lg" title={groupByKey(p.group)?.title}>{groupByKey(p.group)?.icon}</span>
 						<div class="flex-1 min-w-[160px]">
 							<div class="font-bold">{p.name}</div>
@@ -278,7 +278,7 @@
 						</div>
 					</div>
 				{:else}
-					<div class="text-gray-500 text-sm bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
+					<div class="text-gray-500 text-sm bg-slate-800/80 border border-white/10 rounded-2xl px-4 py-3">
 						אין הצעות ממתינות
 					</div>
 				{/each}
@@ -293,7 +293,7 @@
 			</div>
 			<div class="space-y-2">
 				{#each filteredOfficials as o (o.id)}
-					<div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5">
+					<div class="bg-slate-800/80 border border-white/10 rounded-2xl px-4 py-2.5">
 						<div class="flex flex-wrap items-center gap-3">
 							<Avatar name={o.name} image={o.image} size={32} />
 							<span class="font-bold">{o.name}</span>
@@ -326,7 +326,7 @@
 												: 'משיכת הרזומה הפרלמנטרית מה-OData של הכנסת'}
 											class="px-3 py-1.5 text-xs rounded-lg border transition-all cursor-pointer disabled:cursor-wait {o.knesset_record
 												? 'bg-purple-500/10 text-purple-300 border-purple-500/30 hover:bg-purple-500/20'
-												: 'bg-white/5 text-gray-400 border-white/10 hover:bg-white/10'}"
+												: 'bg-slate-800/80 text-gray-400 border-white/10 hover:bg-white/10'}"
 										>
 											{recordingId === o.id ? '⏳' : '📜'} רזומה
 										</button>
@@ -428,7 +428,7 @@
 								<button
 									type="button"
 									onclick={() => (editingId = null)}
-									class="px-4 py-2 text-sm rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-all cursor-pointer"
+									class="px-4 py-2 text-sm rounded-xl bg-slate-800/80 border border-white/10 text-gray-300 hover:bg-white/10 transition-all cursor-pointer"
 								>
 									ביטול
 								</button>
@@ -436,7 +436,7 @@
 						{/if}
 					</div>
 				{:else}
-					<div class="text-gray-500 text-sm bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
+					<div class="text-gray-500 text-sm bg-slate-800/80 border border-white/10 rounded-2xl px-4 py-3">
 						{searchQuery ? 'לא נמצאו מדורגים לחיפוש הזה' : 'אין מדורגים עדיין'}
 					</div>
 				{/each}

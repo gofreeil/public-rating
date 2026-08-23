@@ -66,12 +66,12 @@
         kept: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-300',
         in_progress: 'border-amber-400/30 bg-amber-500/10 text-amber-300',
         broken: 'border-red-400/30 bg-red-500/10 text-red-300',
-        unknown: 'border-white/10 bg-white/5 text-gray-400',
+        unknown: 'border-white/10 bg-slate-800/80 text-gray-400',
     };
 </script>
 
 {#if hasAnything}
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
         <h2 class="mb-3 text-lg font-bold text-white">תעודת זהות ציבורית</h2>
 
         <div class="flex flex-col gap-3">
@@ -95,7 +95,7 @@
                     {:else}
                         <span
                             title={t.title}
-                            class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-500"
+                            class="rounded-full border border-white/10 bg-slate-800/80 px-2.5 py-1 text-xs text-gray-500"
                         >— {t.icon} {t.label}</span>
                     {/if}
                 {/each}
@@ -116,7 +116,7 @@
                             href={chip.href}
                             target={chip.external ? '_blank' : undefined}
                             rel={chip.external ? 'noopener noreferrer nofollow' : undefined}
-                            class="contact-chip rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-300 transition-colors"
+                            class="contact-chip rounded-full border border-white/10 bg-slate-800/80 px-2.5 py-1 text-xs text-gray-300 transition-colors"
                         >{chip.icon} {chip.label}</a>
                     {/each}
                 </div>

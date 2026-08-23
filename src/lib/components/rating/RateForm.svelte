@@ -116,7 +116,7 @@
     {/if}
 
     {#each CRITERIA as c (c.key)}
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2">
             <span class="min-w-44 flex-1">
                 <span class="block text-sm font-semibold text-white">
                     <span aria-hidden="true">{c.icon}</span>
@@ -134,7 +134,7 @@
         maxlength="2000"
         bind:value={text}
         placeholder="שתפו נימוק ענייני — בלי השמצות אישיות…"
-        class="w-full resize-y rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/50 focus:outline-none"
+        class="w-full resize-y rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/50 focus:outline-none"
     ></textarea>
 
     <div class="flex flex-wrap items-center gap-x-4 gap-y-2">

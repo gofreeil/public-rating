@@ -77,31 +77,31 @@
 			<div class="flex gap-2 flex-wrap">
 				<a
 					href="/admin/officials"
-					class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+					class="px-4 py-2 rounded-xl bg-slate-800/80 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
 				>
 					🗳️ ניהול מדורגים
 				</a>
 				<a
 					href="/admin/reports"
-					class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+					class="px-4 py-2 rounded-xl bg-slate-800/80 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
 				>
 					🚩 דיווחי תוכן
 				</a>
 				<a
 					href="/admin/proposals"
-					class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+					class="px-4 py-2 rounded-xl bg-slate-800/80 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
 				>
 					📜 ניהול הצעות
 				</a>
 				<a
 					href="/admin/ads"
-					class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
+					class="px-4 py-2 rounded-xl bg-slate-800/80 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all"
 				>
 					📢 פרסומות
 				</a>
 				<button
 					onclick={() => goto('/')}
-					class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+					class="px-4 py-2 rounded-xl bg-slate-800/80 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
 				>
 					חזרה לאתר
 				</button>
@@ -127,7 +127,7 @@
 					onclick={() => (activeTab = 'users')}
 					class="px-5 py-2.5 rounded-xl font-bold transition-all cursor-pointer {activeTab === 'users'
 						? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-						: 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'}"
+						: 'bg-slate-800/80 text-gray-400 hover:text-white hover:bg-white/10'}"
 				>
 					👥 משתמשים ({data.users?.length ?? 0})
 				</button>
@@ -136,7 +136,7 @@
 				onclick={() => (activeTab = 'items')}
 				class="px-5 py-2.5 rounded-xl font-bold transition-all cursor-pointer {activeTab === 'items'
 					? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-					: 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'}"
+					: 'bg-slate-800/80 text-gray-400 hover:text-white hover:bg-white/10'}"
 			>
 				📋 פרסומים ({data.items?.length ?? 0})
 			</button>
@@ -352,7 +352,7 @@
 					<button
 						type="button"
 						onclick={() => (showRoleModal = false)}
-						class="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300
+						class="flex-1 py-2.5 rounded-xl bg-slate-800/80 border border-white/10 text-gray-300
 						       hover:bg-white/10 transition-all cursor-pointer"
 					>
 						ביטול

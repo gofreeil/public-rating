@@ -28,7 +28,7 @@
             return {
                 label: '⌛ פג תוקף',
                 hint: 'הפרסומת ירדה מהאוויר — אפשר לחדש',
-                cls: 'border-white/10 bg-white/5 text-gray-400',
+                cls: 'border-white/10 bg-slate-800/80 text-gray-400',
             };
         }
         if (ad.daysLeft <= 7) {
@@ -63,7 +63,7 @@
     {/if}
 
     {#if data.ads.length === 0}
-        <div class="rounded-2xl border border-dashed border-white/10 bg-white/5 p-8 text-center">
+        <div class="rounded-2xl border border-dashed border-white/10 bg-slate-800/80 p-8 text-center">
             <div class="text-4xl">📢</div>
             <p class="mt-2 font-bold text-white">עוד לא שלחתם פרסומת</p>
             <p class="mt-1 text-sm text-gray-400">
@@ -100,10 +100,10 @@
 
                 {#if ad.status === 'approved' && ad.stats.impressions > 0}
                     <div class="flex flex-wrap gap-2 border-t border-white/5 pt-2 text-[11px]">
-                        <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-gray-400">
+                        <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">
                             👁 {ad.stats.impressions} חשיפות
                         </span>
-                        <span class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-gray-400">
+                        <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">
                             🖱 {ad.stats.clicks} קליקים ({(ad.stats.ctr * 100).toFixed(1)}%)
                         </span>
                         <span class="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">

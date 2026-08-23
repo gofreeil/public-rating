@@ -44,14 +44,14 @@
         </div>
 
         <div class="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm">
-            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-bold text-white">
+            <span class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 font-bold text-white">
                 🗳️ {data.stats.officialCount} מדורגים
             </span>
-            <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-bold text-white">
+            <span class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 font-bold text-white">
                 ⭐ {data.stats.reviewCount} דירוגים
             </span>
             {#each GROUPS as g (g.key)}
-                <a href={g.route} class="chip-link rounded-full border border-white/10 bg-white/5 px-3 py-1 text-gray-300 transition-colors">
+                <a href={g.route} class="chip-link rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 transition-colors">
                     {g.icon} {g.title}
                 </a>
             {/each}
@@ -61,7 +61,7 @@
     <!-- b) כרטיסי קטגוריות -->
     <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {#each GROUPS as g (g.key)}
-            <a href={g.route} class="cat-card flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition-colors">
+            <a href={g.route} class="cat-card flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-800/80 transition-colors">
                 <img src={g.photo} alt={g.title} class="aspect-video w-full object-cover" loading="lazy" />
                 <span class="flex flex-col gap-1 p-4">
                     <span class="text-center font-black text-white">{g.title}</span>
@@ -148,7 +148,7 @@
             <h2 class="mb-3 text-lg font-black text-white md:text-xl">ביקורות אחרונות</h2>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {#each data.recentReviews as r (r.id)}
-                    <article class="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <article class="flex flex-col gap-2 rounded-2xl border border-white/10 bg-slate-800/80 p-3">
                         <div class="flex flex-wrap items-center justify-between gap-2">
                             <span class="text-sm font-bold text-white">
                                 {r.anonymous || !r.reviewer_name ? 'אזרח/ית' : r.reviewer_name}
