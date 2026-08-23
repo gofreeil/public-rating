@@ -135,12 +135,12 @@
     <!-- e) חמשת המדדים -->
     <section>
         <h2 class="mb-3 text-lg font-black text-white md:text-xl">חמשת המדדים</h2>
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div class="grid grid-cols-5 gap-0">
             {#each CRITERIA as c (c.key)}
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-3 text-center">
-                    <span class="text-2xl" aria-hidden="true">{c.icon}</span>
-                    <p class="mt-1 text-sm font-black text-white">{c.short}</p>
-                    <p class="mt-1 text-xs leading-relaxed text-gray-500">{c.description}</p>
+                <div class="flex flex-col gap-2 px-3 py-5 text-center" style="border-bottom:1px solid rgba(255,255,255,0.08); border-right:1px solid rgba(255,255,255,0.08);">
+                    <span class="text-2xl md:text-3xl" aria-hidden="true">{c.icon}</span>
+                    <p class="text-xs font-black text-white md:text-base">{c.short}</p>
+                    <p class="hidden text-sm leading-snug text-gray-400 md:block">{c.description}</p>
                 </div>
             {/each}
         </div>
