@@ -73,7 +73,7 @@
                     <span class="font-black text-white">{g.title}</span>
                     <span class="text-xs leading-relaxed text-gray-400">{g.blurb}</span>
                     <span class="mt-1 text-xs text-gray-500">{data.groupCounts[g.key]} מדורגים</span>
-                    <span class="mt-1 text-center text-xs font-bold text-blue-400">כנס לפרטים המלאים</span>
+                    <span class="mt-1 text-center text-xs font-bold text-blue-400">הקלק לפרטים</span>
                 </span>
             </a>
         {/each}
