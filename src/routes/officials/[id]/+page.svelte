@@ -138,37 +138,38 @@
         </section>
     {/if}
 
-    <!-- כותרת: מי המדורג -->
-    <section class="flex flex-wrap items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-        <Avatar name={official.name} image={official.image} size={72} />
-        <div class="min-w-0 flex-1">
-            <h1 class="flex flex-wrap items-center gap-2 text-2xl font-black text-white sm:text-3xl">
-                {official.name}
-                {#if official.verified}
-                    <span
-                        class="rounded-full border border-sky-400/40 bg-sky-500/10 px-2.5 py-0.5 text-xs font-bold text-sky-300"
-                        title="הזהות, התפקיד ופרטי הקשר אומתו על ידי צוות האתר"
-                    >✔️ פרופיל מאומת</span>
+    <!-- כותרת: מי המדורג + הפרמטרים שלו, הכול בראש הדף ליד התמונה -->
+    <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div class="flex flex-wrap items-center gap-4">
+            <Avatar name={official.name} image={official.image} size={72} />
+            <div class="min-w-0 flex-1">
+                <h1 class="flex flex-wrap items-center gap-2 text-2xl font-black text-white sm:text-3xl">
+                    {official.name}
+                    {#if official.verified}
+                        <span
+                            class="rounded-full border border-sky-400/40 bg-sky-500/10 px-2.5 py-0.5 text-xs font-bold text-sky-300"
+                            title="הזהות, התפקיד ופרטי הקשר אומתו על ידי צוות האתר"
+                        >✔️ פרופיל מאומת</span>
+                    {/if}
+                    {#if data.lastResponseAt}
+                        <span
+                            class="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-300"
+                            title="ענה/תה רשמית לפניות ציבור באתר"
+                        >🟢 מגיב/ה לפניות</span>
+                    {/if}
+                </h1>
+                <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-400">
+                    <span>{official.position}{official.org ? ` · ${official.org}` : ''}</span>
+                    {#if group}
+                        <a
+                            href={group.route}
+                            class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-blue-400 transition-colors duration-150 hover:text-blue-300"
+                        >{group.icon} {group.title}</a>
+                    {/if}
+                </div>
+                {#if official.bio}
+                    <p class="mt-1 truncate text-sm text-gray-500">{official.bio}</p>
                 {/if}
-                {#if data.lastResponseAt}
-                    <span
-                        class="rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-300"
-                        title="ענה/תה רשמית לפניות ציבור באתר"
-                    >🟢 מגיב/ה לפניות</span>
-                {/if}
-            </h1>
-            <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-400">
-                <span>{official.position}{official.org ? ` · ${official.org}` : ''}</span>
-                {#if group}
-                    <a
-                        href={group.route}
-                        class="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs text-blue-400 transition-colors duration-150 hover:text-blue-300"
-                    >{group.icon} {group.title}</a>
-                {/if}
-            </div>
-            {#if official.bio}
-                <p class="mt-1 truncate text-sm text-gray-500">{official.bio}</p>
-            {/if}
         </div>
 
         <!-- הציון הכולל — צמוד לדמות עצמה, הדבר הראשון שנראה עם הפנים והשם -->
@@ -184,6 +185,22 @@
                 class="btn-premium shrink-0 rounded-xl px-4 py-2 text-center text-sm font-bold text-white"
             >⭐ טרם דורג/ה — היו הראשונים</a>
         {/if}
+        </div>
+
+        <!-- הפרמטרים: התפלגות הדירוגים וחמשת המדדים — צמוד לדמות, לא בתחתית הדף -->
+        <div class="mt-3 flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-white/10 pt-3">
+            <div class="min-w-56 flex-1">
+                <Histogram
+                    distribution={stats.distribution}
+                    count={stats.count}
+                    selected={starFilter}
+                    onselect={selectStar}
+                />
+            </div>
+            <div class="min-w-64 flex-1">
+                <CriteriaBars perCriterion={stats.perCriterion} />
+            </div>
+        </div>
     </section>
 
     <!-- תעודת זהות ציבורית: קשר, שקיפות בפועל, התמחויות והבטחות -->
@@ -195,33 +212,14 @@
     {/if}
 
 
-    <!-- סיכום ציון: היסטוגרמה + מדדים — רק כשיש דירוגים אמיתיים להציג -->
+    <!-- אמון ושיתוף -->
     <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
         {#if stats.count > 0}
-            <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
-                <div class="min-w-56 flex-1">
-                    <Histogram
-                        distribution={stats.distribution}
-                        count={stats.count}
-                        selected={starFilter}
-                        onselect={selectStar}
-                    />
-                </div>
-                <div class="min-w-64 flex-1">
-                    <CriteriaBars perCriterion={stats.perCriterion} />
-                </div>
-            </div>
-
-            <div class="mt-3 border-t border-white/10 pt-3">
+            <div class="mb-3 border-b border-white/10 pb-3">
                 <TrustPanel {stats} reviews={data.reviews} />
             </div>
-
-            <div class="mt-3 border-t border-white/10 pt-3">
-                <ShareBar text={shareText} title="{official.name} — דירוג ציבורי" />
-            </div>
-        {:else}
-            <ShareBar text={shareText} title="{official.name} — דירוג ציבורי" />
         {/if}
+        <ShareBar text={shareText} title="{official.name} — דירוג ציבורי" />
     </section>
 
     <!-- מגמה לאורך זמן — מוצגת רק כשיש מספיק דירוגים לאורך יותר מחודש אחד -->
