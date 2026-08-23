@@ -72,7 +72,7 @@
                 <span class="flex flex-col gap-1 p-4">
                     <span class="text-center font-black text-white">{g.title}</span>
                     <span class="text-xs leading-relaxed text-gray-400">{g.blurb}</span>
-                    <span class="mt-1 text-xs text-gray-500">{data.groupCounts[g.key]} מדורגים</span>
+                    <span class="mt-1 text-xs text-gray-500">{g.tally}</span>
                 </span>
             </a>
         {/each}
