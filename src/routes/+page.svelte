@@ -35,7 +35,7 @@
             <div class="absolute inset-0 rounded-2xl" style="box-shadow: inset 0 0 30px 10px #0f172a;"></div>
         </div>
         <h1 class="mt-3 text-3xl font-black text-white md:text-4xl">הציבור מדרג את משרתיו</h1>
-        <p class="mt-2 text-sm text-gray-400 md:text-base">
+        <p class="mt-2 text-base text-gray-400 md:text-lg">
             שקיפות, אחריות ודירוג אמיתי של נבחרי ועובדי הציבור — על ידי העם
         </p>
 
@@ -43,7 +43,7 @@
             <OfficialSearch officials={data.searchIndex} />
         </div>
 
-        <div class="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm">
+        <div class="mt-3 flex flex-wrap items-center justify-center gap-2 text-base">
             <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 font-bold text-white">
                 🗳️ {data.stats.officialCount} מדורגים
             </span>
@@ -64,9 +64,9 @@
             <a href={g.route} class="cat-card flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition-colors">
                 <img src={g.photo} alt={g.title} class="aspect-video w-full object-cover" loading="lazy" />
                 <span class="flex flex-col gap-1 p-4">
-                    <span class="text-center font-black text-white">{g.title}</span>
-                    <span class="text-xs leading-relaxed text-gray-400">{g.blurb}</span>
-                    <span class="mt-1 text-xs text-gray-500">{g.tally}</span>
+                    <span class="text-center text-lg font-black text-white md:text-xl">{g.title}</span>
+                    <span class="text-sm leading-relaxed text-gray-400">{g.blurb}</span>
+                    <span class="mt-1 text-sm text-gray-500">{g.tally}</span>
                 </span>
             </a>
         {/each}
@@ -76,19 +76,19 @@
     {#if data.showcase.length}
         <section class="space-y-6">
             <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="text-lg font-black text-white md:text-xl">🏆 המובילים והנמוכים — לפי קטגוריה</h2>
-                <a href="/top-rated" class="text-sm font-bold text-blue-400 hover:text-blue-300">לכל המצטיינים ←</a>
+                <h2 class="text-xl font-black text-white md:text-2xl">🏆 המובילים והנמוכים — לפי קטגוריה</h2>
+                <a href="/top-rated" class="text-base font-bold text-blue-400 hover:text-blue-300">לכל המצטיינים ←</a>
             </div>
             {#each data.showcase as s (s.key)}
                 {@const g = groupByKey(s.key)}
                 <div>
                     <div class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-                        <h3 class="font-black text-white">{g?.icon} {g?.title}</h3>
-                        <a href={g?.route} class="text-xs font-bold text-blue-400 hover:text-blue-300">ללוח המלא ←</a>
+                        <h3 class="text-lg font-black text-white">{g?.icon} {g?.title}</h3>
+                        <a href={g?.route} class="text-sm font-bold text-blue-400 hover:text-blue-300">ללוח המלא ←</a>
                     </div>
                     <div class="grid grid-cols-1 gap-3 {s.bottom.length ? 'lg:grid-cols-2' : ''}">
                         <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.04] p-3">
-                            <h4 class="mb-2 text-sm font-bold text-emerald-300">🏆 שלושת המדורגים הגבוה ביותר</h4>
+                            <h4 class="mb-2 text-base font-bold text-emerald-300">🏆 שלושת המדורגים הגבוה ביותר</h4>
                             <div class="flex flex-col gap-2">
                                 {#each s.top as official, i (official.id)}
                                     <OfficialCard {official} rank={i + 1} compact />
@@ -97,7 +97,7 @@
                         </div>
                         {#if s.bottom.length}
                             <div class="rounded-2xl border border-red-400/20 bg-red-500/[0.04] p-3">
-                                <h4 class="mb-2 text-sm font-bold text-red-300">📉 שלושת המדורגים הנמוך ביותר</h4>
+                                <h4 class="mb-2 text-base font-bold text-red-300">📉 שלושת המדורגים הנמוך ביותר</h4>
                                 <div class="flex flex-col gap-2">
                                     {#each s.bottom as official (official.id)}
                                         <OfficialCard {official} compact />
@@ -112,11 +112,11 @@
     {:else}
         <section>
             <div class="py-6 text-center">
-                <p class="font-bold text-white">עוד לא דורג אף אחד — היו הראשונים!</p>
-                <p class="mt-1 text-sm text-gray-400">בחרו לוח, מצאו את המדורג ושתפו את דעתכם</p>
+                <p class="text-lg font-bold text-white md:text-xl">עוד לא דורג אף אחד — היו הראשונים!</p>
+                <p class="mt-1 text-base text-gray-400">בחרו לוח, מצאו את המדורג ושתפו את דעתכם</p>
                 <div class="mt-3 flex flex-wrap justify-center gap-2">
                     {#each GROUPS as g (g.key)}
-                        <a href={g.route} class="btn-premium rounded-full px-4 py-1.5 text-sm font-bold text-white">
+                        <a href={g.route} class="btn-premium rounded-full px-5 py-2 text-base font-bold text-white">
                             {g.icon} {g.title}
                         </a>
                     {/each}
@@ -127,13 +127,13 @@
 
     <!-- e) חמשת המדדים -->
     <section>
-        <h2 class="mb-3 text-lg font-black text-white md:text-xl">חמשת המדדים</h2>
+        <h2 class="mb-3 text-xl font-black text-white md:text-2xl">חמשת המדדים</h2>
         <div class="grid grid-cols-5 gap-0">
             {#each CRITERIA as c (c.key)}
                 <div class="flex flex-col gap-2 px-3 py-5 text-center" style="border-bottom:1px solid rgba(255,255,255,0.08); border-right:1px solid rgba(255,255,255,0.08);">
                     <span class="text-2xl md:text-3xl" aria-hidden="true">{c.icon}</span>
-                    <p class="text-xs font-black text-white md:text-base">{c.short}</p>
-                    <p class="hidden text-sm leading-snug text-gray-400 md:block">{c.description}</p>
+                    <p class="text-sm font-black text-white md:text-lg">{c.short}</p>
+                    <p class="hidden text-base leading-snug text-gray-400 md:block">{c.description}</p>
                 </div>
             {/each}
         </div>
@@ -145,18 +145,18 @@
     <!-- f) ביקורות אחרונות -->
     {#if data.recentReviews.length}
         <section>
-            <h2 class="mb-3 text-lg font-black text-white md:text-xl">ביקורות אחרונות</h2>
+            <h2 class="mb-3 text-xl font-black text-white md:text-2xl">ביקורות אחרונות</h2>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {#each data.recentReviews as r (r.id)}
                     <article class="flex flex-col gap-2 rounded-2xl border border-white/10 bg-white/5 p-3">
                         <div class="flex flex-wrap items-center justify-between gap-2">
-                            <span class="text-sm font-bold text-white">
+                            <span class="text-base font-bold text-white">
                                 {r.anonymous || !r.reviewer_name ? 'אזרח/ית' : r.reviewer_name}
                             </span>
                             <Stars value={r.overall} size={14} />
                         </div>
-                        <p class="line-clamp-3 text-sm leading-relaxed text-gray-300">{r.text}</p>
-                        <div class="mt-auto flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <p class="line-clamp-3 text-base leading-relaxed text-gray-300">{r.text}</p>
+                        <div class="mt-auto flex flex-wrap items-center justify-between gap-2 text-sm">
                             <a href="/officials/{r.official.id}" class="font-bold text-blue-400 hover:text-blue-300">
                                 על {r.official.name}{r.official.position ? ` · ${r.official.position}` : ''}
                             </a>
@@ -172,8 +172,8 @@
 
     <!-- g) פס חזון -->
     <section class="rounded-2xl border border-white/10 bg-gradient-to-l from-blue-600/15 to-purple-600/15 p-4 text-center">
-        <p class="font-black text-white">"חברה אחראית בודקת שהחתול לא שומר על השמנת"</p>
-        <p class="mt-1 text-sm text-gray-400">
+        <p class="text-lg font-black text-white md:text-xl">"חברה אחראית בודקת שהחתול לא שומר על השמנת"</p>
+        <p class="mt-1 text-base text-gray-400">
             דירוג ציבורי הוא כלי הביקורת של האזרח על משרתיו —
             <a href="/about#vision" class="font-bold text-blue-400 hover:text-blue-300">לחזון בעמוד האודות ←</a>
         </p>
