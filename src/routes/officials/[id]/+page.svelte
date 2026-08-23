@@ -173,19 +173,15 @@
                 {/if}
         </div>
 
-        <!-- הציון הכולל — צמוד לדמות עצמה, הדבר הראשון שנראה עם הפנים והשם -->
-        {#if stats.count > 0}
-            <div class="flex shrink-0 flex-col items-center gap-1">
-                <span class="text-4xl font-black text-amber-400 tabular-nums">{fmtScore(stats.average)}</span>
-                <Stars value={stats.average ?? 0} size={22} />
-                <span class="text-xs text-gray-400">מבוסס על {stats.count} דירוגים</span>
-            </div>
-        {:else}
-            <a
-                href="#rate"
-                class="btn-premium shrink-0 rounded-xl px-4 py-2 text-center text-sm font-bold text-white"
-            >⭐ טרם דורג/ה — היו הראשונים</a>
-        {/if}
+        <!-- הציון הכולל — צמוד לדמות עצמה, הדבר הראשון שנראה עם הפנים והשם.
+             בלי דירוגים זה פשוט 0.0 עם חמישה כוכבים ריקים, בלי הודעת "טרם דורג". -->
+        <div class="flex shrink-0 flex-col items-center gap-1">
+            <span class="text-4xl font-black text-amber-400 tabular-nums">
+                {stats.count > 0 ? fmtScore(stats.average) : '0.0'}
+            </span>
+            <Stars value={stats.average ?? 0} size={22} />
+            <span class="text-xs text-gray-400">{stats.count} דירוגים</span>
+        </div>
         </div>
 
         <!-- הפרמטרים: התפלגות הדירוגים וחמשת המדדים — צמוד לדמות, לא בתחתית הדף -->
