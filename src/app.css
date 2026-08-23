@@ -33,6 +33,13 @@ body {
 }
 
 @theme {
+    /* סקאלת הטקסט הרגיל — הגדלה של ~1px בכל מדרגה. נוגע רק בגודל הפונט:
+       הריווחים, הרדיוסים והמסגרות נשארים כשהיו, וגם מדרגות הכותרות
+       (lg ומעלה) לא זזות. */
+    --text-xs: 0.8125rem;   /* 12 → 13px */
+    --text-sm: 0.9375rem;   /* 14 → 15px */
+    --text-base: 1.0625rem; /* 16 → 17px */
+
     --animate-pulse-slow: pulse-slow 11s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
     @keyframes pulse-slow {

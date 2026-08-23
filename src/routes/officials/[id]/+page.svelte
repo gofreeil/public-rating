@@ -170,6 +170,15 @@
                 <p class="mt-1 truncate text-sm text-gray-500">{official.bio}</p>
             {/if}
         </div>
+
+        <!-- הציון הכולל — צמוד לדמות עצמה, הדבר הראשון שנראה עם הפנים והשם -->
+        <div class="flex shrink-0 flex-col items-center gap-1">
+            <span class="text-4xl font-black text-amber-400 tabular-nums">{fmtScore(stats.average)}</span>
+            <Stars value={stats.average ?? 0} size={22} />
+            <span class="text-xs text-gray-500">
+                {stats.count > 0 ? `מבוסס על ${stats.count} דירוגים` : 'אין עדיין דירוגים'}
+            </span>
+        </div>
     </section>
 
     <!-- תעודת זהות ציבורית: קשר, שקיפות בפועל, התמחויות והבטחות -->
@@ -184,13 +193,6 @@
     <!-- סיכום ציון: ממוצע + היסטוגרמה + מדדים -->
     <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
         <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
-            <div class="flex flex-col items-center gap-1">
-                <span class="text-4xl font-black text-amber-400 tabular-nums">{fmtScore(stats.average)}</span>
-                <Stars value={stats.average ?? 0} size={22} />
-                <span class="text-xs text-gray-500">
-                    {stats.count > 0 ? `מבוסס על ${stats.count} דירוגים` : 'אין עדיין דירוגים'}
-                </span>
-            </div>
             <div class="min-w-56 flex-1">
                 <Histogram
                     distribution={stats.distribution}
