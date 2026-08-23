@@ -67,15 +67,15 @@
     <!-- b) כרטיסי קטגוריות -->
     <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {#each GROUPS as g (g.key)}
-            <a href={g.route} class="cat-card flex flex-col gap-1 rounded-2xl border border-white/10 bg-white/5 p-4 transition-colors">
-                <span class="flex items-center gap-2">
-                    <span class="text-2xl">{g.icon}</span>
+            <a href={g.route} class="cat-card flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition-colors">
+                <img src={g.photo} alt={g.title} class="h-28 w-full object-cover" loading="lazy" />
+                <span class="flex flex-col gap-1 p-4">
                     <span class="font-black text-white">{g.title}</span>
-                </span>
-                <span class="text-xs leading-relaxed text-gray-400">{g.blurb}</span>
-                <span class="mt-1 flex items-center justify-between text-xs">
-                    <span class="text-gray-500">{data.groupCounts[g.key]} מדורגים</span>
-                    <span class="font-bold text-blue-400">ללוח המלא ←</span>
+                    <span class="text-xs leading-relaxed text-gray-400">{g.blurb}</span>
+                    <span class="mt-1 flex items-center justify-between text-xs">
+                        <span class="text-gray-500">{data.groupCounts[g.key]} מדורגים</span>
+                        <span class="font-bold text-blue-400">ללוח המלא ←</span>
+                    </span>
                 </span>
             </a>
         {/each}
