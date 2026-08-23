@@ -6,6 +6,12 @@
     import { FAQ_ITEMS } from '$lib/rating/faq';
     import { breadcrumbSchema, methodologySchema } from '$lib/rating/schema';
 
+    const STEPS = [
+        { icon: '🔎', title: 'מאתרים את המדורג', text: 'חיפוש מהיר או גלישה בלוחות — כנסת, שופטים ועובדי ציבור' },
+        { icon: '⭐', title: 'מדרגים ב-5 מדדים', text: 'זמנים ותקנים, תרומה לעם, ראיית המציאות, לגופו של עניין ושקיפות — עם חוות דעת' },
+        { icon: '📊', title: 'התמונה נחשפת לציבור', text: 'הדירוג המצטבר גלוי לכולם — שקוף, הוגן ובלתי תלוי' },
+    ];
+
     const jsonLd = [
         methodologySchema(),
         breadcrumbSchema([
@@ -44,6 +50,24 @@
             תרומתם לעם — מדורגים על ידי האזרחים ומתוגמלים חברתית, לטובה ולרעה. כמו באתרי הדירוג
             הגדולים בעולם, רק שכאן הלקוח הוא העם.
         </p>
+    </section>
+
+    <!-- איך זה עובד -->
+    <section>
+        <h2 class="mb-3 text-lg font-black text-white">איך זה עובד</h2>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {#each STEPS as step, i (step.title)}
+                <div class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <span
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-l from-blue-600 to-purple-600 text-sm font-black text-white"
+                    >{i + 1}</span>
+                    <span>
+                        <span class="block text-sm font-black text-white">{step.icon} {step.title}</span>
+                        <span class="mt-0.5 block text-xs leading-relaxed text-gray-400">{step.text}</span>
+                    </span>
+                </div>
+            {/each}
+        </div>
     </section>
 
     <!-- חמשת המדדים -->

@@ -12,12 +12,6 @@
 
     let { data, form } = $props();
 
-    const STEPS = [
-        { icon: '🔎', title: 'מאתרים את המדורג', text: 'חיפוש מהיר או גלישה בלוחות — כנסת, שופטים ועובדי ציבור' },
-        { icon: '⭐', title: 'מדרגים ב-5 מדדים', text: 'זמנים ותקנים, תרומה לעם, ראיית המציאות, לגופו של עניין ושקיפות — עם חוות דעת' },
-        { icon: '📊', title: 'התמונה נחשפת לציבור', text: 'הדירוג המצטבר גלוי לכולם — שקוף, הוגן ובלתי תלוי' },
-    ];
-
     // נקודת זמן אחת לכל הדף — לא Date.now() בתוך הרינדור
     const now = Date.now();
 </script>
@@ -148,25 +142,7 @@
     <!-- e2) סקר: מה הכי חשוב לציבור במשרתיו -->
     <SurveyPanel results={data.survey} myVote={data.mySurveyVote} loggedIn={data.loggedIn} {form} />
 
-    <!-- f) איך זה עובד -->
-    <section>
-        <h2 class="mb-3 text-lg font-black text-white md:text-xl">איך זה עובד</h2>
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {#each STEPS as step, i (step.title)}
-                <div class="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
-                    <span
-                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-l from-blue-600 to-purple-600 text-sm font-black text-white"
-                    >{i + 1}</span>
-                    <span>
-                        <span class="block text-sm font-black text-white">{step.icon} {step.title}</span>
-                        <span class="mt-0.5 block text-xs leading-relaxed text-gray-400">{step.text}</span>
-                    </span>
-                </div>
-            {/each}
-        </div>
-    </section>
-
-    <!-- g) ביקורות אחרונות -->
+    <!-- f) ביקורות אחרונות -->
     {#if data.recentReviews.length}
         <section>
             <h2 class="mb-3 text-lg font-black text-white md:text-xl">ביקורות אחרונות</h2>
@@ -194,7 +170,7 @@
         </section>
     {/if}
 
-    <!-- h) פס חזון -->
+    <!-- g) פס חזון -->
     <section class="rounded-2xl border border-white/10 bg-gradient-to-l from-blue-600/15 to-purple-600/15 p-4 text-center">
         <p class="font-black text-white">"חברה אחראית בודקת שהחתול לא שומר על השמנת"</p>
         <p class="mt-1 text-sm text-gray-400">
