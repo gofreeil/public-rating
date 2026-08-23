@@ -189,6 +189,9 @@
 
         <!-- הפרמטרים: התפלגות הדירוגים וחמשת המדדים — צמוד לדמות, לא בתחתית הדף -->
         <div class="mt-3 flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-white/10 pt-3">
+            <div class="min-w-64 flex-1">
+                <CriteriaBars perCriterion={stats.perCriterion} />
+            </div>
             <div class="min-w-56 flex-1">
                 <Histogram
                     distribution={stats.distribution}
@@ -196,9 +199,6 @@
                     selected={starFilter}
                     onselect={selectStar}
                 />
-            </div>
-            <div class="min-w-64 flex-1">
-                <CriteriaBars perCriterion={stats.perCriterion} />
             </div>
         </div>
     </section>
