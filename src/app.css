@@ -40,6 +40,13 @@ body {
     --text-sm: 0.96875rem;  /* 14 → 15.5px */
     --text-base: 1.09375rem; /* 16 → 17.5px */
 
+    /* רצפת בהירות לטקסט משני — האפורים המקוריים (#9ca3af / #6b7280 / #4b5563)
+       נקראים ככבויים על רקע כהה. כאן הם מוגדרים מחדש פעם אחת, וכל האתר
+       מתעדכן. הסדר נשמר: 400 בהיר מ-500 שבהיר מ-600. */
+    --color-gray-400: #cbd5e1;
+    --color-gray-500: #aab7c7;
+    --color-gray-600: #94a3b8;
+
     --animate-pulse-slow: pulse-slow 11s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 
     @keyframes pulse-slow {

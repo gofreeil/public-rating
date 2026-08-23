@@ -274,7 +274,7 @@
 
 	.travel-sub {
 		font-size: 0.8rem;
-		color: #9ca3af;
+		color: #cbd5e1;
 	}
 
 	.path-svg {
@@ -394,13 +394,13 @@
 		border: 1px solid rgba(251,191,36,0.25);
 	}
 
-	.sr-label { font-size: 0.9rem; color: #9ca3af; }
+	.sr-label { font-size: 0.9rem; color: #cbd5e1; }
 	.sr-value { font-size: 1rem; font-weight: 700; color: #fff; }
 	.sr-value.gold { color: #fbbf24; }
 
 	.summary-email {
 		font-size: 0.85rem;
-		color: #6b7280;
+		color: #94a3b8;
 		text-align: center;
 		margin: 0;
 	}

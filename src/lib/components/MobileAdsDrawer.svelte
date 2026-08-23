@@ -494,7 +494,7 @@
 	.close-btn {
 		background: rgba(255,255,255,0.08);
 		border: 1px solid rgba(255,255,255,0.12);
-		color: #9ca3af;
+		color: #cbd5e1;
 		width: 30px;
 		height: 30px;
 		border-radius: 50%;
@@ -596,7 +596,7 @@
 
 	.profile-btn-sub, .login-btn-sub {
 		font-size: 0.7rem;
-		color: #94a3b8;
+		color: #cbd5e1;
 	}
 
 	.login-btn-title {
@@ -695,7 +695,7 @@
 
 	.benefit-desc {
 		font-size: 0.75rem;
-		color: #94a3b8;
+		color: #cbd5e1;
 		margin: 0 0 0.3rem;
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
@@ -733,7 +733,7 @@
 
 	.ad-empty-icon { font-size: 1.3rem; }
 	.ad-empty-text { font-size: 0.75rem; font-weight: 600; color: #6366f1; margin: 0; }
-	.ad-empty-sub  { font-size: 0.65rem; color: #64748b; margin: 0; }
+	.ad-empty-sub  { font-size: 0.65rem; color: #94a3b8; margin: 0; }
 
 	/* ---- לשונית — מחוברת לקצה הימני של ה-drawer בתוך drawer-system ---- */
 	.tab {

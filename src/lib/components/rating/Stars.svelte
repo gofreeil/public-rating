@@ -12,7 +12,7 @@
 
 <span class="inline-flex items-center gap-1.5" role="img" aria-label={label}>
     <span class="relative inline-block leading-none" style="font-size:{size}px" aria-hidden="true">
-        <span class="text-white/15 tracking-tight">★★★★★</span>
+        <span class="text-white/30 tracking-tight">★★★★★</span>
         <span
             class="absolute inset-0 overflow-hidden text-amber-400 tracking-tight whitespace-nowrap"
             style="width:{pct}%"

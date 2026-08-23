@@ -68,8 +68,9 @@
 
 <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
     <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 class="text-lg font-bold text-white">🏛️ הרזומה בכנסת ה-{record.knesset_num}</h2>
-        <span class="text-xs text-gray-500">מהמאגר הרשמי של הכנסת (OData)</span>
+        <h2 class="text-lg font-bold text-white">
+            🏛️ הרזומה בכנסת ה-{record.knesset_num}<span class="align-super text-sm text-gray-400">*</span>
+        </h2>
     </div>
 
     <div class="flex flex-col gap-3">
@@ -82,7 +83,7 @@
                 >🎖️ {seniority === 1 ? 'קדנציה ראשונה' : `${seniority} קדנציות`} · כנסות {knessetRanges(record.knessets)}</span>
             {/if}
             {#each roles as role, i (role.title)}
-                {#if seniority || i > 0}<span aria-hidden="true" class="text-white/25">|</span>{/if}
+                {#if seniority || i > 0}<span aria-hidden="true" class="text-white/40">|</span>{/if}
                 <span class="text-gray-300">
                     {role.title}
                     <span class="text-gray-500">
@@ -260,7 +261,7 @@
         {/if}
 
         <p class="text-xs text-gray-400">
-            הנתונים נשאבים אוטומטית ממאגר הנתונים הפתוח של הכנסת ומשקפים את מה שנרשם בו
+            * הנתונים נשאבים אוטומטית מהמאגר הרשמי והפתוח של הכנסת (OData) ומשקפים את מה שנרשם בו
             {#if record.synced_at}· עודכן {absDate(record.synced_at)}{/if}
         </p>
     </div>

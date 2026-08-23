@@ -436,7 +436,7 @@
 		margin-bottom: 0.4rem;
 	}
 	.doc-date {
-		color: #6b7280;
+		color: #94a3b8;
 		font-size: 0.95rem;
 	}
 
@@ -465,7 +465,7 @@
 	.toc-list {
 		list-style: decimal;
 		padding-right: 1.2rem;
-		color: #9ca3af;
+		color: #cbd5e1;
 		font-size: 0.95rem;
 		line-height: 1.8;
 	}
