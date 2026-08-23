@@ -6,14 +6,13 @@
     let { loggedIn = false }: { loggedIn?: boolean } = $props();
 
     // הלוחות נגזרים מ-GROUPS — הוספת קטגוריה מדורגת חדשה לא דורשת עריכה כאן
+    // accent: שלושת הלוחות — לב האתר, ולכן בכחול ולא באפור.
+    // דף הבית ואודות לא חוזרים כאן — שניהם קיימים בהדר שמעל.
     const LINKS = $derived([
-        { href: '/', label: 'דף הבית' },
-        ...GROUPS.map((g) => ({ href: g.route, label: g.title })),
-        { href: '/compare', label: '⚖️ השוואה' },
-        { href: '/top-rated', label: '🏆 המצטיינים' },
-        { href: '/proposals', label: '📜 הצעות' },
-        ...(loggedIn ? [{ href: '/my-ratings', label: '⭐ שלי' }] : []),
-        { href: '/about', label: 'אודות' },
+        ...GROUPS.map((g) => ({ href: g.route, label: g.title, accent: true })),
+        { href: '/top-rated', label: '🏆 המצטיינים', accent: false },
+        { href: '/compare', label: '⚖️ השוואה', accent: false },
+        ...(loggedIn ? [{ href: '/my-ratings', label: '⭐ שלי', accent: false }] : []),
     ]);
 
     function isActive(href: string, pathname: string): boolean {
@@ -39,7 +38,9 @@
                 class="nav-link border-b-2 px-3 py-2 text-sm font-bold transition-colors
                     {isActive(link.href, page.url.pathname)
                         ? 'border-blue-500 text-white'
-                        : 'border-transparent text-gray-200'}"
+                        : link.accent
+                          ? 'border-transparent text-blue-400'
+                          : 'border-transparent text-gray-200'}"
             >{link.label}</a>
         {/each}
     </div>
