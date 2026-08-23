@@ -68,12 +68,11 @@
     <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {#each GROUPS as g (g.key)}
             <a href={g.route} class="cat-card flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/5 transition-colors">
-                <img src={g.photo} alt={g.title} class="h-28 w-full object-cover" loading="lazy" />
+                <img src={g.photo} alt={g.title} class="aspect-video w-full object-cover" loading="lazy" />
                 <span class="flex flex-col gap-1 p-4">
-                    <span class="font-black text-white">{g.title}</span>
+                    <span class="text-center font-black text-white">{g.title}</span>
                     <span class="text-xs leading-relaxed text-gray-400">{g.blurb}</span>
                     <span class="mt-1 text-xs text-gray-500">{data.groupCounts[g.key]} מדורגים</span>
-                    <span class="mt-1 text-center text-xs font-bold text-blue-400">הקלק לפרטים</span>
                 </span>
             </a>
         {/each}
