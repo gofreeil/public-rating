@@ -39,7 +39,7 @@
                 class="nav-link border-b-2 px-3 py-2 text-sm font-bold transition-colors
                     {isActive(link.href, page.url.pathname)
                         ? 'border-blue-500 text-white'
-                        : 'border-transparent text-gray-400'}"
+                        : 'border-transparent text-gray-200'}"
             >{link.label}</a>
         {/each}
     </div>
@@ -58,6 +58,6 @@
         display: none;
     }
     .nav-link:hover {
-        color: #e5e7eb;
+        color: #fff;
     }
 </style>
