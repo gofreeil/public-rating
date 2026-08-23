@@ -91,6 +91,17 @@
 />
 
 <div class="flex flex-col gap-4 py-6">
+    <!-- חזרה ללוח גם בראש הדף — בלי לגלול את כל הפרופיל עד הסוף -->
+    <div class="-mb-2">
+        {#if group}
+            <a href={group.route} class="text-sm text-blue-400 transition-colors hover:text-blue-300">
+                ← חזרה ללוח {group.title}
+            </a>
+        {:else}
+            <a href="/" class="text-sm text-blue-400 transition-colors hover:text-blue-300">← חזרה לדף הבית</a>
+        {/if}
+    </div>
+
     <!-- פס ניהול (אדמין בלבד): משיכת הרזומה מהכנסת ישירות מדף המדורג -->
     {#if data.isAdmin}
         <section class="rounded-2xl border border-dashed border-purple-400/40 bg-purple-500/5 p-3">

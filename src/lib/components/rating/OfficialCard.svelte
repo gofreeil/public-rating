@@ -2,6 +2,7 @@
     // כרטיס מדורג — משותף לדף הבית, ללוחות ולמצטיינים
     import type { RatedOfficial } from '$lib/rating/types';
     import { fmtScore } from '$lib/rating/aggregate';
+    import { partyLeaderOf } from '$lib/rating/leaders';
     import { triggerAdPopup } from '$lib/adPopupStore';
     import Avatar from './Avatar.svelte';
     import Stars from './Stars.svelte';
@@ -11,6 +12,9 @@
         rank = null,
         compact = false,
     }: { official: RatedOfficial; rank?: number | null; compact?: boolean } = $props();
+
+    // ראש מפלגה — התווית מסבירה למה הוא בראש הלוח לפני שיש דירוגים
+    const leader = $derived(official.group === 'knesset' ? partyLeaderOf(official.name) : null);
 
     const MEDALS = ['🥇', '🥈', '🥉'];
     const rankBadge = $derived(rank !== null && rank >= 1 && rank <= 3 ? MEDALS[rank - 1] : null);
@@ -43,6 +47,11 @@
             {official.position}{official.org ? ` · ${official.org}` : ''}
         </span>
         <span class="mt-1 flex items-center gap-2 flex-wrap">
+            {#if leader}
+                <span class="rounded-full border border-blue-400/40 bg-blue-500/10 px-2 py-0.5 text-xs font-bold text-blue-300">
+                    {leader.title}
+                </span>
+            {/if}
             {#if official.stats.count > 0}
                 <Stars value={official.stats.average ?? 0} size={compact ? 14 : 16} />
                 <span class="text-xs font-bold text-amber-300 tabular-nums">{fmtScore(official.stats.average)}</span>

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { CRITERIA, type CriterionKey, type Scores } from './criteria';
+import { leaderOrder } from './leaders';
 import type {
     CivicProposal,
     MyReview,
@@ -104,7 +105,8 @@ export function globalAverage(reviews: Review[]): number {
 
 /**
  * חיבור מדורגים לדירוגים + מיון הוגן:
- * מדורגים עם דירוגים — לפי ציון משוקלל יורד; ללא דירוגים — בסוף, לפי שם.
+ * מדורגים עם דירוגים — לפי ציון משוקלל יורד; ללא דירוגים — בסוף, ראשי
+ * המפלגות תחילה (אחרת המסך הראשון הוא סתם תחילת הא-ב) ואז לפי שם.
  */
 export function rankOfficials(officials: Official[], reviews: Review[]): RatedOfficial[] {
     const prior = globalAverage(reviews);
@@ -123,6 +125,11 @@ export function rankOfficials(officials: Official[], reviews: Review[]): RatedOf
             if (!a.stats.count && b.stats.count) return 1;
             if (a.stats.weighted !== b.stats.weighted) return b.stats.weighted - a.stats.weighted;
             if (a.stats.count !== b.stats.count) return b.stats.count - a.stats.count;
+            if (!a.stats.count && a.group === 'knesset' && b.group === 'knesset') {
+                const la = leaderOrder(a.name);
+                const lb = leaderOrder(b.name);
+                if (la !== lb) return la - lb;
+            }
             return a.name.localeCompare(b.name, 'he');
         });
 }

@@ -5,6 +5,7 @@
     import { page } from '$app/state';
     import type { Group, RatedOfficial } from '$lib/rating/types';
     import { heMatches } from '$lib/rating/heSearch';
+    import { partyLeaderOf } from '$lib/rating/leaders';
     import { FAQ_COMPACT } from '$lib/rating/faq';
     import FaqAccordion from './FaqAccordion.svelte';
     import OfficialCard from './OfficialCard.svelte';
@@ -89,7 +90,20 @@
         !flat && sort === 'rank' && shown.length >= FEATURED + BOTTOM + 10 ? BOTTOM : 0,
     );
     const middle = $derived(shown.slice(0, shown.length - bottomCount));
-    const visible = $derived(flat || expanded ? middle : middle.slice(0, FEATURED));
+
+    /**
+     * כמה ראשי מפלגות פותחים את הרשימה — כל עוד אין דירוגים הם בראש הלוח,
+     * והמסך הראשון נמתח כדי להכיל את כולם. משהצטברו דירוגים המדורגים עוקפים
+     * אותם, הרצף נקטע והחשיפה חוזרת ל-FEATURED.
+     */
+    const leadersOnTop = $derived.by(() => {
+        if (sort !== 'rank' || anyFilter) return 0;
+        let n = 0;
+        while (n < middle.length && partyLeaderOf(middle[n].name)) n++;
+        return n;
+    });
+    const featuredCount = $derived(Math.max(FEATURED, leadersOnTop));
+    const visible = $derived(flat || expanded ? middle : middle.slice(0, featuredCount));
     const bottom = $derived(bottomCount ? shown.slice(shown.length - bottomCount) : []);
 
     /** שינוי סינון/מיון מחזיר את הרשימה למצב מקוצר — אחרת קופצים לאמצע רשימה אחרת */
@@ -233,13 +247,13 @@
         </div>
 
         <!-- פתח עוד — חושף את המשך הרשימה -->
-        {#if !flat && !expanded && middle.length > FEATURED}
+        {#if !flat && !expanded && middle.length > featuredCount}
             <div class="flex justify-center">
                 <button
                     type="button"
                     onclick={() => { expanded = true; syncUrl(); }}
                     class="cursor-pointer rounded-full border border-white/10 bg-white/5 px-6 py-2 text-sm font-bold text-blue-300 transition-colors hover:bg-white/10"
-                >פתח עוד ({middle.length - FEATURED}) ⌄</button>
+                >פתח עוד ({middle.length - featuredCount}) ⌄</button>
             </div>
         {/if}
 
