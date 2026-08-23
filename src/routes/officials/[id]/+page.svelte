@@ -172,13 +172,18 @@
         </div>
 
         <!-- הציון הכולל — צמוד לדמות עצמה, הדבר הראשון שנראה עם הפנים והשם -->
-        <div class="flex shrink-0 flex-col items-center gap-1">
-            <span class="text-4xl font-black text-amber-400 tabular-nums">{fmtScore(stats.average)}</span>
-            <Stars value={stats.average ?? 0} size={22} />
-            <span class="text-xs text-gray-500">
-                {stats.count > 0 ? `מבוסס על ${stats.count} דירוגים` : 'אין עדיין דירוגים'}
-            </span>
-        </div>
+        {#if stats.count > 0}
+            <div class="flex shrink-0 flex-col items-center gap-1">
+                <span class="text-4xl font-black text-amber-400 tabular-nums">{fmtScore(stats.average)}</span>
+                <Stars value={stats.average ?? 0} size={22} />
+                <span class="text-xs text-gray-400">מבוסס על {stats.count} דירוגים</span>
+            </div>
+        {:else}
+            <a
+                href="#rate"
+                class="btn-premium shrink-0 rounded-xl px-4 py-2 text-center text-sm font-bold text-white"
+            >⭐ טרם דורג/ה — היו הראשונים</a>
+        {/if}
     </section>
 
     <!-- תעודת זהות ציבורית: קשר, שקיפות בפועל, התמחויות והבטחות -->
@@ -190,38 +195,40 @@
     {/if}
 
 
-    <!-- סיכום ציון: ממוצע + היסטוגרמה + מדדים -->
+    <!-- סיכום ציון: היסטוגרמה + מדדים — רק כשיש דירוגים אמיתיים להציג -->
     <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
-            <div class="min-w-56 flex-1">
-                <Histogram
-                    distribution={stats.distribution}
-                    count={stats.count}
-                    selected={starFilter}
-                    onselect={selectStar}
-                />
-            </div>
-            <div class="min-w-64 flex-1">
-                <CriteriaBars perCriterion={stats.perCriterion} />
-            </div>
-        </div>
-
         {#if stats.count > 0}
+            <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
+                <div class="min-w-56 flex-1">
+                    <Histogram
+                        distribution={stats.distribution}
+                        count={stats.count}
+                        selected={starFilter}
+                        onselect={selectStar}
+                    />
+                </div>
+                <div class="min-w-64 flex-1">
+                    <CriteriaBars perCriterion={stats.perCriterion} />
+                </div>
+            </div>
+
             <div class="mt-3 border-t border-white/10 pt-3">
                 <TrustPanel {stats} reviews={data.reviews} />
             </div>
-        {/if}
 
-        <div class="mt-3 border-t border-white/10 pt-3">
+            <div class="mt-3 border-t border-white/10 pt-3">
+                <ShareBar text={shareText} title="{official.name} — דירוג ציבורי" />
+            </div>
+        {:else}
             <ShareBar text={shareText} title="{official.name} — דירוג ציבורי" />
-        </div>
+        {/if}
     </section>
 
     <!-- מגמה לאורך זמן — מוצגת רק כשיש מספיק דירוגים לאורך יותר מחודש אחד -->
     <TrendChart reviews={data.reviews} />
 
     <!-- דרגו בעצמכם -->
-    <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <section id="rate" class="scroll-mt-20 rounded-2xl border border-white/10 bg-white/5 p-4">
         <h2 class="mb-3 text-lg font-bold text-white">דרגו בעצמכם</h2>
 
         {#if data.me}
@@ -277,7 +284,7 @@
             onclearstar={() => (starFilter = null)}
         />
 
-        <p class="text-xs leading-relaxed text-gray-600">
+        <p class="text-xs leading-relaxed text-gray-400">
             הדירוגים והתגובות בעמוד זה הם דעות אישיות של משתמשים ואינם משקפים את עמדת האתר.
             נתקלתם בתוכן פוגעני, בלשון הרע או בזיהוי שגוי? לחצו על <b class="text-gray-500">🚩 דיווח</b>
             בכרטיס הרלוונטי — הדיווח נבדק על ידי צוות האתר. פרטים נוספים

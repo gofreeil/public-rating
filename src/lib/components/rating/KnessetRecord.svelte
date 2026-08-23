@@ -258,7 +258,7 @@
             </div>
         {/if}
 
-        <p class="text-xs text-gray-600">
+        <p class="text-xs text-gray-400">
             הנתונים נשאבים אוטומטית ממאגר הנתונים הפתוח של הכנסת ומשקפים את מה שנרשם בו
             {#if record.synced_at}· עודכן {absDate(record.synced_at)}{/if}
         </p>

@@ -46,10 +46,11 @@
             {#if official.stats.count > 0}
                 <Stars value={official.stats.average ?? 0} size={compact ? 14 : 16} />
                 <span class="text-xs font-bold text-amber-300 tabular-nums">{fmtScore(official.stats.average)}</span>
-                <span class="text-xs text-gray-500">({official.stats.count})</span>
+                <span class="text-xs text-gray-400">({official.stats.count})</span>
             {:else}
-                <Stars value={0} size={compact ? 14 : 16} />
-                <span class="text-xs text-gray-500">היו הראשונים לדרג</span>
+                <span class="rounded-full border border-amber-400/40 bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-300">
+                    ⭐ היו הראשונים לדרג
+                </span>
             {/if}
         </span>
     </span>

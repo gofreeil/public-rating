@@ -138,7 +138,7 @@
             </time>
         </div>
 
-        <p class="mt-1 text-[11px] leading-relaxed text-gray-600">
+        <p class="mt-1 text-[11px] leading-relaxed text-gray-400">
             ממוצע הדירוגים שהתקבלו בכל חודש. הציר מוצג על סולם 1–5 המלא.
         </p>
     </section>

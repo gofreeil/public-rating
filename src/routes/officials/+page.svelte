@@ -82,9 +82,9 @@
                                 <span class="shrink-0 text-xs font-bold text-amber-300 tabular-nums">
                                     {fmtScore(o.average)}
                                 </span>
-                                <span class="shrink-0 text-[11px] text-gray-600">({o.count})</span>
+                                <span class="shrink-0 text-[11px] text-gray-400">({o.count})</span>
                             {:else}
-                                <span class="shrink-0 text-[11px] text-gray-600">טרם דורג</span>
+                                <span class="shrink-0 text-[11px] text-gray-400">טרם דורג</span>
                             {/if}
                         </a>
                     </li>

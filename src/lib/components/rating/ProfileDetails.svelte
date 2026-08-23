@@ -147,7 +147,7 @@
                             rel="noopener noreferrer nofollow"
                             class="shakuf-link rounded-full border border-purple-400/30 bg-purple-500/10 px-2.5 py-1 text-xs font-bold text-purple-300 transition-colors"
                         >לדו"ח המלא באתר שקוף ↗</a>
-                        <span class="text-xs text-gray-600">
+                        <span class="text-xs text-gray-400">
                             מקור: "שקוף" — בדיקה מבוססת נתונים רשמיים
                             {#if official.shakuf.source_date}· עודכן {absDate(official.shakuf.source_date)}{/if}
                         </span>
@@ -170,7 +170,7 @@
                             </li>
                         {/each}
                     </ul>
-                    <p class="mt-2 text-xs text-gray-600">
+                    <p class="mt-2 text-xs text-gray-400">
                         מעקב ההבטחות מתעדכן על ידי צוות האתר על סמך מקורות פומביים.
                     </p>
                 </div>

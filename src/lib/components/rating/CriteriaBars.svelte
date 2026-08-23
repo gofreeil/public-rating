@@ -10,7 +10,7 @@
     {#each CRITERIA as c (c.key)}
         {@const v = perCriterion[c.key] ?? null}
         <li
-            class="flex items-center gap-2 {v === null ? 'opacity-40' : ''}"
+            class="flex items-center gap-2"
             style="height:22px"
             title={c.description}
         >
@@ -28,7 +28,7 @@
                     style="width:{v ? (v / 5) * 100 : 0}%"
                 ></span>
             </span>
-            <span aria-hidden="true" class="w-7 text-xs font-bold text-amber-300 tabular-nums">{fmtScore(v)}</span>
+            <span aria-hidden="true" class="w-7 text-xs font-bold tabular-nums {v === null ? 'text-gray-400' : 'text-amber-300'}">{fmtScore(v)}</span>
         </li>
     {/each}
 </ul>

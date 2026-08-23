@@ -53,7 +53,7 @@
         ></span>
     </span>
     <span aria-hidden="true" class="w-6 text-xs text-gray-500 tabular-nums">{row.n}</span>
-    <span aria-hidden="true" class="hidden w-9 text-xs text-gray-600 tabular-nums sm:block">{row.share}%</span>
+    <span aria-hidden="true" class="hidden w-9 text-xs text-gray-400 tabular-nums sm:block">{row.share}%</span>
 {/snippet}
 
 <ul class="flex flex-col gap-0.5" aria-label="התפלגות {count} דירוגים לפי כוכבים">
