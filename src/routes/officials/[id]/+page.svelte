@@ -199,8 +199,6 @@
         <div class="mt-3 flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-white/10 pt-3">
             <div class="min-w-64 flex-1">
                 <CriteriaBars perCriterion={stats.perCriterion} officialId={official.id} />
-                <!-- כל מדד הוא דף בפני עצמו: החומר הפומבי על הדמות באותו מדד והניתוח שלו -->
-                <p class="mt-1 text-xs text-gray-400">לחצו על מדד לחומר ולניתוח שמאחוריו</p>
             </div>
             <div class="min-w-56 flex-1">
                 <Histogram
