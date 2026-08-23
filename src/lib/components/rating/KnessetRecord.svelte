@@ -74,15 +74,16 @@
 
     <div class="flex flex-col gap-3">
         <!-- ותק וציר התפקידים בקדנציה -->
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
             {#if seniority}
                 <span
                     title="הכנסות שבהן כיהן/ה: {knessetRanges(record.knessets)}"
-                    class="rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-300"
+                    class="font-bold text-amber-300"
                 >🎖️ {seniority === 1 ? 'קדנציה ראשונה' : `${seniority} קדנציות`} · כנסות {knessetRanges(record.knessets)}</span>
             {/if}
-            {#each roles as role (role.title)}
-                <span class="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-gray-300">
+            {#each roles as role, i (role.title)}
+                {#if seniority || i > 0}<span aria-hidden="true" class="text-white/25">|</span>{/if}
+                <span class="text-gray-300">
                     {role.title}
                     <span class="text-gray-500">
                         מ־{day(role.from)}{#if role.to} עד {day(role.to)}{/if}
