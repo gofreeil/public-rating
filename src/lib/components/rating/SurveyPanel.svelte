@@ -29,19 +29,19 @@
     /** המדדים ממוינים לפי חשיבות שהציבור ייחס להם — הגבוה ראשון */
     const ranked = $derived(
         CRITERIA.map((c) => ({ ...c, avg: results.importance[c.key] }))
-            .filter((c) => c.avg !== null)
+            .filter((c) => c.avg !== null && c.avg > 0)
             .sort((a, b) => (b.avg ?? 0) - (a.avg ?? 0)),
     );
 </script>
 
 <section class="rounded-2xl border border-white/10 bg-white/5 p-4">
     <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 class="text-lg font-black text-white md:text-xl">📊 מה הכי חשוב לך במשרת ציבור?</h2>
+        <h2 class="text-xl font-black text-white md:text-2xl">📊 מה הכי חשוב לך במשרת ציבור?</h2>
         {#if results.count > 0}
-            <span class="text-xs text-gray-500">{results.count} משתתפים עד כה</span>
+            <span class="text-sm text-gray-300">{results.count} משתתפים עד כה</span>
         {/if}
     </div>
-    <p class="mt-1 text-sm text-gray-400">
+    <p class="mt-1 text-base text-gray-300">
         דרגו כמה כל מדד חשוב לכם — והשוו לסדר העדיפויות של שאר הציבור.
     </p>
 
@@ -49,17 +49,17 @@
     {#if ranked.length}
         <div class="mt-3 flex flex-col gap-1.5">
             {#each ranked as c, i (c.key)}
-                <div class="flex items-center gap-2 text-sm">
-                    <span class="w-40 shrink-0 truncate text-gray-300" title={c.label}>
+                <div class="flex items-center gap-2 text-base">
+                    <span class="w-44 shrink-0 truncate font-bold text-white" title={c.label}>
                         {i === 0 ? '👑 ' : ''}{c.icon} {c.short}
                     </span>
-                    <div class="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-white/5">
+                    <div class="h-3 min-w-0 flex-1 overflow-hidden rounded-full bg-white/15">
                         <div
-                            class="h-full rounded-full bg-gradient-to-l from-amber-400 to-amber-500/60"
-                            style="width: {((c.avg ?? 0) / 5) * 100}%"
+                            class="h-full rounded-full bg-gradient-to-l from-amber-300 to-amber-500"
+                            style="width: {Math.max(6, ((c.avg ?? 0) / 5) * 100)}%"
                         ></div>
                     </div>
-                    <span class="w-8 shrink-0 text-left font-bold text-amber-300 tabular-nums">{fmtScore(c.avg)}</span>
+                    <span class="w-10 shrink-0 text-left font-black text-amber-300 tabular-nums">{fmtScore(c.avg)}</span>
                 </div>
             {/each}
         </div>
@@ -81,7 +81,7 @@
             <button
                 type="button"
                 onclick={() => (open = true)}
-                class="btn-premium mt-3 cursor-pointer rounded-xl px-5 py-2 text-sm font-bold text-white"
+                class="btn-premium mt-3 cursor-pointer rounded-xl px-5 py-2 text-base font-bold text-white"
             >{myVote ? '✏️ עדכון ההצבעה שלי' : '🗳️ אני מצביע/ה'}</button>
         {:else}
             <form
@@ -99,7 +99,7 @@
             >
                 {#each CRITERIA as c (c.key)}
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                        <span class="w-40 shrink-0 text-sm font-bold text-white" title={c.description}>
+                        <span class="w-44 shrink-0 text-base font-bold text-white" title={c.description}>
                             {c.icon} {c.short}
                         </span>
                         <StarInput bind:value={values[c.key]} name={c.key} size={24} label="חשיבות {c.short}" />
@@ -109,24 +109,24 @@
                     <button
                         type="submit"
                         disabled={submitting}
-                        class="btn-premium cursor-pointer rounded-xl px-5 py-2 text-sm font-bold text-white disabled:opacity-60"
+                        class="btn-premium cursor-pointer rounded-xl px-5 py-2 text-base font-bold text-white disabled:opacity-60"
                     >{submitting ? 'שולח...' : 'שמירת ההצבעה'}</button>
                     <button
                         type="button"
                         onclick={() => (open = false)}
-                        class="cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-400 transition-colors hover:bg-white/10"
+                        class="cursor-pointer rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-base text-gray-200 transition-colors hover:bg-white/10"
                     >ביטול</button>
                 </div>
             </form>
         {/if}
     {:else}
         <div class="mt-3 flex flex-wrap items-center gap-3 border-t border-white/10 pt-3">
-            <p class="flex-1 text-sm text-gray-400" style="min-width: 14rem">
+            <p class="flex-1 text-base text-gray-200" style="min-width: 14rem">
                 {results.count > 0
                     ? 'רוצים להשפיע על הסדר? הצביעו גם אתם'
                     : 'היו הראשונים לקבוע מה הכי חשוב'}
             </p>
-            <a href="/login?redirect=/" class="btn-premium rounded-xl px-5 py-2 text-sm font-bold text-white">
+            <a href="/login?redirect=/" class="btn-premium rounded-xl px-5 py-2 text-base font-bold text-white">
                 התחברות להצבעה
             </a>
         </div>
