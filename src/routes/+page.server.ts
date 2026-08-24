@@ -52,6 +52,50 @@ export const load: PageServerLoad = async () => {
                 };
             });
 
+        // קומת ההדליינס — כותרת אחת מכל דף באתר, דינמית היכן שיש נתונים
+        const headlines: { href: string; tag: string; text: string }[] = [];
+        for (const g of GROUPS) {
+            const top = rated.find((o) => o.group === g.key);
+            headlines.push({
+                href: g.route,
+                tag: `${g.icon} ${g.title}`,
+                text: top
+                    ? `בראש הלוח: ${top.name}${top.position ? ` (${top.position})` : ''} — ${top.stats.average?.toFixed(1)}★ מתוך ${top.stats.count} דירוגים`
+                    : g.blurb,
+            });
+        }
+        if (rated[0]) {
+            headlines.push({
+                href: '/top-rated',
+                tag: '🏆 המצטיינים',
+                text: `${rated[0].name} בפסגת הדירוג הארצי — לטבלה המלאה`,
+            });
+        }
+        headlines.push({
+            href: '/compare',
+            tag: '⚖️ השוואה',
+            text: 'ראש בראש: משווים שני מדורגים זה מול זה בכל המדדים',
+        });
+        if (recentReviews[0]) {
+            const r = recentReviews[0];
+            const quote = r.text.length > 80 ? `${r.text.slice(0, 80)}…` : r.text;
+            headlines.push({
+                href: `/officials/${r.official.id}`,
+                tag: '📝 ביקורת אחרונה',
+                text: `על ${r.official.name}: "${quote}"`,
+            });
+        }
+        headlines.push({
+            href: '/suggest',
+            tag: '💡 הצעת מדורג',
+            text: 'חסרה לכם דמות בלוחות? הציעו אותה לדירוג הציבור',
+        });
+        headlines.push({
+            href: '/about',
+            tag: '🎯 החזון',
+            text: '"חברה אחראית בודקת שהחתול לא שומר על השמנת"',
+        });
+
         const groupCounts = emptyGroupCounts();
         for (const o of officials) groupCounts[o.group] = (groupCounts[o.group] ?? 0) + 1;
 
@@ -66,6 +110,7 @@ export const load: PageServerLoad = async () => {
 
         return {
             stats: { officialCount: officials.length, reviewCount: reviews.length },
+            headlines,
             showcase,
             recentReviews,
             groupCounts,
@@ -75,6 +120,7 @@ export const load: PageServerLoad = async () => {
         console.warn('[home] load failed:', e instanceof Error ? e.message : e);
         return {
             stats: { officialCount: 0, reviewCount: 0 },
+            headlines: [] as { href: string; tag: string; text: string }[],
             showcase: [],
             recentReviews: [],
             groupCounts: emptyGroupCounts(),

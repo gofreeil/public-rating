@@ -56,6 +56,26 @@
         </div>
     </section>
 
+    <!-- a2) קומת ההדליינס — כותרת אחת מכל דף -->
+    {#if data.headlines.length}
+        <section class="overflow-hidden rounded-2xl border border-white/10 bg-slate-800/60">
+            <div class="border-b border-white/10 px-4 py-2">
+                <h2 class="text-sm font-black text-white">📰 הדליינס — מה קורה בכל דף</h2>
+            </div>
+            <ul class="divide-y divide-white/5">
+                {#each data.headlines as h (h.href)}
+                    <li>
+                        <a href={h.href} class="headline-row flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-2.5 transition-colors">
+                            <span class="shrink-0 text-xs font-black text-blue-400">{h.tag}</span>
+                            <span class="text-sm font-bold leading-relaxed text-white">{h.text}</span>
+                            <span class="mr-auto shrink-0 text-xs text-gray-500">←</span>
+                        </a>
+                    </li>
+                {/each}
+            </ul>
+        </section>
+    {/if}
+
     <!-- b) כרטיסי קטגוריות -->
     <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {#each GROUPS as g (g.key)}
@@ -171,5 +191,8 @@
     .chip-link:hover {
         background: rgba(255, 255, 255, 0.1);
         color: #fff;
+    }
+    .headline-row:hover {
+        background: rgba(255, 255, 255, 0.06);
     }
 </style>
