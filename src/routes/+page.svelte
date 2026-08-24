@@ -1,6 +1,5 @@
 <script lang="ts">
     // דף הבית — דירוג ציבורי
-    import { CRITERIA } from '$lib/rating/criteria';
     import { GROUPS, groupByKey } from '$lib/rating/types';
     import { websiteSchema } from '$lib/rating/schema';
     import { absDate, isoDate, relDate } from '$lib/rating/time';
@@ -8,9 +7,8 @@
     import OfficialCard from '$lib/components/rating/OfficialCard.svelte';
     import OfficialSearch from '$lib/components/rating/OfficialSearch.svelte';
     import Stars from '$lib/components/rating/Stars.svelte';
-    import SurveyPanel from '$lib/components/rating/SurveyPanel.svelte';
 
-    let { data, form } = $props();
+    let { data } = $props();
 
     // נקודת זמן אחת לכל הדף — לא Date.now() בתוך הרינדור
     const now = Date.now();
@@ -124,23 +122,6 @@
             </div>
         </section>
     {/if}
-
-    <!-- e) חמשת המדדים -->
-    <section>
-        <h2 class="mb-3 text-lg font-black text-white md:text-xl">חמשת המדדים</h2>
-        <div class="grid grid-cols-5 gap-0">
-            {#each CRITERIA as c (c.key)}
-                <div class="flex flex-col gap-2 px-3 py-5 text-center" style="border-bottom:1px solid rgba(255,255,255,0.08); border-right:1px solid rgba(255,255,255,0.08);">
-                    <span class="text-2xl md:text-3xl" aria-hidden="true">{c.icon}</span>
-                    <p class="text-xs font-black text-white md:text-base">{c.short}</p>
-                    <p class="hidden text-sm leading-snug text-gray-400 md:block">{c.description}</p>
-                </div>
-            {/each}
-        </div>
-    </section>
-
-    <!-- e2) סקר: מה הכי חשוב לציבור במשרתיו -->
-    <SurveyPanel results={data.survey} myVote={data.mySurveyVote} loggedIn={data.loggedIn} {form} />
 
     <!-- f) ביקורות אחרונות -->
     {#if data.recentReviews.length}

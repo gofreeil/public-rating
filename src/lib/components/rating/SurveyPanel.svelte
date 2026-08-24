@@ -86,7 +86,7 @@
         {:else}
             <form
                 method="POST"
-                action="/?/survey"
+                action="/about?/survey"
                 class="mt-3 flex flex-col gap-2 border-t border-white/10 pt-3"
                 use:enhance={() => {
                     submitting = true;

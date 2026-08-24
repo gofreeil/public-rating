@@ -5,6 +5,9 @@
     import FaqAccordion from '$lib/components/rating/FaqAccordion.svelte';
     import { FAQ_ITEMS } from '$lib/rating/faq';
     import { breadcrumbSchema, methodologySchema } from '$lib/rating/schema';
+    import SurveyPanel from '$lib/components/rating/SurveyPanel.svelte';
+
+    let { data, form } = $props();
 
     const STEPS = [
         { icon: '🔎', title: 'מאתרים את המדורג', text: 'חיפוש מהיר או גלישה בלוחות — כנסת, שופטים ועובדי ציבור' },
@@ -85,6 +88,9 @@
             {/each}
         </div>
     </section>
+
+    <!-- סקר: מה הכי חשוב לציבור במשרתיו — צמוד להסבר על המדדים -->
+    <SurveyPanel results={data.survey} myVote={data.mySurveyVote} loggedIn={data.loggedIn} {form} />
 
     <!-- שאלות ותשובות — מקור אחד עם ה-JSON-LD למעלה -->
     <div id="methodology">
