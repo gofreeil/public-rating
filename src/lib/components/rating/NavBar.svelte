@@ -12,7 +12,7 @@
         ...GROUPS.map((g) => ({ href: g.route, label: g.title, accent: true })),
         { href: '/top-rated', label: '🏆 המצטיינים', accent: false },
         { href: '/compare', label: '⚖️ השוואה', accent: false },
-        ...(loggedIn ? [{ href: '/my-ratings', label: '⭐ שלי', accent: false }] : []),
+        ...(loggedIn ? [{ href: '/my-ratings', label: '⭐ הדירוגים שלי', accent: false }] : []),
     ]);
 
     function isActive(href: string, pathname: string): boolean {
