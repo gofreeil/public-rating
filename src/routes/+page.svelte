@@ -151,16 +151,7 @@
         </section>
     {/if}
 
-    <!-- g) פס חזון -->
-    <section class="rounded-2xl border border-white/10 bg-gradient-to-l from-blue-600/15 to-purple-600/15 p-4 text-center">
-        <p class="font-black text-white">"חברה אחראית בודקת שהחתול לא שומר על השמנת"</p>
-        <p class="mt-1 text-sm text-gray-400">
-            דירוג ציבורי הוא כלי הביקורת של האזרח על משרתיו —
-            <a href="/about#vision" class="font-bold text-blue-400 hover:text-blue-300">לחזון בעמוד האודות ←</a>
-        </p>
-    </section>
-
-    <!-- h) קומת ההדליינס — כותרת אחת מכל דף -->
+    <!-- g) קומת ההדליינס — כותרת אחת מכל דף -->
     {#if data.headlines.length}
         <section class="overflow-hidden rounded-2xl border border-white/10 bg-slate-800/60">
             <h2 class="sr-only">הדליינס — מה קורה בכל דף</h2>
@@ -177,6 +168,15 @@
             </ul>
         </section>
     {/if}
+
+    <!-- h) פס חזון — סוגר את הדף, בלי מסגרת -->
+    <section class="p-4 text-center">
+        <p class="font-black text-white">"חברה אחראית בודקת שהחתול לא שומר על השמנת"</p>
+        <p class="mt-1 text-sm text-gray-400">
+            דירוג ציבורי הוא כלי הביקורת של האזרח על משרתיו —
+            <a href="/about#vision" class="font-bold text-blue-400 hover:text-blue-300">לחזון בעמוד האודות ←</a>
+        </p>
+    </section>
 
 </div>
 
