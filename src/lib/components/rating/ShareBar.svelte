@@ -79,7 +79,7 @@
 
 <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="שיתוף">
     {#if !compact}
-        <span class="ml-1 text-xs font-bold text-gray-400">שתפו:</span>
+        <span class="ml-1 text-xs font-bold text-gray-400">שתף:</span>
     {/if}
 
     {#each NETWORKS as n (n.key)}
