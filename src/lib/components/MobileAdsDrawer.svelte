@@ -290,7 +290,7 @@
 							{layoutUser.nickname || layoutUser.name || currentUser.username}
 						</span>
 						<span class="text-orange-400 text-xs font-bold">📩 הודעות אישיות</span>
-						<span class="text-gray-400 text-xs">לדירוגים שלי ←</span>
+						<span class="text-gray-400 text-xs">בדף עצמו אפשר לדרג, לשנמך או לשדרג דירוג קודם, לכתוב תגובות ודעות, להעלות תמונות ולשתף כל דירוג (כמו ציוץ) בכל הרשתות החברתיות ←</span>
 					</div>
 
 					<!-- יתרה -->
@@ -310,7 +310,7 @@
 				{/if}
 				<div class="profile-btn-text">
 					<span class="profile-btn-name">{currentUser.username}</span>
-					<span class="profile-btn-sub">לדירוגים שלי שלי ←</span>
+					<span class="profile-btn-sub">בדף עצמו אפשר לדרג, לשנמך או לשדרג דירוג קודם, לכתוב תגובות ודעות, להעלות תמונות ולשתף כל דירוג (כמו ציוץ) בכל הרשתות החברתיות ←</span>
 				</div>
 			</a>
 			{:else}
