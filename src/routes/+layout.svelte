@@ -14,7 +14,7 @@
 	import WelcomeScreen from "$lib/components/WelcomeScreen.svelte";
 	import { signOut } from "@auth/sveltekit/client";
 	import { goto, beforeNavigate } from "$app/navigation";
-	import { page } from "$app/state";
+	import { page, navigating } from "$app/state";
 	import { closeAdPopup } from "$lib/adPopupStore";
 
 	let { children, data } = $props();
@@ -52,6 +52,12 @@
 </svelte:head>
 
 <a href="#main-content" class="skip-link">דלג לתוכן הראשי</a>
+
+<!-- פס התקדמות בזמן ניווט: SvelteKit נשאר על הדף הקודם עד שהחדש מוכן, ובלי סימן כלשהו הלחיצה מרגישה כאילו לא קרה כלום. הפס מופיע רק אחרי ~150ms, כך שניווט מיידי לא מהבהב. -->
+{#if navigating.to}
+	<div class="nav-progress" role="status" aria-label="טוען…"></div>
+{/if}
+
 <!-- מסך פתיחה אחרי הרשמה / זיהוי ראשון — גלובלי, מופעל ע"י ?welcome ב-URL -->
 <WelcomeScreen userName={data.session?.user?.name ?? ''} />
 <CoinAnimation />
@@ -82,6 +88,33 @@
 </div>
 
 <style>
+	/* פס ההתקדמות של הניווט */
+	.nav-progress {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 3px;
+		z-index: 100;
+		transform-origin: left center;
+		background: linear-gradient(90deg, #4f46e5, #7c3aed, #f5d57a);
+		animation: nav-progress 8s cubic-bezier(0.15, 0.85, 0.25, 1) forwards;
+	}
+	:global(html[dir="rtl"]) .nav-progress {
+		transform-origin: right center;
+	}
+	@keyframes nav-progress {
+		0% { transform: scaleX(0); opacity: 0; }
+		2% { transform: scaleX(0.06); opacity: 0; }
+		4% { opacity: 1; }
+		25% { transform: scaleX(0.55); }
+		60% { transform: scaleX(0.82); }
+		100% { transform: scaleX(0.97); opacity: 1; }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.nav-progress { animation-duration: 0s; transform: scaleX(1); opacity: 1; }
+	}
+
 	.layout-container {
 		max-width: 1440px;
 		margin: 0 auto;
