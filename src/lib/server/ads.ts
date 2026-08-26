@@ -23,6 +23,7 @@ import { imageStamp, decodeDataImage } from './inlineImage.js';
 import { MAX_AD_TOTAL_BYTES } from '$lib/ads/adImage';
 import { normalizeGradientId } from '$lib/ads/gradients';
 import { DEFAULT_PLAN_DAYS, normalizePlanDays } from '$lib/ads/plans';
+import { AD_SLOTS } from '$lib/ads/slots';
 import {
     clamp,
     dataUriBytes,
@@ -792,41 +793,134 @@ export async function resumeAd(
     return { title: ad.title, expiresAt: expires.toISOString(), daysLeft };
 }
 
+// ============================================================
+// לוח המקומות המספרי של הטור (1..AD_SLOTS.length)
+// ------------------------------------------------------------
+// המיקום נשמר ב-extra_fields.slot_order (0-based) — אין עמודה ייעודית,
+// ואותה עמודת json כבר נושאת את כל שאר שדות המודעה. המספר קבוע למודעה
+// גם דרך השהיה ופקיעה — כשהיא חוזרת לאוויר היא חוזרת לאותו מקום.
+// ============================================================
+
+/** כל המאושרות בסדר התצוגה של הטור: מיקום שמור גובר, אחריו ותיק→חדש */
+function approvedInDisplayOrder(all: SubmittedAd[]): SubmittedAd[] {
+    return (
+        all
+            .filter((a) => a.status === 'approved')
+            // listAllForAdmin מחזיר חדש→ותיק; סדר המשבצות הוא ותיק→חדש
+            .slice()
+            .reverse()
+            .sort(bySlotOrder)
+    );
+}
+
 /**
- * מזיזה מודעה שעל האוויר משבצת אחת למעלה/למטה בטור.
- * המיקום נשמר ב-extra_fields.slot_order — אין עמודה ייעודית, ואותה
- * עמודת json כבר נושאת את כל שאר שדות המודעה.
+ * המספר האפקטיבי של כל מודעה מאושרת (0-based). מי שכבר נקבע לה מספר —
+ * שומרת עליו (בהתנגשות, הראשונה בסדר התצוגה גוברת); מי שאין לה מקבלת
+ * את המספר הפנוי הנמוך ביותר, לפי סדר התצוגה הנוכחי. כך מודעות ותיקות
+ * בלי מספר מקבלות בדיוק את מקומן של היום — ההקצאה הראשונה לא מזיזה כלום.
+ */
+function computeSlots(all: SubmittedAd[]): Map<string, number> {
+    const display = approvedInDisplayOrder(all);
+    const bySlot = new Map<string, number>();
+    const taken = new Set<number>();
+    for (const ad of display) {
+        if (typeof ad.slotOrder === 'number' && ad.slotOrder >= 0 && !taken.has(ad.slotOrder)) {
+            bySlot.set(ad.id, ad.slotOrder);
+            taken.add(ad.slotOrder);
+        }
+    }
+    let next = 0;
+    for (const ad of display) {
+        if (bySlot.has(ad.id)) continue;
+        while (taken.has(next)) next++;
+        bySlot.set(ad.id, next);
+        taken.add(next);
+    }
+    return bySlot;
+}
+
+/** מספרי המקומות לתצוגה (1-based) — למסך הניהול שמציג "מקום N מתוך 16" */
+export function computeAdSlots(all: SubmittedAd[]): Map<string, number> {
+    return new Map([...computeSlots(all)].map(([id, s]) => [id, s + 1]));
+}
+
+/**
+ * מקבע במסד מספר מקום לכל מודעה מאושרת שעדיין אין לה (או שהמספר השמור
+ * מתנגש). כותב רק את מי שהשתנה — בהקצאה הראשונה זו כל הרשימה, ומכאן
+ * והלאה כלום. רץ בפעולות ניהול בלבד, לא בנתיבי קריאה.
+ */
+async function ensureSlotsPersisted(all: SubmittedAd[]): Promise<Map<string, number>> {
+    const slots = computeSlots(all);
+    // סדרתי בכוונה — mergeExtra עושה GET+PUT לכל מודעה, והרשומות כבדות
+    // (תמונות data-URI); מקבילי היה חונק את השרת בבת אחת.
+    for (const ad of approvedInDisplayOrder(all)) {
+        if (ad.slotOrder !== slots.get(ad.id)) {
+            await mergeExtra(ad.id, { slot_order: slots.get(ad.id)! });
+        }
+    }
+    return slots;
+}
+
+/**
+ * מזיזה מודעה מקום אחד למעלה/למטה בלוח: מחליפה מספרים עם השכנה *שבאוויר*
+ * בלבד — מושהית/פגה שומרת את המספר שלה ואינה זזה, ושאר המודעות נשארות
+ * במקומן (בלי מספור-מחדש דוחס).
  * מחזירה null אם המודעה לא באוויר או שהיא כבר בקצה הטור.
  */
 export async function moveApprovedAd(
     id: string,
     direction: 'up' | 'down',
 ): Promise<{ title: string; position: number; total: number } | null> {
+    const all = await listAllForAdmin();
+    const slots = await ensureSlotsPersisted(all);
     const now = Date.now();
-    const list = (await listAllForAdmin())
-        .filter((a) => a.status === 'approved')
-        .filter((a) => !isExpired(a, now))
-        // מושהית אינה תופסת משבצת בטור
-        .filter((a) => !a.paused)
-        // listAllForAdmin מחזיר חדש→ותיק; סדר המשבצות הוא ותיק→חדש
-        .reverse()
-        .sort(bySlotOrder);
-
-    const from = list.findIndex((a) => a.id === id);
+    const live = all
+        .filter((a) => a.status === 'approved' && !isExpired(a, now) && !a.paused)
+        .sort((a, b) => (slots.get(a.id) ?? 0) - (slots.get(b.id) ?? 0));
+    const from = live.findIndex((a) => a.id === id);
     if (from === -1) return null;
     const to = direction === 'up' ? from - 1 : from + 1;
-    if (to < 0 || to >= list.length) return null;
+    if (to < 0 || to >= live.length) return null;
 
-    const reordered = [...list];
-    [reordered[from], reordered[to]] = [reordered[to], reordered[from]];
+    const moved = live[from];
+    const other = live[to];
+    const movedSlot = slots.get(moved.id)!;
+    const otherSlot = slots.get(other.id)!;
+    await mergeExtra(moved.id, { slot_order: otherSlot });
+    await mergeExtra(other.id, { slot_order: movedSlot });
+    return { title: moved.title, position: otherSlot + 1, total: AD_SLOTS.length };
+}
 
-    // כותבים רק את מי שהמשבצת שלו באמת השתנתה: בפעם הראשונה זה כל הטור
-    // (לאף מודעה אין עדיין slot_order), ומכאן והלאה שתי המודעות שהוחלפו.
-    for (const [i, ad] of reordered.entries()) {
-        if (ad.slotOrder === i) continue;
-        await mergeExtra(ad.id, { slot_order: i });
-    }
-    return { title: reordered[to].title, position: to + 1, total: reordered.length };
+/**
+ * מציבה מודעה מאושרת במקום מספרי מסוים בלוח (1..16). מקום תפוס — השתיים
+ * מתחלפות זו בזו; שאר המודעות לא זזות. המספר נשאר קבוע למודעה גם דרך
+ * השהיה ופקיעה — כשהיא חוזרת לאוויר היא חוזרת לאותו מקום.
+ */
+export async function setAdSlot(
+    id: string,
+    requested: number,
+): Promise<{ title: string; slot: number; swappedTitle?: string; swappedSlot?: number } | null> {
+    const n = Math.round(Number(requested));
+    if (!Number.isFinite(n)) return null;
+    const target = Math.min(AD_SLOTS.length, Math.max(1, n)) - 1;
+
+    const all = await listAllForAdmin();
+    const ad = all.find((a) => a.id === id && a.status === 'approved');
+    if (!ad) return null;
+    const slots = await ensureSlotsPersisted(all);
+    const cur = slots.get(id) ?? 0;
+    if (cur === target) return { title: ad.title, slot: target + 1 };
+
+    const occupant =
+        all.find((a) => a.id !== id && a.status === 'approved' && slots.get(a.id) === target) ??
+        null;
+    await mergeExtra(ad.id, { slot_order: target });
+    if (occupant) await mergeExtra(occupant.id, { slot_order: cur });
+    return {
+        title: ad.title,
+        slot: target + 1,
+        ...(occupant ? { swappedTitle: occupant.title, swappedSlot: cur + 1 } : {}),
+    };
 }
 
 /** הארכה ידנית של מודעה קיימת */

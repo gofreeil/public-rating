@@ -15,9 +15,9 @@ import { adPlans } from '$lib/ads/plans';
 import {
     AdTooLargeError,
     approveAd,
+    computeAdSlots,
     extendAd,
     isExpired,
-    bySlotOrder,
     listAllForAdmin,
     moveApprovedAd,
     normalizeDurationDays,
@@ -26,6 +26,7 @@ import {
     removeAd,
     resumeAd,
     setAdDuration,
+    setAdSlot,
     submitAd,
     unapproveAd,
 } from '$lib/server/ads';
@@ -55,13 +56,14 @@ export const load: PageServerLoad = async (event) => {
     }
 
     const now = Date.now();
-    // סדר המשבצות בטור — זהה לסדר שהאתר מציג בו. ממנו נגזר מספר המשבצת
-    // שמוצג ליד כל מודעה וכפתורי החלפת המקום.
+    // המקום המספרי הקבוע של כל מודעה מאושרת בלוח (1-based) — גם מושהית/
+    // פגה שומרת את המקום שלה, כדי שתחזור אליו כשהיא עולה שוב לאוויר
+    const adSlots = computeAdSlots(ads);
+    // סדר המודעות שעל האוויר — זהה לסדר שהאתר מציג בו; ממנו נגזרים
+    // כפתורי ▲/▼ (מושבתים בקצוות הטור)
     const slotOrder = ads
         .filter((a) => a.status === 'approved' && !isExpired(a, now) && !a.paused)
-        .slice()
-        .reverse()
-        .sort(bySlotOrder)
+        .sort((a, b) => (adSlots.get(a.id) ?? 0) - (adSlots.get(b.id) ?? 0))
         .map((a) => a.id);
 
     const rows = ads.map((ad) => ({
@@ -78,6 +80,8 @@ export const load: PageServerLoad = async (event) => {
         stats: stats[ad.id] ?? { impressions: 0, clicks: 0, landing: 0, leads: 0, ctr: 0 },
         slotIndex: slotOrder.indexOf(ad.id),
         slotTotal: slotOrder.length,
+        // המקום המספרי הקבוע בלוח (1-based); למודעה לא-מאושרת אין מקום
+        slot: adSlots.get(ad.id) ?? null,
         // גרסה מעודכנת שהמודעה הקודמת שלה באמת באוויר — רק אז האישור
         // מחליף אותה, ורק אז יש טעם בכפתור "אישור כמודעה נוספת"
         replacesLive: Boolean(
@@ -229,6 +233,26 @@ export const actions: Actions = {
             return { success: true, message: `${r.title} חזרה לאוויר — ${r.daysLeft} ימים` };
         } catch (e) {
             return fail(500, { error: `שגיאה בהפעלה מחדש: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // הצבה במקום מספרי בלוח — מקום תפוס: שתי המודעות מתחלפות זו בזו
+    setSlot: async (event) => {
+        await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            const r = await setAdSlot(id, Number(fd.get('slot')));
+            if (!r) return fail(404, { error: 'הפרסומת לא נמצאה או שאינה מאושרת' });
+            return {
+                success: true,
+                message: r.swappedTitle
+                    ? `"${r.title}" עברה למקום ${r.slot}, ו"${r.swappedTitle}" עברה למקום ${r.swappedSlot}`
+                    : `"${r.title}" עברה למקום ${r.slot}`,
+            };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בהעברה: ${e instanceof Error ? e.message : e}` });
         }
     },
 

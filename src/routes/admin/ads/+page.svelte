@@ -39,6 +39,57 @@
         hoverPreview = { id, x, y };
     }
 
+    // ---- הלוח המספרי: בורר מקום עם אזהרת מקום תפוס והחלפה ----
+    let slotOptions = $derived(Array.from({ length: data.slotCount }, (_, i) => i + 1));
+    // מי תופסת כל מקום בלוח — גם מושהית/פגה שומרת את המקום שלה
+    let slotOccupants = $derived(
+        new Map(
+            data.rows
+                .filter((a) => a.status === 'approved' && typeof a.slot === 'number')
+                .map((a) => [a.slot as number, { id: a.id, title: a.title }]),
+        ),
+    );
+    function shortTitle(t: string): string {
+        return t.length > 22 ? t.slice(0, 21) + '…' : t;
+    }
+    /** תווית אפשרות בבורר המקום — מקום תפוס מסומן עם שם הפרסומת שיושבת בו */
+    function slotOptionLabel(n: number, selfId: string): string {
+        const occ = slotOccupants.get(n);
+        if (!occ) return `${n}`;
+        if (occ.id === selfId) return `${n} — המקום הנוכחי`;
+        return `${n} ⚠ תפוס: ${shortTitle(occ.title)}`;
+    }
+    // אזהרה חיה מתחת לבורר ברגע שנבחר מקום תפוס (לפי מזהה המודעה)
+    let slotWarning = $state<Record<string, string>>({});
+    function onSlotPick(e: Event, self: { id: string }) {
+        const n = Number((e.currentTarget as HTMLSelectElement).value);
+        const occ = slotOccupants.get(n);
+        slotWarning = {
+            ...slotWarning,
+            [self.id]:
+                occ && occ.id !== self.id
+                    ? `מקום ${n} תפוס ע"י "${shortTitle(occ.title)}" — לחיצה על "העבר" תחליף ביניהן`
+                    : '',
+        };
+    }
+    /** אישור אחרון לפני העברה למקום תפוס — אישור = החלפה, ביטול = כלום לא זז */
+    function confirmSlotMove(
+        e: MouseEvent,
+        self: { id: string; title: string; slot: number | null },
+    ) {
+        const formEl = (e.currentTarget as HTMLButtonElement).form;
+        const sel = formEl?.elements.namedItem('slot');
+        const n = Number((sel as HTMLSelectElement | null)?.value);
+        const occ = slotOccupants.get(n);
+        if (!occ || occ.id === self.id) return;
+        const ok = confirm(
+            `⚠ מקום ${n} כבר תפוס על ידי "${occ.title}".\n\n` +
+                `אישור — החלפה: "${self.title}" תעבור למקום ${n}, ו"${occ.title}" תעבור למקום ${self.slot ?? '-'}.\n` +
+                `ביטול — ההעברה מתבטלת ושתי הפרסומות נשארות במקומן.`,
+        );
+        if (!ok) e.preventDefault();
+    }
+
     // תקופות שאפשר לקצוב למודעה שעל האוויר (נספרות מיום האישור)
     const DURATION_OPTIONS = [7, 14, 30, 60, 90, 180, 365];
 
@@ -275,15 +326,49 @@
                         </div>
 
                         {#if ad.status === 'approved' && !ad.expired && ad.slotIndex >= 0}
-                            <!-- משבצת המודעה בטור + החלפת מקום. הסדר כאן הוא בדיוק
-                                 הסדר שהגולש רואה בטור הימני. -->
+                            <!-- המקום המספרי הקבוע של המודעה בלוח + בורר מקום עם
+                                 אזהרת מקום תפוס והחלפה. הסדר בטור הימני נגזר
+                                 בדיוק ממספרי המקומות האלה. -->
                             <div class="flex flex-wrap items-center gap-2 border-t border-white/10 pt-2">
                                 <span class="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-emerald-400/40 bg-emerald-500/15 text-xs font-black text-emerald-200">
-                                    {ad.slotIndex + 1}
+                                    {ad.slot}
                                 </span>
                                 <span class="text-xs font-bold text-gray-400">
-                                    משבצת {ad.slotIndex + 1} מתוך {ad.slotTotal} בטור
+                                    מקום {ad.slot} מתוך {data.slotCount} בלוח
                                 </span>
+                                <form method="POST" action="?/setSlot" use:enhance class="flex flex-wrap items-center gap-1.5">
+                                    <input type="hidden" name="id" value={ad.id} />
+                                    <select
+                                        name="slot"
+                                        onchange={(e) => onSlotPick(e, ad)}
+                                        class="rounded-lg border border-white/10 bg-slate-800/80 px-1.5 py-1 text-xs text-white focus:border-blue-400/60 focus:outline-none"
+                                    >
+                                        {#each slotOptions as n (n)}
+                                            {@const occ = slotOccupants.get(n)}
+                                            {@const takenByOther = !!occ && occ.id !== ad.id}
+                                            <option
+                                                value={n}
+                                                selected={n === ad.slot}
+                                                style="background:{takenByOther ? '#fee2e2' : '#fff'};color:{takenByOther ? '#991b1b' : '#111'}"
+                                            >
+                                                {slotOptionLabel(n, ad.id)}
+                                            </option>
+                                        {/each}
+                                    </select>
+                                    <button
+                                        type="submit"
+                                        onclick={(e) => confirmSlotMove(e, ad)}
+                                        title="העבר למקום שנבחר; מקום תפוס — תתבקש לאשר החלפה בין השתיים"
+                                        class="cursor-pointer rounded-xl border border-purple-400/40 bg-purple-500/15 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-purple-200 hover:bg-purple-500/25"
+                                    >
+                                        ⇄ העבר
+                                    </button>
+                                    {#if slotWarning[ad.id]}
+                                        <span class="max-w-[240px] text-[11px] leading-snug font-bold text-amber-300">
+                                            ⚠ {slotWarning[ad.id]}
+                                        </span>
+                                    {/if}
+                                </form>
                                 <div class="mr-auto flex items-center gap-1">
                                     <form method="POST" action="?/move" use:enhance>
                                         <input type="hidden" name="id" value={ad.id} />
