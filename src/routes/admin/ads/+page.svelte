@@ -4,11 +4,40 @@
     import { AD_GRADIENTS, gradientCss } from '$lib/ads/gradients';
     import { absDate } from '$lib/rating/time';
     import Seo from '$lib/components/rating/Seo.svelte';
+    import AdCardPreview from '$lib/components/AdCardPreview.svelte';
     import type { ActionData, PageData } from './$types';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
 
     let showCreate = $state(false);
+
+    // תצוגה מקדימה של הכרטיס כפי שהוא באמת מוצג בטור הפרסומות באתר:
+    // ריחוף על כותרת מודעה שעל האוויר (דסקטופ) או הקשה עליה (נייד/דסקטופ)
+    let previewableById = $derived(
+        new Map(
+            data.rows
+                .filter((a) => a.status === 'approved' && !a.expired)
+                .map((a) => [a.id, a] as const),
+        ),
+    );
+    let hoverPreview = $state<{ id: string; x: number; y: number } | null>(null);
+    let modalPreviewId = $state<string | null>(null);
+    const PREVIEW_W = 144; // מידות הכרטיס האמיתי בטור (w-36 × h-[470px])
+    const PREVIEW_H = 470;
+    function openHoverPreview(e: MouseEvent, id: string) {
+        if (!previewableById.has(id)) return;
+        // מסך מגע — אין ריחוף אמיתי; ההקשה פותחת את המודאל במקום
+        if (window.matchMedia('(hover: none)').matches) return;
+        const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        // הכרטיס צף משמאל לכותרת, מוצמד לגבולות המסך (fixed) —
+        // אחרת overflow של הכרטיס במסך היה חותך אותו
+        const y = Math.max(
+            8,
+            Math.min(window.innerHeight - PREVIEW_H - 8, r.top + r.height / 2 - PREVIEW_H / 2),
+        );
+        const x = Math.max(8, r.left - PREVIEW_W - 16);
+        hoverPreview = { id, x, y };
+    }
 
     // תקופות שאפשר לקצוב למודעה שעל האוויר (נספרות מיום האישור)
     const DURATION_OPTIONS = [7, 14, 30, 60, 90, 180, 365];
@@ -187,7 +216,25 @@
                                 aria-hidden="true"
                             ></span>
                             <span class="min-w-0">
-                                <span class="block truncate font-bold text-white">{ad.title}</span>
+                                <!-- מודעה שעל האוויר: ריחוף על הכותרת = הכרטיס האמיתי צף;
+                                     הקשה = מודאל עם הכרטיס + קישור לדף הנחיתה -->
+                                {#if previewableById.has(ad.id)}
+                                    <button
+                                        type="button"
+                                        onmouseenter={(e) => openHoverPreview(e, ad.id)}
+                                        onmouseleave={() => (hoverPreview = null)}
+                                        onclick={() => {
+                                            hoverPreview = null;
+                                            modalPreviewId = ad.id;
+                                        }}
+                                        title="תצוגה מקדימה של הפרסומת כפי שהיא מוצגת באתר"
+                                        class="block max-w-full cursor-pointer truncate text-right font-bold text-white underline decoration-dotted decoration-white/30 underline-offset-2 hover:text-amber-300"
+                                    >
+                                        {ad.title}
+                                    </button>
+                                {:else}
+                                    <span class="block truncate font-bold text-white">{ad.title}</span>
+                                {/if}
                                 <span class="block truncate text-xs text-gray-400">{ad.subtitle}</span>
                             </span>
 
@@ -464,4 +511,68 @@
             </section>
         {/if}
     {/each}
+
+    <!-- תצוגה מקדימה צפה בריחוף על כותרת מודעה שעל האוויר (דסקטופ בלבד) -->
+    {#if hoverPreview}
+        {@const pAd = previewableById.get(hoverPreview.id)}
+        {#if pAd}
+            <div
+                class="pointer-events-none fixed z-40 hidden drop-shadow-2xl md:block"
+                style="left:{hoverPreview.x}px; top:{hoverPreview.y}px"
+            >
+                <AdCardPreview ad={pAd} />
+            </div>
+        {/if}
+    {/if}
+
+    <!-- מודאל תצוגה מקדימה בהקשה על הכותרת (נייד ודסקטופ) -->
+    {#if modalPreviewId}
+        {@const mAd = previewableById.get(modalPreviewId)}
+        {#if mAd}
+            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+            <div
+                class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm"
+                role="presentation"
+                onclick={() => (modalPreviewId = null)}
+            >
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <div
+                    class="my-auto flex flex-col items-center gap-3"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="תצוגה מקדימה של הפרסומת"
+                    tabindex="-1"
+                    onclick={(e) => e.stopPropagation()}
+                >
+                    <AdCardPreview ad={mAd} />
+                    <div class="flex items-center gap-2">
+                        <a
+                            href={`/ads/${mAd.id}`}
+                            target="_blank"
+                            rel="noopener"
+                            class="rounded-lg border border-amber-500/40 bg-amber-500/20 px-3 py-1.5 text-xs font-black text-amber-200 hover:bg-amber-500/30"
+                        >
+                            פתח דף נחיתה
+                        </a>
+                        <button
+                            type="button"
+                            onclick={() => (modalPreviewId = null)}
+                            class="cursor-pointer rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-black text-gray-200 hover:bg-white/20"
+                        >
+                            ✕ סגור
+                        </button>
+                    </div>
+                </div>
+            </div>
+        {/if}
+    {/if}
 </div>
+
+<svelte:window
+    onkeydown={(e) => {
+        if (e.key === 'Escape') {
+            modalPreviewId = null;
+            hoverPreview = null;
+        }
+    }}
+/>
