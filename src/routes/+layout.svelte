@@ -53,7 +53,7 @@
 
 <a href="#main-content" class="skip-link">דלג לתוכן הראשי</a>
 
-<!-- פס התקדמות בזמן ניווט: SvelteKit נשאר על הדף הקודם עד שהחדש מוכן, ובלי סימן כלשהו הלחיצה מרגישה כאילו לא קרה כלום. הפס מופיע רק אחרי ~150ms, כך שניווט מיידי לא מהבהב. -->
+<!-- פס התקדמות בזמן ניווט: SvelteKit נשאר על הדף הקודם עד שהחדש מוכן, ובלי סימן כלשהו הלחיצה מרגישה כאילו לא קרה כלום. הפס נדלק מיידית עם הלחיצה — משוב תוך כדי הטעינה, גם במחיר הבהוב קצר בניווט מהיר. -->
 {#if navigating.to}
 	<div class="nav-progress" role="status" aria-label="טוען…"></div>
 {/if}
@@ -104,9 +104,7 @@
 		transform-origin: right center;
 	}
 	@keyframes nav-progress {
-		0% { transform: scaleX(0); opacity: 0; }
-		2% { transform: scaleX(0.06); opacity: 0; }
-		4% { opacity: 1; }
+		0% { transform: scaleX(0.04); opacity: 1; }
 		25% { transform: scaleX(0.55); }
 		60% { transform: scaleX(0.82); }
 		100% { transform: scaleX(0.97); opacity: 1; }
