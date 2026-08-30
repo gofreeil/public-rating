@@ -52,12 +52,41 @@
     function shortTitle(t: string): string {
         return t.length > 22 ? t.slice(0, 21) + '…' : t;
     }
+    // הטור מציג רביעייה עוקבת אחת בכל רגע (1-4, אחריה 5-8... — ראו RightAdBanner).
+    // הסימון כאן משקף את זה: צבע לכל רביעייה (= מה שמוצג יחד), אות לרביעייה
+    // ושם-מיקום בתוך הרביעייה (רקע בהיר בלבד — כהה נשבר בהדגשת המערכת)
+    const GROUP_LETTERS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח'];
+    const POS_NAMES = ['עליונה', 'שנייה', 'שלישית', 'תחתונה'];
+    function slotGroup(n: number): number { return Math.ceil(n / 4); }
+    function slotGroupLetter(n: number): string {
+        return GROUP_LETTERS[slotGroup(n) - 1] ?? String(slotGroup(n));
+    }
+    function slotPosName(n: number): string { return POS_NAMES[(n - 1) % 4]; }
+    function slotOptionBg(n: number): string {
+        const g = slotGroup(n) % 4;
+        if (g === 1) return '#dbeafe';
+        if (g === 2) return '#dcfce7';
+        if (g === 3) return '#fef9c3';
+        return '#f3e8ff';
+    }
+    /** אפשרויות הבורר מקובצות לרביעיות — כל קבוצה מקבלת כותרת optgroup משלה */
+    function groupSlotOptions(options: number[]): { letter: string; nums: number[] }[] {
+        const byGroup = new Map<number, number[]>();
+        for (const n of options) {
+            const g = slotGroup(n);
+            byGroup.set(g, [...(byGroup.get(g) ?? []), n]);
+        }
+        return [...byGroup.entries()]
+            .sort((a, b) => a[0] - b[0])
+            .map(([g, nums]) => ({ letter: GROUP_LETTERS[g - 1] ?? String(g), nums }));
+    }
     /** תווית אפשרות בבורר המקום — מקום תפוס מסומן עם שם הפרסומת שיושבת בו */
     function slotOptionLabel(n: number, selfId: string): string {
+        const base = `${n} · ${slotPosName(n)}`;
         const occ = slotOccupants.get(n);
-        if (!occ) return `${n}`;
-        if (occ.id === selfId) return `${n} — המקום הנוכחי`;
-        return `${n} ⚠ תפוס: ${shortTitle(occ.title)}`;
+        if (!occ) return `${base} — פנוי`;
+        if (occ.id === selfId) return `${base} — המקום הנוכחי`;
+        return `${base} ⚠ ${shortTitle(occ.title)}`;
     }
     // אזהרה חיה מתחת לבורר ברגע שנבחר מקום תפוס (לפי מזהה המודעה)
     let slotWarning = $state<Record<string, string>>({});
@@ -326,12 +355,15 @@
                         </div>
 
                         {#if ad.status === 'approved' && !ad.expired && ad.slotIndex >= 0}
+                            {@const slotN = ad.slot ?? ad.slotIndex + 1}
                             <!-- המקום המספרי הקבוע של המודעה בלוח + בורר מקום עם
                                  אזהרת מקום תפוס והחלפה. הסדר בטור הימני נגזר
                                  בדיוק ממספרי המקומות האלה. -->
                             <div class="flex flex-wrap items-center gap-2 border-t border-white/10 pt-2">
-                                <span class="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-emerald-400/40 bg-emerald-500/15 text-xs font-black text-emerald-200">
-                                    {ad.slot}
+                                <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-lg border border-black/20 px-1.5 text-xs font-black whitespace-nowrap"
+                                      style="background:{slotOptionBg(slotN)};color:#111"
+                                      title="רביעייה {slotGroupLetter(slotN)}׳ · הכרטיס ה{slotPosName(slotN)} בה">
+                                    {slotN} · {slotGroupLetter(slotN)}׳
                                 </span>
                                 <span class="text-xs font-bold text-gray-400">
                                     מקום {ad.slot} מתוך {data.slotCount} בלוח
@@ -343,16 +375,19 @@
                                         onchange={(e) => onSlotPick(e, ad)}
                                         class="rounded-lg border border-white/10 bg-slate-800/80 px-1.5 py-1 text-xs text-white focus:border-blue-400/60 focus:outline-none"
                                     >
-                                        {#each slotOptions as n (n)}
-                                            {@const occ = slotOccupants.get(n)}
-                                            {@const takenByOther = !!occ && occ.id !== ad.id}
-                                            <option
-                                                value={n}
-                                                selected={n === ad.slot}
-                                                style="background:{takenByOther ? '#fee2e2' : '#fff'};color:{takenByOther ? '#991b1b' : '#111'}"
-                                            >
-                                                {slotOptionLabel(n, ad.id)}
-                                            </option>
+                                        <!-- כל רביעייה תחת כותרת משלה — הקשר מספר↔רביעייה קריא במילים, לא רק
+                                             בצבע; מקום תפוס שומר את צבע הרביעייה ומסומן באדום מודגש -->
+                                        {#each groupSlotOptions(slotOptions) as grp (grp.letter)}
+                                            <optgroup label="— רביעייה {grp.letter}׳ (מוצגות יחד) —">
+                                                {#each grp.nums as n (n)}
+                                                    {@const occ = slotOccupants.get(n)}
+                                                    {@const takenByOther = !!occ && occ.id !== ad.id}
+                                                    <option value={n} selected={n === ad.slot}
+                                                            style="background:{slotOptionBg(n)};color:{takenByOther ? '#b91c1c' : '#111'};font-weight:{takenByOther ? '700' : '400'}">
+                                                        {slotOptionLabel(n, ad.id)}
+                                                    </option>
+                                                {/each}
+                                            </optgroup>
                                         {/each}
                                     </select>
                                     <button
