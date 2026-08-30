@@ -9,7 +9,7 @@
 // ============================================================
 
 import { fail, redirect } from '@sveltejs/kit';
-import { isAdmin, requireAdmin } from '$lib/server/auth';
+import { isAdmin, isSuperAdmin, requireAdmin } from '$lib/server/auth';
 import { AD_SLOTS } from '$lib/ads/slots';
 import { adPlans } from '$lib/ads/plans';
 import {
@@ -26,6 +26,7 @@ import {
     removeAd,
     resumeAd,
     setAdDuration,
+    setAdExpiry,
     setAdSlot,
     submitAd,
     unapproveAd,
@@ -101,6 +102,8 @@ export const load: PageServerLoad = async (event) => {
         slotCount: AD_SLOTS.length,
         live,
         pending: rows.filter((a) => a.status === 'pending').length,
+        // חלון הקציבה (תקופה/תפוגה שרירותית) שמור לסופר-אדמין
+        superAdmin: isSuperAdmin(session),
     };
 };
 
@@ -190,9 +193,12 @@ export const actions: Actions = {
         }
     },
 
-    // קציבת תקופה — נספרת מיום האישור (extend מוסיף על הקיים, זה קובע מחדש)
+    // קציבת תקופה — נספרת מיום האישור (extend מוסיף על הקיים, זה קובע מחדש). שמורה לסופר-אדמין
     setDuration: async (event) => {
         await adminOf(event);
+        if (!isSuperAdmin(await event.locals.auth())) {
+            return fail(403, { error: 'קציבת תקופה שמורה לסופר-אדמין' });
+        }
         const fd = await event.request.formData();
         const id = String(fd.get('id') ?? '');
         if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
@@ -203,6 +209,29 @@ export const actions: Actions = {
             return { success: true, message: `${r.title}: ${r.daysLeft} ימים נותרו${suffix}` };
         } catch (e) {
             return fail(500, { error: `שגיאה בקציבה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // תאריך תפוגה שרירותי מחלון הקציבה — המודעה יורדת בסוף היום שנבחר. שמור לסופר-אדמין
+    setExpiry: async (event) => {
+        await adminOf(event);
+        if (!isSuperAdmin(await event.locals.auth())) {
+            return fail(403, { error: 'קביעת תאריך תפוגה שמורה לסופר-אדמין' });
+        }
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        const expires = String(fd.get('expires') ?? '');
+        if (!id || !expires) return fail(400, { error: 'חסר תאריך תפוגה' });
+        const d = new Date(`${expires}T23:59:59`);
+        if (isNaN(d.getTime())) return fail(400, { error: 'תאריך לא תקין' });
+        try {
+            const r = await setAdExpiry(id, d.toISOString());
+            if (!r) return fail(404, { error: 'הפרסומת לא נמצאה' });
+            const day = new Date(r.expiresAt).toLocaleDateString('he-IL');
+            const suffix = r.daysLeft < 0 ? ' — התאריך שנקבע כבר עבר, המודעה ירדה מהאוויר' : '';
+            return { success: true, message: `${r.title}: תפוגה נקבעה ל-${day}${suffix}` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בקביעת התאריך: ${e instanceof Error ? e.message : e}` });
         }
     },
 

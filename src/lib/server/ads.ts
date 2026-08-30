@@ -763,6 +763,28 @@ export async function setAdDuration(
 }
 
 /**
+ * קובע תאריך תפוגה שרירותי (מחלון הקציבה). המשך (duration_days) נגזר
+ * ממנו ביחס ליום האישור, כדי שהתצוגה תמשיך להציג משך עקבי.
+ */
+export async function setAdExpiry(
+    id: string,
+    expiresIso: string,
+): Promise<{ title: string; expiresAt: string; daysLeft: number } | null> {
+    const ad = await getAd(id);
+    if (!ad) return null;
+    const expires = new Date(expiresIso);
+    if (isNaN(expires.getTime())) return null;
+    const from = ad.decidedAt || ad.submittedAt || new Date().toISOString();
+    const days = Math.max(0, Math.ceil((expires.getTime() - Date.parse(from)) / DAY_MS));
+    await mergeExtra(id, { duration_days: days, expires_at: expires.toISOString() });
+    return {
+        title: ad.title,
+        expiresAt: expires.toISOString(),
+        daysLeft: Math.ceil((expires.getTime() - Date.now()) / DAY_MS),
+    };
+}
+
+/**
  * השהיה: המודעה יורדת מהאוויר אבל שומרת את הימים שנותרו לה. בשונה
  * מהורדה לממתינות — המפרסם לא מפסיד ימים ששילם עליהם.
  */
