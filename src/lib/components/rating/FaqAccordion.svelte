@@ -7,18 +7,30 @@
         items,
         title = 'שאלות ותשובות',
         compact = false,
-    }: { items: FaqItem[]; title?: string; compact?: boolean } = $props();
+        id = undefined,
+        openFirst = 0,
+    }: {
+        items: FaqItem[];
+        title?: string;
+        compact?: boolean;
+        /** מזהה לעוגן (#faq) ולקישור aria בין הכותרת למקטע */
+        id?: string;
+        /** כמה פריטים ראשונים פתוחים כברירת מחדל — התשובה נראית כבר ב-SSR בלי לחיצה */
+        openFirst?: number;
+    } = $props();
+
+    const titleId = $derived(id ? `${id}-title` : undefined);
 </script>
 
-<section class="flex flex-col gap-2">
+<section {id} aria-labelledby={titleId} class="flex flex-col gap-2">
     {#if title}
-        <h2 class="font-black text-white {compact ? 'text-base' : 'text-lg md:text-xl'}">
+        <h2 id={titleId} class="font-black text-white {compact ? 'text-base' : 'text-lg md:text-xl'}">
             {title}
         </h2>
     {/if}
 
-    {#each items as item (item.q)}
-        <details class="faq-item rounded-2xl border border-white/10 bg-slate-800/80">
+    {#each items as item, i (item.q)}
+        <details class="faq-item rounded-2xl border border-white/10 bg-slate-800/80" open={i < openFirst}>
             <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-white">
                 <span>{item.q}</span>
                 <span class="faq-marker shrink-0 text-gray-500" aria-hidden="true">⌄</span>

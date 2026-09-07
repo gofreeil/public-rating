@@ -92,9 +92,10 @@
     <!-- סקר: מה הכי חשוב לציבור במשרתיו — צמוד להסבר על המדדים -->
     <SurveyPanel results={data.survey} myVote={data.mySurveyVote} loggedIn={data.loggedIn} {form} />
 
-    <!-- שאלות ותשובות — מקור אחד עם ה-JSON-LD למעלה -->
+    <!-- שאלות ותשובות — מקור אחד (FAQ_ITEMS) עם סכמת ה-FAQPage למעלה ועם /llms.txt.
+         שתי הראשונות פתוחות כדי שהתשובה "מה זה האתר" תיראה כבר ב-SSR בלי לחיצה. -->
     <div id="methodology">
-        <FaqAccordion items={FAQ_ITEMS} title="שאלות ותשובות על שיטת הדירוג" />
+        <FaqAccordion id="faq" items={FAQ_ITEMS} title="שאלות ותשובות על שיטת הדירוג" openFirst={2} />
     </div>
 
     <!-- השלב הבא -->

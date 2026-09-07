@@ -85,6 +85,7 @@ ${perGroup
 - ${SITE_URL}/officials/<id> — דף מדורג: ציון, התפלגות, פירוט לפי מדד וחוות דעת
 - ${SITE_URL}/compare?ids=<id>,<id> — השוואה בין מדורגים לפי כל המדדים
 - ${SITE_URL}/top-rated — מצטייני הציבור
+- ${SITE_URL}/about — אודות: החזון, המתודולוגיה המלאה ושאלות ותשובות (#faq)
 - ${SITE_URL}/about#methodology — המתודולוגיה המלאה
 - ${SITE_URL}/sitemap.xml — מפת אתר
 
