@@ -1,6 +1,6 @@
 import { redirect, fail } from '@sveltejs/kit';
 import { getUserByEmail } from '$lib/server/db';
-import { strapiLogin } from '$lib/server/strapiClient';
+import { strapiLogin, getStrapiMe, bestStrapiName, friendlyName } from '$lib/server/strapiClient';
 import { oauthEnabled } from '../../auth';
 import type { PageServerLoad, Actions } from './$types';
 
@@ -12,8 +12,21 @@ export const load: PageServerLoad = async (event) => {
         throw redirect(302, redirectTo);
     }
 
+    // זיהוי מראש דרך העוגייה המשותפת gofreeil-auth (.gofreeil.com): מי שכבר מחובר
+    // באתר אחר של יוצאים לחירות רואה "המשך כ-<שם>" בלחיצה אחת. עוגייה מתה או
+    // חסרה → null, וכפתור ה-SSO מוצג כאפשרות משנית בלבד (לא כהבטחה שתיכשל).
+    let ssoName: string | null = null;
+    const sharedJwt = event.cookies.get('gofreeil-auth');
+    if (sharedJwt) {
+        try {
+            const me = await getStrapiMe(sharedJwt);
+            if (me?.email) ssoName = friendlyName(bestStrapiName(me), me.email) || 'חבר הקהילה';
+        } catch { /* Strapi לא זמין - מציגים את הדף הרגיל */ }
+    }
+
     return {
         oauth: oauthEnabled,
+        ssoName,
         redirectTo:  event.url.searchParams.get('redirect') ?? '/',
         error:       event.url.searchParams.get('error') ?? null,
         registered:  event.url.searchParams.get('registered') === '1',

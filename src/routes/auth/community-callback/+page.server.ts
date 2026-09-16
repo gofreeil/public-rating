@@ -1,4 +1,5 @@
 import type { PageServerLoad } from './$types';
+import { oauthEnabled } from '../../../auth';
 
 /**
  * חזרה מ-SSO של "יוצאים לחירות" (community.gofreeil.com/sso).
@@ -10,5 +11,5 @@ export const load: PageServerLoad = async ({ url }) => {
     const raw = url.searchParams.get('returnTo') ?? '/';
     const returnTo = raw.startsWith('/') && !raw.startsWith('//') ? raw : '/';
     const error = url.searchParams.get('error');
-    return { returnTo, error };
+    return { returnTo, error, oauth: oauthEnabled };
 };
