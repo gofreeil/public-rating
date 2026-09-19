@@ -53,6 +53,14 @@
             תרומתם לעם — מדורגים על ידי האזרחים ומתוגמלים חברתית, לטובה ולרעה. כמו באתרי הדירוג
             הגדולים בעולם, רק שכאן הלקוח הוא העם.
         </p>
+        <p class="mt-2 text-sm leading-relaxed text-gray-300">
+            דירוג ציבורי הוא מיזם של התנועה החברתית <a
+                href="https://gofreeil.com"
+                target="_blank"
+                rel="noopener"
+                class="text-blue-400 hover:text-blue-300"
+            >יוצאים לחירות</a> ומופעל בהתנדבות.
+        </p>
     </section>
 
     <!-- איך זה עובד -->

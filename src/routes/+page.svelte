@@ -3,7 +3,7 @@
     import { GROUPS, groupByKey } from '$lib/rating/types';
     import { websiteSchema } from '$lib/rating/schema';
     import { absDate, isoDate, relDate } from '$lib/rating/time';
-    import { PARENT_BRAND, PARENT_URL } from '$lib/seo';
+    import { PARENT_BRAND } from '$lib/seo';
     import Seo from '$lib/components/rating/Seo.svelte';
     import OfficialCard from '$lib/components/rating/OfficialCard.svelte';
     import OfficialSearch from '$lib/components/rating/OfficialSearch.svelte';
@@ -39,18 +39,6 @@
         </h1>
         <p class="mt-2 text-sm text-gray-400 md:text-base">
             שקיפות, אחריות ודירוג אמיתי של נבחרי ועובדי הציבור — על ידי העם
-        </p>
-        <!-- שיוך גלוי לתנועה-האם מעל הקפל (לא רק בפוטר) כדי שגוגל יקשר "יוצאים לחירות" לאתר -->
-        <p class="mt-3">
-            <a
-                href={PARENT_URL}
-                target="_blank"
-                rel="noopener"
-                class="inline-flex items-center gap-1.5 rounded-full border border-[#3b5794] bg-[#1c2f5a] px-4 py-1.5 text-xs font-semibold text-gray-200 shadow-md transition-colors hover:bg-[#2a4379] hover:text-white md:text-sm"
-            >
-                <span aria-hidden="true">👉</span>
-                מיזם של התנועה החברתית {PARENT_BRAND}
-            </a>
         </p>
 
         <div class="mx-auto mt-4 max-w-xl">
