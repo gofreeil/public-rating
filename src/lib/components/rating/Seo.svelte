@@ -1,7 +1,7 @@
 <script lang="ts">
     // תגי SEO / שיתוף לדף בודד — title, description, canonical, Open Graph, JSON-LD
     import { page } from '$app/state';
-    import { DEFAULT_OG_IMAGE, SITE_NAME, absUrl, jsonLdScript, metaTrim } from '$lib/seo';
+    import { DEFAULT_OG_IMAGE, PARENT_BRAND, SITE_NAME, absUrl, jsonLdScript, metaTrim } from '$lib/seo';
 
     let {
         title = '',
@@ -12,6 +12,7 @@
         type = 'website',
         noindex = false,
         jsonLd = null,
+        keywords = '',
     }: {
         /** כותרת הדף בלי שם האתר (מתווסף אוטומטית) */
         title?: string;
@@ -25,9 +26,16 @@
         noindex?: boolean;
         /** אובייקט schema.org (או מערך) לתוצאות עשירות בגוגל */
         jsonLd?: unknown;
+        /** מילות מפתח (דף הבית בלבד) */
+        keywords?: string;
     } = $props();
 
-    const fullTitle = $derived(title ? `${title} — ${SITE_NAME}` : SITE_NAME);
+    const baseTitle = $derived(title ? `${title} — ${SITE_NAME}` : SITE_NAME);
+    /** כל כותרת מסתיימת ב"| יוצאים לחירות" — כמו בשאר אתרי הרשת, כדי שגוגל יקשר
+     *  בין התנועה לאתר וחיפוש "יוצאים לחירות דירוג ציבורי" יגיע לכאן. */
+    const fullTitle = $derived(
+        baseTitle.includes(PARENT_BRAND) ? baseTitle : `${baseTitle} | ${PARENT_BRAND}`,
+    );
     const desc = $derived(metaTrim(description));
     const canonical = $derived(absUrl(page.url.pathname));
     const ogImage = $derived(absUrl(image));
@@ -42,6 +50,9 @@
 <svelte:head>
     <title>{fullTitle}</title>
     <meta name="description" content={desc} />
+    {#if keywords}
+        <meta name="keywords" content={keywords} />
+    {/if}
     <link rel="canonical" href={canonical} />
     {#if noindex}
         <meta name="robots" content="noindex, nofollow" />

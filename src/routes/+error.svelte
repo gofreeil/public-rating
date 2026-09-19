@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-    <title>{page.status} — דירוג ציבורי</title>
+    <title>{page.status} — דירוג ציבורי | יוצאים לחירות</title>
 </svelte:head>
 
 <div class="mx-auto flex max-w-md flex-col items-center gap-3 py-16 text-center">

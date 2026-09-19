@@ -3,7 +3,7 @@
 // מטרה: תוצאות עשירות בגוגל + הבנה נכונה של האתר ע"י מנועי חיפוש ובוטים.
 // ============================================================
 
-import { DEFAULT_OG_IMAGE, SITE_NAME, SITE_TAGLINE, SITE_URL, absUrl, metaTrim } from '$lib/seo';
+import { DEFAULT_OG_IMAGE, PARENT_BRAND, PARENT_URL, SITE_NAME, SITE_TAGLINE, SITE_URL, absUrl, metaTrim } from '$lib/seo';
 import { FAQ_ITEMS } from './faq';
 import type { Group, OfficialStats, PublicReview, RatedOfficial, Official } from './types';
 
@@ -14,10 +14,15 @@ export function websiteSchema(officialCount: number, reviewCount: number): unkno
             '@context': 'https://schema.org',
             '@type': 'WebSite',
             name: SITE_NAME,
-            alternateName: SITE_TAGLINE,
+            alternateName: [
+                SITE_TAGLINE,
+                `${SITE_NAME} של ${PARENT_BRAND}`,
+                `${PARENT_BRAND} ${SITE_NAME}`,
+                'דירוג ציבורי gofreeil',
+            ],
             url: SITE_URL,
             inLanguage: 'he-IL',
-            description: `${officialCount} נבחרי ועובדי ציבור, ${reviewCount} דירוגי אזרחים`,
+            description: `${SITE_NAME} של תנועת ${PARENT_BRAND}: ${officialCount} נבחרי ועובדי ציבור, ${reviewCount} דירוגי אזרחים`,
             // תיבת החיפוש בתוצאות גוגל — מצביעה על /search שמסנן מדורגים בשרת
             potentialAction: {
                 '@type': 'SearchAction',
@@ -32,9 +37,11 @@ export function websiteSchema(officialCount: number, reviewCount: number): unkno
             '@context': 'https://schema.org',
             '@type': 'Organization',
             name: SITE_NAME,
+            alternateName: [`${SITE_NAME} של ${PARENT_BRAND}`, `${SITE_NAME} — ${PARENT_BRAND}`],
             url: SITE_URL,
             logo: absUrl('/images/public-rating-logo.png'),
-            description: 'כלי ביקורת אזרחי — הציבור מדרג את נבחריו ואת משרתיו',
+            description: `כלי ביקורת אזרחי של תנועת ${PARENT_BRAND} — הציבור מדרג את נבחריו ואת משרתיו`,
+            parentOrganization: { '@type': 'Organization', name: PARENT_BRAND, url: PARENT_URL },
         },
     ];
 }

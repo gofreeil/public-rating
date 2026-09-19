@@ -44,7 +44,8 @@
 </script>
 
 <svelte:head>
-	<title>דירוג ציבורי</title>
+	<!-- כותרת גיבוי בלבד: כל דף ציבורי דורס אותה דרך <Seo> -->
+	<title>דירוג ציבורי | יוצאים לחירות</title>
 	<link rel="icon" href="/images/public-rating.jpeg" type="image/jpeg" />
 	<!-- tabnav: מושבת לבינתיים - לא רשום על הדומיין הנוכחי -->
 	<!-- <script src="https://widget.tabnav.com/widget.min.js.gz" defer></script> -->

@@ -11,9 +11,13 @@ export const SITE_NAME = 'דירוג ציבורי';
 /** ניתן לעקוף ב-PUBLIC_SITE_URL (סביבת בדיקות/סטייג'ינג) */
 export const SITE_URL = (env.PUBLIC_SITE_URL || 'https://rating.gofreeil.com').replace(/\/$/, '');
 export const SITE_TAGLINE = 'הציבור מדרג את משרתיו';
+/** שם התנועה-האם. מצורף לכל <title> (ב-Seo.svelte), לתיאור ולסכימות — כדי שחיפוש
+ *  "יוצאים לחירות דירוג ציבורי" יגיע לכאן ולא לאתרים זרים בשם דומה. */
+export const PARENT_BRAND = 'יוצאים לחירות';
+export const PARENT_URL = 'https://gofreeil.com';
 export const DEFAULT_OG_IMAGE = '/images/public-rating.jpeg';
 export const DEFAULT_DESCRIPTION =
-    'דירוג ציבורי — שקיפות, אחריות ודירוג אמיתי של חברי כנסת, שופטים ועובדי ציבור על ידי העם. ' +
+    'דירוג ציבורי של תנועת יוצאים לחירות — שקיפות, אחריות ודירוג אמיתי של חברי כנסת, שופטים ועובדי ציבור על ידי העם. ' +
     'חמישה מדדים: זמנים ותקנים, תרומה לעם, ראיית המציאות, ניתוח לגופו של עניין ושקיפות.';
 
 /** כתובת מוחלטת לנתיב יחסי (canonical / og:image חייבים להיות מוחלטים) */

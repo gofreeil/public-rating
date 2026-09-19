@@ -80,7 +80,7 @@
 </script>
 
 <svelte:head>
-	<title>{tFn("login_title")}</title>
+	<title>{tFn("login_title")} | יוצאים לחירות</title>
 </svelte:head>
 
 <div
