@@ -32,7 +32,7 @@
     const now = Date.now();
 </script>
 
-<section id="inquiries" class="scroll-mt-20 rounded-2xl border border-white/10 bg-slate-800/80 p-4">
+<section id="inquiries" class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
     <div class="flex flex-wrap items-baseline gap-2">
         <h2 class="text-lg font-bold text-white">📨 פניות ציבור ({inquiries.length})</h2>
         {#if answeredCount > 0}

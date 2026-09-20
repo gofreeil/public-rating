@@ -62,7 +62,7 @@
 
 <article
     id={anchor}
-    class="review-card scroll-mt-24 rounded-2xl border p-3 {review.mine
+    class="review-card rounded-2xl border p-3 {review.mine
         ? 'border-blue-400/30 bg-blue-500/[0.06]'
         : 'border-white/10 bg-slate-800/80'}"
     data-official={officialId}

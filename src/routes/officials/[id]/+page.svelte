@@ -234,7 +234,7 @@
     <TrendChart reviews={data.reviews} />
 
     <!-- דרגו בעצמכם -->
-    <section id="rate" class="scroll-mt-20 rounded-2xl border border-white/10 bg-slate-800/80 p-4">
+    <section id="rate" class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
         <h2 class="mb-3 text-lg font-bold text-white">דרגו בעצמכם</h2>
 
         {#if data.me}
@@ -262,7 +262,7 @@
     </section>
 
     <!-- דירוגי הציבור -->
-    <section id="public-reviews" class="flex scroll-mt-20 flex-col gap-2">
+    <section id="public-reviews" class="flex flex-col gap-2">
         <div class="flex flex-wrap items-baseline gap-3">
             <h2 class="text-lg font-bold text-white">דירוגי הציבור ({stats.count})</h2>
             {#if data.isOfficialUser}

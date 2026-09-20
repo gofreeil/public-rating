@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { headerHeight } from '$lib/actions/headerHeight';
     import { t, locale } from 'svelte-i18n';
 	import { get } from 'svelte/store';
     import { goto } from "$app/navigation";
@@ -158,7 +159,7 @@
 
 </script>
 
-<header
+<header use:headerHeight
     class="sticky top-0 z-50 border-b-2 md:border-b-4 border-blue-600 shadow-lg backdrop-blur-lg"
     style="background: linear-gradient(to bottom, rgba(17, 24, 39, 0.88) 0%, rgba(17, 24, 39, 0.88) 66%, rgba(17, 24, 39, 0.1) 100%);"
 >
