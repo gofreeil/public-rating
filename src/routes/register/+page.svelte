@@ -72,8 +72,11 @@
 				<div class="text-center mb-8">
 					<div class="flex justify-center mb-4">
 						<img
-							src="/images/public-rating-logo.png"
-							alt="דירוג ציבורי"
+							src="/images/public-rating-logo.webp"
+							alt="לוגו דירוג ציבורי"
+							width="64"
+							height="64"
+							decoding="async"
 							class="h-16 w-16 rounded-2xl object-cover bg-white shadow-xl"
 						/>
 					</div>
@@ -297,7 +300,7 @@
 							       transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl
 							       disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
 						>
-							<img src="/images/yotzim-lecherut.png" alt="יוצאים לחירות" class="h-6 w-6 rounded-full object-cover bg-white flex-shrink-0" />
+							<img src="/images/yotzim-lecherut.webp" alt="" width="24" height="24" loading="lazy" decoding="async" class="h-6 w-6 rounded-full object-cover bg-white flex-shrink-0" />
 							<span>המשך דרך "יוצאים לחירות"</span>
 						</button>
 					</div>

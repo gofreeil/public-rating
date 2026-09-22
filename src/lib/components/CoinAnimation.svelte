@@ -124,7 +124,7 @@
 				</svg>
 			</div>
 			<div class="travel-dest">
-				<img src="/images/kupat-hair.png" alt="קופת העיר" class="travel-bag"/>
+				<img src="/images/kupat-hair.webp" alt="" width="400" height="301" loading="lazy" decoding="async" class="travel-bag"/>
 				<span class="travel-sub">קופת העיר</span>
 			</div>
 		</div>
@@ -145,7 +145,7 @@
 				</svg>
 				{/each}
 			</div>
-			<img src="/images/kupat-hair.png" alt="קופת העיר" class="bag-fill"/>
+			<img src="/images/kupat-hair.webp" alt="" width="400" height="301" loading="lazy" decoding="async" class="bag-fill"/>
 		</div>
 		<div class="counter-wrap">
 			<span class="counter-label">סכום בקופה</span>

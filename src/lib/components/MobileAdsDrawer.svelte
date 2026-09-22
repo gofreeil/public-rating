@@ -255,7 +255,7 @@
 					<!-- תמונה + מעגל מילוי -->
 					<div class="relative flex-shrink-0">
 						{#if layoutUser.avatar_url}
-							<img src={layoutUser.avatar_url} alt="avatar"
+							<img src={layoutUser.avatar_url} alt="" width="64" height="64" loading="lazy" decoding="async"
 								class="w-16 h-16 rounded-full object-cover border-2 border-purple-500/40" />
 						{:else}
 							<div class="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600">
@@ -295,7 +295,7 @@
 
 					<!-- יתרה -->
 					<div class="flex-shrink-0 flex flex-col items-center gap-1 mr-auto">
-						<img src="/images/wallet.png" alt="ארנק" class="w-10 h-10 object-contain" />
+						<img src="/images/wallet.webp" alt="ארנק — יתרה" width="40" height="40" loading="lazy" decoding="async" class="w-10 h-10 object-contain" />
 						<span class="text-green-400 text-xs font-black">{layoutUser.balance ?? 0}₪</span>
 					</div>
 
@@ -304,7 +304,7 @@
 			{:else if currentUser}
 			<a href="/my-ratings" class="profile-btn" onclick={closeAll}>
 				{#if currentUser.avatar_url}
-				<img src={currentUser.avatar_url} alt="avatar" class="profile-avatar" />
+				<img src={currentUser.avatar_url} alt="" loading="lazy" decoding="async" class="profile-avatar" />
 				{:else}
 				<span class="profile-avatar-placeholder">👤</span>
 				{/if}
@@ -353,6 +353,7 @@
 						alt=""
 						aria-hidden="true"
 						class="benefit-img-thumb"
+						loading="lazy"
 						decoding="async"
 					/>
 					<!-- שלב 2: תמונה מלאה - מופיעה בהדרגה אחרי טעינה -->
@@ -360,6 +361,7 @@
 						src={ad.image}
 						alt={ad.title}
 						class="benefit-img"
+						loading="lazy"
 						decoding="async"
 						style={ad.imageScale ? `transform: scale(${ad.imageScale});` : ''}
 						onload={(e) => (e.currentTarget as HTMLImageElement).classList.add('loaded')}

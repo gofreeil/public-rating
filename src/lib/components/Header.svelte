@@ -176,8 +176,11 @@
                     >
                         <div class="relative">
                             <img
-                                src="/images/public-rating-logo.png"
+                                src="/images/public-rating-logo.webp"
                                 alt=""
+                                width="40"
+                                height="40"
+                                decoding="async"
                                 class="h-10 w-10 object-cover flex-shrink-0 rounded-lg scale-[1.5]"
                             />
                             <div
@@ -241,6 +244,9 @@
                                     <img
                                         src={currentUser.avatar_url}
                                         alt=""
+                                        width="36"
+                                        height="36"
+                                        decoding="async"
                                         class="h-9 w-9 rounded-full object-cover border-2 border-purple-500/40 shadow-lg"
                                     />
                                 {:else}
@@ -272,8 +278,11 @@
                         class="flex h-20 w-20 items-center justify-center rounded-xl shadow-lg transition-transform hover:scale-105 overflow-hidden"
                     >
                         <img
-                            src="/images/public-rating-logo.png"
-                            alt=""
+                            src="/images/public-rating-logo.webp"
+                            alt="דירוג ציבורי — לדף הבית"
+                            width="80"
+                            height="80"
+                            decoding="async"
                             class="h-full w-full object-cover rounded-xl scale-[1.5]"
                         />
                     </a>
@@ -399,6 +408,9 @@
                                     <img
                                         src={currentUser.avatar_url}
                                         alt=""
+                                        width="56"
+                                        height="56"
+                                        decoding="async"
                                         class="h-14 w-14 rounded-full object-cover border-2 border-purple-500/40
                                                shadow-lg hover:border-purple-400 transition-all"
                                     />

@@ -28,8 +28,12 @@
     <section class="text-center">
         <div class="relative mx-auto inline-block">
             <img
-                src="/images/public-rating.jpeg"
-                alt="דירוג ציבורי"
+                src="/images/public-rating.webp"
+                alt="לוגו דירוג ציבורי — הציבור מדרג את משרתיו"
+                width="640"
+                height="960"
+                fetchpriority="high"
+                decoding="async"
                 class="max-h-56 w-auto rounded-2xl object-contain"
             />
             <div class="absolute inset-0 rounded-2xl" style="box-shadow: inset 0 0 30px 10px #0f172a;"></div>
@@ -64,7 +68,7 @@
     <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {#each GROUPS as g (g.key)}
             <a href={g.route} class="cat-card flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-800/80 transition-colors">
-                <img src={g.photo} alt={g.title} class="aspect-video w-full object-cover" loading="lazy" />
+                <img src={g.photo} alt={g.photoAlt} width="800" height="450" class="aspect-video w-full object-cover" loading="lazy" decoding="async" />
                 <span class="flex flex-col gap-1 p-4">
                     <span class="text-center font-black text-white">{g.title}</span>
                     <span class="text-xs leading-relaxed text-gray-400">{g.blurb}</span>

@@ -21,8 +21,12 @@
                 class="flex items-center gap-3 hover:opacity-80 transition-opacity"
             >
                 <img
-                    src="/images/yotzim-lecherut.png"
-                    alt="יוצאים לחירות"
+                    src="/images/yotzim-lecherut.webp"
+                    alt=""
+                    width="400"
+                    height="228"
+                    loading="lazy"
+                    decoding="async"
                     class="h-28 w-28 md:h-32 md:w-32 object-contain rounded-lg hover:scale-105 transition-transform flex-shrink-0"
                 />
 

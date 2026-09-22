@@ -182,6 +182,10 @@
                 src={logo}
                 alt=""
                 draggable="false"
+                width="48"
+                height="48"
+                loading="lazy"
+                decoding="async"
                 class="absolute z-10 h-12 w-12 border-2 border-white/40 object-cover shadow-lg
                     {s.logo_shape === 'circle' ? 'rounded-full' : 'rounded-lg'}
                     {logoFree ? '' : s.logo_position === 'top' ? 'top-2 right-2' : 'bottom-16 right-2'}

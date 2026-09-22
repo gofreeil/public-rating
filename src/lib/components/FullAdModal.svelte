@@ -126,7 +126,9 @@
         <div class="h-64 overflow-hidden relative">
             <img
                 src={ad.image}
-                alt={ad.title}
+                alt=""
+                loading="lazy"
+                decoding="async"
                 class="w-full h-full object-cover"
             />
             <div

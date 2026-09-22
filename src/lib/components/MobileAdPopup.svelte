@@ -70,7 +70,8 @@
         <div class="relative h-44 w-full">
             <img
                 src={popup.ad.image}
-                alt={popup.ad.title}
+                alt=""
+                decoding="async"
                 class="w-full h-full object-cover"
             />
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>

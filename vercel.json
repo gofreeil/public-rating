@@ -2,5 +2,25 @@
   "rewrites": [
     { "source": "/favicon.ico", "destination": "/favicon.svg" },
     { "source": "/favicon.png", "destination": "/favicon.svg" }
+  ],
+  "headers": [
+    {
+      "source": "/images/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=604800, s-maxage=31536000, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/fonts/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=604800, s-maxage=31536000, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/favicon.svg",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=604800, s-maxage=31536000, stale-while-revalidate=86400" }
+      ]
+    }
   ]
 }

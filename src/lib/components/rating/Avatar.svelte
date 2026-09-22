@@ -37,7 +37,10 @@
     <img
         src={image}
         alt=""
+        width={size}
+        height={size}
         loading="lazy"
+        decoding="async"
         referrerpolicy="no-referrer"
         class="avatar rounded-full border border-white/15 bg-white/10 object-cover object-top shrink-0 select-none"
         style={vars}

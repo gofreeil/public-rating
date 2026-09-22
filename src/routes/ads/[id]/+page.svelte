@@ -76,6 +76,9 @@
                     <img
                         src={logo}
                         alt=""
+                        width="64"
+                        height="64"
+                        decoding="async"
                         class="mx-auto mb-3 h-16 w-16 rounded-full border-2 border-white/30 object-cover shadow-lg {heroImage
                             ? 'md:mx-0'
                             : ''}"
@@ -93,11 +96,16 @@
             </div>
 
             {#if heroImage}
-                <img
-                    src={heroImage}
-                    alt=""
-                    class="mx-auto max-h-56 w-auto max-w-full rounded-xl object-contain shadow-lg md:max-h-72"
-                />
+                <!-- מידות התמונה לא ידועות מראש (העלאת מפרסם) — העטיפה שומרת גובה כדי שהדף לא יקפוץ בטעינה -->
+                <div class="flex min-h-56 items-center justify-center md:min-h-72">
+                    <img
+                        src={heroImage}
+                        alt=""
+                        fetchpriority="high"
+                        decoding="async"
+                        class="mx-auto max-h-56 w-auto max-w-full rounded-xl object-contain shadow-lg md:max-h-72"
+                    />
+                </div>
             {/if}
         </div>
     </section>
@@ -164,7 +172,7 @@
                 {#each products as p (p.id)}
                     <article class="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-800/80">
                         {#if safeDataImage(p.image)}
-                            <img src={safeDataImage(p.image)} alt="" class="h-24 w-full object-cover" />
+                            <img src={safeDataImage(p.image)} alt="" loading="lazy" decoding="async" class="h-24 w-full object-cover" />
                         {/if}
                         <div class="flex flex-1 flex-col p-3">
                             <h3 class="text-sm font-bold text-white">{p.name}</h3>

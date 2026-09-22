@@ -174,7 +174,7 @@
 						<!-- אווטאר + שם -->
 						<div class="flex items-center gap-3 flex-1 min-w-0">
 							{#if user.avatar_url}
-								<img src={user.avatar_url} alt="" class="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+								<img src={user.avatar_url} alt="" width="40" height="40" loading="lazy" decoding="async" class="w-10 h-10 rounded-full object-cover flex-shrink-0" />
 							{:else}
 								<div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center flex-shrink-0 text-sm font-bold">
 									{(user.name ?? '?')[0]}

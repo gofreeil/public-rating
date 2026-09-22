@@ -47,7 +47,10 @@
                         <img
                             src={ad.mainImage}
                             alt=""
+                            width="64"
+                            height="64"
                             loading="lazy"
+                            decoding="async"
                             class="h-16 w-16 shrink-0 rounded-xl object-cover"
                         />
                     {:else}

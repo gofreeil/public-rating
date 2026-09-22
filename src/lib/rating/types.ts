@@ -32,6 +32,8 @@ export interface Group {
     icon: string;
     /** תמונת הבאנר בכרטיס הקטגוריה בדף הבית (נתיב ב-static) */
     photo: string;
+    /** תיאור התמונה לקוראי מסך */
+    photoAlt: string;
     /** תווית שדה הארגון בטפסים (סיעה / ערכאה / משרד) */
     orgLabel: string;
     /** תפקידים מוצעים בטופס הוספה */
@@ -49,7 +51,8 @@ export const GROUPS: Group[] = [
         title: 'חברי כנסת ושרים',
         singular: 'חבר כנסת',
         icon: '🏛️',
-        photo: '/images/groups/knesset.jpg',
+        photo: '/images/groups/knesset.webp',
+        photoAlt: 'חזית משכן הכנסת בירושלים עם דגלי ישראל',
         orgLabel: 'סיעה / מפלגה',
         positions: ['חבר כנסת', 'שר', 'ראש הממשלה', 'יו"ר הכנסת', 'ראש האופוזיציה'],
         blurb: 'נבחרי הציבור בכנסת ובממשלה — חקיקה, תקציב וביצוע',
@@ -61,7 +64,8 @@ export const GROUPS: Group[] = [
         title: 'שופטים',
         singular: 'שופט',
         icon: '⚖️',
-        photo: '/images/groups/judges.jpg',
+        photo: '/images/groups/judges.webp',
+        photoAlt: 'בניין בית המשפט העליון בירושלים ממבט על',
         orgLabel: 'ערכאה / בית משפט',
         positions: ['נשיא בית המשפט העליון', 'שופט עליון', 'שופט מחוזי', 'שופט שלום', 'רשם'],
         blurb: 'הרשות השופטת — הכרעות, זמני טיפול והגינות דיונית',
@@ -73,7 +77,8 @@ export const GROUPS: Group[] = [
         title: 'עובדי ציבור',
         singular: 'עובד ציבור',
         icon: '🏢',
-        photo: '/images/groups/public-servants.jpg',
+        photo: '/images/groups/public-servants.webp',
+        photoAlt: 'בניין בנק ישראל בקריית הממשלה בירושלים',
         orgLabel: 'משרד / רשות',
         positions: ['מנכ"ל משרד', 'יועץ', 'נציב', 'מבקר', 'ראש רשות', 'פקיד בכיר'],
         blurb: 'הפקידות הבכירה והרשויות — שירות, תקנים ושקיפות',
