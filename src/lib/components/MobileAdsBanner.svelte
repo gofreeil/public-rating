@@ -29,12 +29,6 @@
             color: 'from-green-600 to-emerald-600'
         },
         {
-            title: 'גידול ביתי',
-            summary: 'מערכת לגידול ביתי (בקרוב)',
-            url: 'https://www.melecshop.com/page/free',
-            color: 'from-teal-500 to-teal-600'
-        },
-        {
             title: 'בעלי מקצוע כשירים',
             summary: 'מחפש בעל מקצוע איכותי?',
             url: 'https://index.gofreeil.com/',
