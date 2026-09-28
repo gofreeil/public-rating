@@ -52,12 +52,13 @@
     function shortTitle(t: string): string {
         return t.length > 22 ? t.slice(0, 21) + '…' : t;
     }
-    // הטור מציג רביעייה עוקבת אחת בכל רגע (1-4, אחריה 5-8... — ראו RightAdBanner).
-    // הסימון כאן משקף את זה: צבע לכל רביעייה (= מה שמוצג יחד), אות לרביעייה
-    // ושם-מיקום בתוך הרביעייה (רקע בהיר בלבד — כהה נשבר בהדגשת המערכת)
+    // רביעייה = המקומות שמתחלפים באותה משבצת בטור: א׳ = 1,5,9,13 (העליונה),
+    // ב׳ = 2,6,10,14, ג׳ = 3,7,11,15, ד׳ = 4,8,12,16 (התחתונה). הטור עצמו מציג
+    // 1-4 יחד, אחריהם 5-8 וכו' (ראו RightAdBanner) - אחד מכל רביעייה בכל רגע.
+    // צבע ואות לכל רביעייה (רקע בהיר בלבד — כהה נשבר בהדגשת המערכת)
     const GROUP_LETTERS = ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח'];
     const POS_NAMES = ['עליונה', 'שנייה', 'שלישית', 'תחתונה'];
-    function slotGroup(n: number): number { return Math.ceil(n / 4); }
+    function slotGroup(n: number): number { return ((n - 1) % 4) + 1; }
     function slotGroupLetter(n: number): string {
         return GROUP_LETTERS[slotGroup(n) - 1] ?? String(slotGroup(n));
     }
@@ -382,7 +383,7 @@
                             <div class="flex flex-wrap items-center gap-2 border-t border-white/10 pt-2">
                                 <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-lg border border-black/20 px-1.5 text-xs font-black whitespace-nowrap"
                                       style="background:{slotOptionBg(slotN)};color:#111"
-                                      title="רביעייה {slotGroupLetter(slotN)}׳ · הכרטיס ה{slotPosName(slotN)} בה">
+                                      title="רביעייה {slotGroupLetter(slotN)}׳ · המשבצת ה{slotPosName(slotN)} בטור">
                                     {slotN} · {slotGroupLetter(slotN)}׳
                                 </span>
                                 <span class="text-xs font-bold text-gray-400">
@@ -398,7 +399,7 @@
                                         <!-- כל רביעייה תחת כותרת משלה — הקשר מספר↔רביעייה קריא במילים, לא רק
                                              בצבע; מקום תפוס שומר את צבע הרביעייה ומסומן באדום מודגש -->
                                         {#each groupSlotOptions(slotOptions) as grp (grp.letter)}
-                                            <optgroup label="— רביעייה {grp.letter}׳ (מוצגות יחד) —">
+                                            <optgroup label="— רביעייה {grp.letter}׳ · המשבצת ה{slotPosName(grp.nums[0])} בטור —">
                                                 {#each grp.nums as n (n)}
                                                     {@const occ = slotOccupants.get(n)}
                                                     {@const takenByOther = !!occ && occ.id !== ad.id}
