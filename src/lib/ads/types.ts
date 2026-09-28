@@ -89,6 +89,8 @@ export function isLogoFree(style: Partial<AdCardStyle>): boolean {
 
 /** הצורה המלאה בשרת — כוללת שדות שלעולם לא עוזבים אותו */
 export interface SubmittedAd {
+    /** כרטיס מוצר מחנות החירות (מסונכרן מקהילה בשכונה, extra_fields.shop_product) */
+    shop?: boolean;
     /** documentId — מזהה ציבורי, מופיע ב-/ads/[id] ובמפתחות המדדים */
     id: string;
     status: AdStatus;
@@ -144,6 +146,8 @@ export interface SubmittedAd {
 
 /** מה שהטור הימני ופרסומת הנייד מקבלים — בלי שום זהות */
 export interface ApprovedAdPublic {
+    /** כרטיס מוצר מחנות החירות - מוצג בלי כפתור המחיר */
+    shop?: boolean;
     id: string;
     title: string;
     subtitle: string;

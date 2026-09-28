@@ -66,16 +66,30 @@
             {countdown}
         </button>
 
-        <!-- Ad image -->
-        <div class="relative h-44 w-full">
+        <!-- Ad image. בלי CTA (כרטיס מוצר מהחנות) - התמונה היא הקישור -->
+        {#snippet adImage(src: string)}
             <img
-                src={popup.ad.image}
+                {src}
                 alt=""
                 decoding="async"
                 class="w-full h-full object-cover"
             />
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-        </div>
+        {/snippet}
+        {#if popup.ad.cta}
+            <div class="relative h-44 w-full">
+                {@render adImage(popup.ad.image)}
+            </div>
+        {:else}
+            <a href={popup.ad.href}
+               target={popup.ad.internal ? undefined : "_blank"}
+               rel={popup.ad.internal ? undefined : "noopener noreferrer"}
+               aria-label={popup.ad.title}
+               onclick={() => closeAdPopup()}
+               class="relative block h-44 w-full">
+                {@render adImage(popup.ad.image)}
+            </a>
+        {/if}
 
         <!-- Ad content -->
         <div class="bg-[#0f172a] p-4">
@@ -87,7 +101,8 @@
             >
                 {popup.ad.title}
             </h3>
-            <p class="text-gray-300 text-sm mb-3 leading-snug">{popup.ad.description}</p>
+            <p class="text-gray-300 text-sm leading-snug" class:mb-3={!!popup.ad.cta}>{popup.ad.description}</p>
+            {#if popup.ad.cta}
             <!-- דף נחיתה של מפרסם משולם הוא יעד פנימי (/ads/<id>) ונפתח
                  באותה לשונית; אתרי הרשת ממשיכים להיפתח בלשונית חדשה. -->
             <a
@@ -100,6 +115,7 @@
             >
                 ← {popup.ad.cta}
             </a>
+            {/if}
         </div>
     </div>
 </div>

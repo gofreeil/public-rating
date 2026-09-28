@@ -48,7 +48,8 @@ function registerToPopup(list: ApprovedAdPublic[]): void {
                 id:          a.id,
                 title:       a.title,
                 description: a.subtitle,
-                cta:         a.cta || a.title,
+                // כרטיס מוצר מהחנות - בלי כפתור המחיר (התמונה היא הקישור)
+                cta:         a.shop ? '' : a.cta || a.title,
                 href:        `/ads/${a.id}`,
                 internal:    true,
                 image:       a.mainImage,

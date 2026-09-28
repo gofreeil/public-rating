@@ -21,6 +21,7 @@
         mainImage = '',
         logo = '',
         style = {},
+        hideCta = false,
         editable = false,
         onmove = undefined,
         onlogomove = undefined,
@@ -33,6 +34,8 @@
         mainImage?: string;
         logo?: string;
         style?: Partial<AdCardStyle>;
+        /** בלי רצועת ה-CTA בתחתית (כרטיס מוצר מהחנות) - התמונה ממלאת את הגובה */
+        hideCta?: boolean;
         /** מצב עריכה — גרירת התמונה בתוך המסגרת */
         editable?: boolean;
         onmove?: (next: { image_x: number; image_y: number }) => void;
@@ -245,12 +248,14 @@
         {/if}
     </div>
 
+    {#if !hideCta}
     <div
         class="p-2.5 text-center"
         style="background: {gradientCss(gradientId)}; color: {gradientInk(gradientId)}"
     >
         <span class="text-xs leading-tight font-bold">{cta || 'לפרטים'}</span>
     </div>
+    {/if}
 </div>
 
 <style>

@@ -73,10 +73,16 @@
                         {/if}
                     </span>
 
+                    <!-- כרטיס מוצר מהחנות - בלי כפתור המחיר -->
+
+                    {#if !ad.shop}
+
                     <span
                         class="shrink-0 rounded-lg px-3 py-1.5 text-xs font-bold"
                         style="background: {gradientCss(ad.gradientId)}; color: {gradientInk(ad.gradientId)}"
                     >{ad.cta}</span>
+
+                    {/if}
                 </a>
             {/each}
         </div>

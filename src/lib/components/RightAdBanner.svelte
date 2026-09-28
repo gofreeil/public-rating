@@ -79,6 +79,7 @@
                         mainImage={item.ad.mainImage}
                         logo={item.ad.logo}
                         style={item.ad.style}
+                        hideCta={item.ad.shop === true}
                     />
                 </a>
             {:else}

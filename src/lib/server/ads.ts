@@ -149,6 +149,7 @@ function mapAd(item: StrapiItem): SubmittedAd {
         // יחזיק ישנה
         imgVersion: imageStamp(logo, mainImage, landing.image, ...landing.products.map((p) => p.image)),
         style: normalizeStyle(x.style),
+        shop: typeof x.shop_product === 'string' && x.shop_product !== '',
         landing,
 
         ownerId: item.user_id ?? null,
@@ -265,6 +266,7 @@ export function toApprovedPublic(ad: SubmittedAd): ApprovedAdPublic {
         logo: adImageUrl(ad, 'logo'),
         mainImage: adImageUrl(ad, 'main'),
         style: ad.style,
+        shop: ad.shop === true,
     };
 }
 
