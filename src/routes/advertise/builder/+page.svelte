@@ -163,7 +163,7 @@
             <div class="grid gap-3 sm:grid-cols-2">
                 <label class="block sm:col-span-2">
                     <span class={labelCls}>כותרת * (עד 35)</span>
-                    <input bind:value={title} required maxlength="35" class={inputCls} />
+                    <input bind:value={title} required maxlength="40" class={inputCls} />
                 </label>
                 <label class="block sm:col-span-2">
                     <span class={labelCls}>שורת משנה (עד 70)</span>

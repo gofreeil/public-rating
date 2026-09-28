@@ -215,8 +215,8 @@
                 }}
             >
                 <label class="block sm:col-span-2">
-                    <span class="mb-1 block text-xs font-semibold text-gray-400">כותרת * (עד 35 תווים)</span>
-                    <input name="title" required maxlength="35" class={inputCls} />
+                    <span class="mb-1 block text-xs font-semibold text-gray-400">כותרת * (עד 40 תווים)</span>
+                    <input name="title" required maxlength="40" class={inputCls} />
                 </label>
                 <label class="block sm:col-span-2">
                     <span class="mb-1 block text-xs font-semibold text-gray-400">שורת משנה (עד 70)</span>

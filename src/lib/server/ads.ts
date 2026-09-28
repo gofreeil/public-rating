@@ -137,7 +137,7 @@ function mapAd(item: StrapiItem): SubmittedAd {
     return {
         id: item.documentId,
         status: fromItemStatus(item.status1),
-        title: clamp(item.label, 35),
+        title: clamp(item.label, 40),
         subtitle: clamp(item.description, 70),
         hoverText: clamp(x.hover_text, 90),
         cta: clamp(x.cta, 30) || 'לפרטים',
@@ -171,7 +171,7 @@ function mapAd(item: StrapiItem): SubmittedAd {
         pausedDaysLeft: typeof x.paused_days_left === 'number' ? x.paused_days_left : undefined,
         // מפרסם חוזר: הקישור לגרסה הקודמת ולמי שהחליפה אותה
         replacesAdId: typeof x.replaces_ad_id === 'string' ? x.replaces_ad_id : undefined,
-        replacesTitle: typeof x.replaces_title === 'string' ? clamp(x.replaces_title, 35) : undefined,
+        replacesTitle: typeof x.replaces_title === 'string' ? clamp(x.replaces_title, 40) : undefined,
         supersededBy: typeof x.superseded_by === 'string' ? x.superseded_by : undefined,
     };
 }
@@ -526,7 +526,7 @@ export async function submitAd(input: SubmitAdInput): Promise<SubmitAdResult> {
     const res = await strapiPost<{ data: StrapiItem }>(ITEMS, {
         data: {
             category: AD_CATEGORY,
-            label: clamp(input.title, 35),
+            label: clamp(input.title, 40),
             description: clamp(input.subtitle, 70),
             user_id: input.ownerId,
             status1: 'pending',
@@ -631,7 +631,7 @@ export async function updateAdContent(
             edited_at: new Date().toISOString(),
             bytes,
         },
-        { label: clamp(patch.title, 35), description: clamp(patch.subtitle, 70) },
+        { label: clamp(patch.title, 40), description: clamp(patch.subtitle, 70) },
     );
 }
 
