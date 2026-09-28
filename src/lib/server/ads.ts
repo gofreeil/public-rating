@@ -188,6 +188,23 @@ export function isExpired(ad: SubmittedAd, now = Date.now()): boolean {
     return Number.isFinite(t) && t < now;
 }
 
+/**
+ * מסנן גרסאות שהוחלפו: מי שסומנה supersededBy, וגם מי שיש לה באותה רשימה
+ * יורשת מאושרת (עדכון שלה שכבר אושר) — גם כשסימון ההחלפה לא נכתב, למשל
+ * כשה-PUT של ההורדה נכשל אחרי שהאישור כבר עבר. בלי זה אותה פרסומת הופיעה
+ * פעמיים: הגרסה החדשה "באוויר" והישנה "פג התוקף", באותו מקום בטור.
+ * הסינון הוא לפי הרשימה שביד: הממתינה עדיין לא מחליפה כלום, ולכן הישנה
+ * נשארת גלויה (ובאוויר) עד שהעדכון מאושר.
+ */
+function withoutReplaced(list: SubmittedAd[]): SubmittedAd[] {
+    const replaced = new Set(
+        list
+            .filter((a) => a.status === 'approved' && a.replacesAdId && !a.supersededBy)
+            .map((a) => a.replacesAdId as string),
+    );
+    return list.filter((a) => !a.supersededBy && !replaced.has(a.id));
+}
+
 // ============================================================
 // הגשת תמונות המודעה ככתובת, לא כ-base64 בתוך הנתונים
 // ------------------------------------------------------------
@@ -305,8 +322,8 @@ export async function listApproved(): Promise<ApprovedAdPublic[]> {
     }
 
     const now = Date.now();
-    const data = rows
-        .map(mapAd)
+    // גרסה שהוחלפה בעדכון מאושר לא מוצגת לצד היורשת שלה
+    const data = withoutReplaced(rows.map(mapAd))
         .filter((ad) => !isExpired(ad, now))
         // מודעה מושהית יורדת מהאוויר ושומרת את הימים שנותרו לה
         .filter((ad) => !ad.paused)
@@ -333,14 +350,18 @@ export async function getAd(id: string): Promise<SubmittedAd | undefined> {
     return mapAd(res.data);
 }
 
-/** כל המודעות לניהול — כולל ממתינות ודחויות, בלי מוסרות */
+/**
+ * כל המודעות לניהול — כולל ממתינות ודחויות, בלי מוסרות.
+ * גרסה שהוחלפה בעדכון מאושר לא מוצגת: היא לא "נדחתה" ולא ממתינה —
+ * היא ההיסטוריה של פרסומת שכבר רצה על האתר בגרסה חדשה יותר.
+ */
 export async function listAllForAdmin(): Promise<SubmittedAd[]> {
     const rows = await fetchAds({
         'filters[status1][$ne]': 'deleted',
         sort: 'createdAt:desc',
         'pagination[limit]': '100',
     });
-    return rows.map(mapAd);
+    return withoutReplaced(rows.map(mapAd));
 }
 
 /**
@@ -384,7 +405,8 @@ export async function listForOwner(userId: string): Promise<SubmittedAd[]> {
         sort: 'createdAt:desc',
         'pagination[limit]': '50',
     });
-    return rows.map(mapAd);
+    // גרסה שהוחלפה בעדכון מאושר יורדת מהרשימה — הפרסומת מופיעה פעם אחת
+    return withoutReplaced(rows.map(mapAd));
 }
 
 // ============================================================
@@ -491,8 +513,9 @@ async function findPredecessors(
 
 /**
  * מוציא גרסה ישנה מהמחזור אחרי שגרסה מעודכנת נכנסה במקומה. הסטטוס
- * 'rejected' הוא הארכיון — המודעה יורדת מהאוויר ומהתור אבל נשארת במסך
- * הניהול עם הסיבה, ואפשר להחזיר אותה. שום דבר לא נמחק.
+ * 'rejected' הוא הארכיון — המודעה יורדת מהאוויר ומהתור, והסימון
+ * superseded_by מסתיר אותה מהרשימות (withoutReplaced) כדי שלא תופיע לצד
+ * היורשת שלה. הרשומה נשארת במסד עם הסיבה — שום דבר לא נמחק.
  */
 async function supersedeAd(oldId: string, newAdId: string, decidedBy: string, reason: string): Promise<void> {
     await mergeExtra(
@@ -722,9 +745,11 @@ export async function unapproveAd(id: string, byAdmin: string): Promise<void> {
     await mergeExtra(
         id,
         {
-            decided_at: '',
+            // null ולא '' — איפוס תאריך נשלח כ-null (Strapi פוסל מחרוזת ריקה
+            // בשדה datetime, ו-mapAd ממילא מתרגם null לריק)
+            decided_at: null,
             decided_by: clamp(byAdmin, 120),
-            expires_at: '',
+            expires_at: null,
             rejection_reason: '',
         },
         { status1: 'pending' },
