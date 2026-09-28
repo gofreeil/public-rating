@@ -61,7 +61,7 @@
     <div class="ads-stage">
         {#each groups as grp, gi}
         <div class="ads-group space-y-3" class:active={gi === active}>
-        {#each grp as item (item.kind === 'real' ? item.ad.id : `v${item.no}`)}
+        {#each grp as item (item.kind === 'real' ? `${item.ad.id}-${item.no}` : `v${item.no}`)}
             {#if item.kind === 'real'}
                 <!-- מודעה בתשלום — הקליק נשאר באתר ונוחת בדף הנחיתה המקומי -->
                 <a
