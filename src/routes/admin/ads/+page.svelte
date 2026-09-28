@@ -476,67 +476,6 @@
                             </div>
                         {/if}
 
-                        <!-- שכפל פרסומת (סופר-אדמין): אותה פרסומת גם במקומות נוספים — למשל
-                             2 ו-6 (אותה רביעייה), כך שהיא נשארת באותה משבצת ולא מתחלפת בסבב.
-                             תג ⧉ = שכפול קיים; לחיצה עליו מבטלת אותו -->
-                        {#if data.superAdmin && ad.status === 'approved' && typeof ad.slot === 'number'}
-                            {@const dup = dupOptions(ad)}
-                            {#if (ad.extraSlots ?? []).length + dup.same.length + dup.rest.length > 0}
-                                <div class="flex flex-wrap items-center gap-1.5">
-                                    {#each ad.extraSlots ?? [] as n (n)}
-                                        <form method="POST" action="?/removeExtraSlot" use:enhance>
-                                            <input type="hidden" name="id" value={ad.id} />
-                                            <input type="hidden" name="slot" value={n} />
-                                            <button
-                                                type="submit"
-                                                class="inline-flex h-6 cursor-pointer items-center gap-1 rounded-lg border border-black/20 px-1.5 text-xs font-black whitespace-nowrap hover:opacity-80"
-                                                style="background:{slotOptionBg(n)};color:#111"
-                                                title="שכפול במקום {n} (רביעייה {slotGroupLetter(n)}׳ · המשבצת ה{slotPosName(n)} בטור) — לחיצה מבטלת את השכפול"
-                                            >
-                                                ⧉ {n} · {slotGroupLetter(n)}׳ <span class="text-red-700">✕</span>
-                                            </button>
-                                        </form>
-                                    {/each}
-                                    {#if dup.same.length + dup.rest.length > 0}
-                                        <form method="POST" action="?/addExtraSlot" use:enhance>
-                                            <input type="hidden" name="id" value={ad.id} />
-                                            <select
-                                                name="slot"
-                                                aria-label="שכפל פרסומת"
-                                                onchange={(e) => e.currentTarget.form?.requestSubmit()}
-                                                class="rounded-lg border border-sky-500/40 bg-sky-500/15 px-1.5 py-1 text-xs font-black text-sky-200 focus:border-sky-400/60 focus:outline-none"
-                                            >
-                                                <option value="" selected disabled>⧉ שכפל פרסומת</option>
-                                                {#if dup.same.length > 1}
-                                                    <option value="same" style="background:#fff;color:#111;font-weight:700">
-                                                        ★ קבועה בכל הרביעייה ({dup.same.join(', ')})
-                                                    </option>
-                                                {/if}
-                                                {#if dup.same.length > 0}
-                                                    <optgroup label="★ אותה רביעייה (אותה משבצת)">
-                                                        {#each dup.same as n (n)}
-                                                            <option value={n} style="background:{slotOptionBg(n)};color:#111">
-                                                                {n} · {slotPosName(n)}
-                                                            </option>
-                                                        {/each}
-                                                    </optgroup>
-                                                {/if}
-                                                {#each groupSlotOptions(dup.rest) as grp (grp.letter)}
-                                                    <optgroup label="— רביעייה {grp.letter}׳ —">
-                                                        {#each grp.nums as n (n)}
-                                                            <option value={n} style="background:{slotOptionBg(n)};color:#111">
-                                                                {n} · {slotPosName(n)}
-                                                            </option>
-                                                        {/each}
-                                                    </optgroup>
-                                                {/each}
-                                            </select>
-                                        </form>
-                                    {/if}
-                                </div>
-                            {/if}
-                        {/if}
-
                         <!-- פרטי המפרסם: מסך מאחורי הרשאה, ולכן מותר כאן -->
                         <p class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
                             {#if ad.submittedByName}<span>מפרסם: {ad.submittedByName}</span>{/if}
@@ -730,6 +669,66 @@
                                     🗑 הסרה
                                 </button>
                             </form>
+                            <!-- שכפל פרסומת (סופר-אדמין): אותה פרסומת גם במקומות נוספים — למשל
+                                 2 ו-6 (אותה רביעייה), כך שהיא נשארת באותה משבצת ולא מתחלפת בסבב.
+                                 תג ⧉ = שכפול קיים; לחיצה עליו מבטלת אותו -->
+                            {#if data.superAdmin && ad.status === 'approved' && typeof ad.slot === 'number'}
+                                {@const dup = dupOptions(ad)}
+                                {#if (ad.extraSlots ?? []).length + dup.same.length + dup.rest.length > 0}
+                                    <div style="display: contents">
+                                        {#each ad.extraSlots ?? [] as n (n)}
+                                            <form method="POST" action="?/removeExtraSlot" use:enhance>
+                                                <input type="hidden" name="id" value={ad.id} />
+                                                <input type="hidden" name="slot" value={n} />
+                                                <button
+                                                    type="submit"
+                                                    class="inline-flex h-6 cursor-pointer items-center gap-1 rounded-lg border border-black/20 px-1.5 text-xs font-black whitespace-nowrap hover:opacity-80"
+                                                    style="background:{slotOptionBg(n)};color:#111"
+                                                    title="שכפול במקום {n} (רביעייה {slotGroupLetter(n)}׳ · המשבצת ה{slotPosName(n)} בטור) — לחיצה מבטלת את השכפול"
+                                                >
+                                                    ⧉ {n} · {slotGroupLetter(n)}׳ <span class="text-red-700">✕</span>
+                                                </button>
+                                            </form>
+                                        {/each}
+                                        {#if dup.same.length + dup.rest.length > 0}
+                                            <form method="POST" action="?/addExtraSlot" use:enhance>
+                                                <input type="hidden" name="id" value={ad.id} />
+                                                <select
+                                                    name="slot"
+                                                    aria-label="שכפל פרסומת"
+                                                    onchange={(e) => e.currentTarget.form?.requestSubmit()}
+                                                    class="rounded-lg border border-sky-500/40 bg-sky-500/15 px-1.5 py-1 text-xs font-black text-sky-200 focus:border-sky-400/60 focus:outline-none"
+                                                >
+                                                    <option value="" selected disabled>⧉ שכפל פרסומת</option>
+                                                    {#if dup.same.length > 1}
+                                                        <option value="same" style="background:#fff;color:#111;font-weight:700">
+                                                            ★ קבועה בכל הרביעייה ({dup.same.join(', ')})
+                                                        </option>
+                                                    {/if}
+                                                    {#if dup.same.length > 0}
+                                                        <optgroup label="★ אותה רביעייה (אותה משבצת)">
+                                                            {#each dup.same as n (n)}
+                                                                <option value={n} style="background:{slotOptionBg(n)};color:#111">
+                                                                    {n} · {slotPosName(n)}
+                                                                </option>
+                                                            {/each}
+                                                        </optgroup>
+                                                    {/if}
+                                                    {#each groupSlotOptions(dup.rest) as grp (grp.letter)}
+                                                        <optgroup label="— רביעייה {grp.letter}׳ —">
+                                                            {#each grp.nums as n (n)}
+                                                                <option value={n} style="background:{slotOptionBg(n)};color:#111">
+                                                                    {n} · {slotPosName(n)}
+                                                                </option>
+                                                            {/each}
+                                                        </optgroup>
+                                                    {/each}
+                                                </select>
+                                            </form>
+                                        {/if}
+                                    </div>
+                                {/if}
+                            {/if}
                         </div>
                     </article>
                 {/each}
