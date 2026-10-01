@@ -13,6 +13,12 @@
 	let mode            = $state<'oauth' | 'email'>('oauth');
 	let showPassword    = $state(false);
 	let credError       = $state<string | null>(null);
+	let emailValue      = $state('');
+
+	// האימייל שהוקלד נשלח לדף השחזור - לא צריך להקליד אותו פעמיים.
+	const forgotHref = $derived(
+		emailValue.includes('@') ? `/forgot-password?email=${encodeURIComponent(emailValue.trim())}` : '/forgot-password'
+	);
 
 	// מוסיף welcome=back ליעד — מפעיל את מסך "ברוכים השבים" אחרי ההתחברות
 	function withWelcome(dest: string): string {
@@ -125,6 +131,12 @@
 				{#if form?.error || credError}
 					<div id="login-error" role="alert" class="mb-6 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-center">
 						<p class="text-red-400 text-sm font-medium">{credError ?? form?.error}</p>
+						{#if credError || form?.error}
+							<ul class="mt-2 list-disc space-y-1 pr-5 text-right text-xs leading-relaxed text-gray-300">
+								<li>נרשמתם בעבר עם <strong>Google</strong> או <strong>Facebook</strong>? אז אין לכם סיסמה — היכנסו עם הכפתורים שבדף.</li>
+								<li>שכחתם את הסיסמה? <a href={forgotHref} class="font-bold text-purple-300 underline">שלחו לי קישור לבחירת סיסמה חדשה</a></li>
+							</ul>
+						{/if}
 					</div>
 				{/if}
 				{#if data.registered}
@@ -292,6 +304,7 @@
 								type="email"
 								required
 								autocomplete="email"
+								bind:value={emailValue}
 								aria-describedby={data.error || credError || form?.error ? 'login-error' : undefined}
 								class="w-full bg-[#1e293b] border border-white/10 rounded-xl px-4 py-3
 								       text-white placeholder-gray-500 focus:outline-none focus:border-purple-500
@@ -332,6 +345,10 @@
 									{/if}
 								</button>
 							</div>
+						</div>
+
+						<div class="text-left -mt-3 mb-4">
+							<a href={forgotHref} class="text-purple-400 hover:text-purple-300 text-sm transition-colors">שכחתי סיסמה</a>
 						</div>
 
 						<button
