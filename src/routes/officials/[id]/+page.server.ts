@@ -40,6 +40,8 @@ import {
     replyToInquiry,
 } from '$lib/server/rating';
 import { syncOneRecord } from '$lib/server/knessetSync';
+import { getOpinionStar } from '$lib/server/opinion';
+import type { OpinionStar } from '$lib/rating/opinion';
 import type { PageServerLoad, Actions } from './$types';
 
 // משיכת הרזומה פונה ל-OData של הכנסת — מעבר ל-10ש' ברירת המחדל של Vercel
@@ -79,6 +81,12 @@ export const load: PageServerLoad = async (event) => {
         inquiries = [];
     }
 
+    // כוכב "דעת הציבור" — מהטיפול בפניות שהגיעו מאתר מבקר רשויות המדינה
+    let opinion: OpinionStar = { score: null, positive: 0, negative: 0, count: 0 };
+    try {
+        opinion = await getOpinionStar(official.id);
+    } catch {}
+
     let session = null;
     try {
         session = await event.locals.auth();
@@ -117,6 +125,7 @@ export const load: PageServerLoad = async (event) => {
         inquiries: inquiries.map((i) => toPublicInquiry(i, meId)),
         lastResponseAt,
         stats: computeStats(reviews),
+        opinion,
         // גם הדירוג "שלי" עובר ניקוי — helpful_by שבתוכו הוא רשימת מזהים של אחרים
         myReview: myReview ? toMyReview(myReview) : null,
         isAdmin: isSiteAdmin(session),

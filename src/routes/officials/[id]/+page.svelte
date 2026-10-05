@@ -193,6 +193,26 @@
             <Stars value={stats.average ?? 0} size={22} />
             <span class="text-xs text-gray-400">{stats.count} דירוגים</span>
         </div>
+
+        <!-- כוכב "דעת הציבור" — נפרד מהמדדים: נבנה רק מהטיפול בפניות ציבור
+             שנשלחו לנציג דרך אתר מבקר רשויות המדינה -->
+        <div
+            class="flex shrink-0 flex-col items-center gap-1 border-white/10 ps-4 sm:border-s"
+            title="מענה לפניות ציבור בזמן סביר (עד 30 יום) מעלה את הכוכב; ללא מענה, מענה באיחור או מענה לא הולם מורידים אותו"
+        >
+            <span class="text-xs font-bold text-emerald-300">📣 דעת הציבור</span>
+            <span class="text-2xl font-black text-emerald-300 tabular-nums">
+                {fmtScore(data.opinion.score)}
+            </span>
+            <Stars value={data.opinion.score ?? 0} size={16} />
+            <span class="text-xs text-gray-400">
+                {#if data.opinion.count > 0}
+                    {data.opinion.positive} טופלו · {data.opinion.negative} לא טופלו
+                {:else}
+                    טרם נשלחו פניות
+                {/if}
+            </span>
+        </div>
         </div>
 
         <!-- הפרמטרים: התפלגות הדירוגים וחמשת המדדים — צמוד לדמות, לא בתחתית הדף -->
