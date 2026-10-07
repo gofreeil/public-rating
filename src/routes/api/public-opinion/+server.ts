@@ -4,12 +4,15 @@
 // שרת-לשרת בלבד: האתר השולח (כרגע "מבקר רשויות המדינה", אחרי בחירת
 // מודרטור העיר) חותם בסוד משותף — Authorization: Bearer <OPINION_SHARED_SECRET>.
 // בלי הסוד בשני הצדדים ה-endpoint סגור (503).
+//
+// GET /api/public-opinion?source=criticism&days=60&limit=12 — ציבורי: השינויים
+// האחרונים בכוכב (מי עלה/ירד ולמה), לבאנר באתר המקור.
 // ============================================================
 
 import { json } from '@sveltejs/kit';
 import { timingSafeEqual } from 'node:crypto';
 import { env } from '$env/dynamic/private';
-import { recordOpinion } from '$lib/server/opinion';
+import { listRecentOpinion, recordOpinion } from '$lib/server/opinion';
 import { isOpinionReason } from '$lib/rating/opinion';
 import type { RequestHandler } from './$types';
 
@@ -25,6 +28,29 @@ const str = (v: unknown, max = 300): string => (typeof v === 'string' ? v.trim()
 const iso = (v: unknown): string | null => {
     const t = typeof v === 'string' ? Date.parse(v) : NaN;
     return Number.isFinite(t) ? new Date(t).toISOString() : null;
+};
+
+const clampInt = (v: string | null, def: number, min: number, max: number): number => {
+    const n = Number.parseInt(v ?? '', 10);
+    return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : def;
+};
+
+export const GET: RequestHandler = async ({ url }) => {
+    const source = url.searchParams.get('source') ?? 'criticism';
+    if (!SOURCES.has(source)) return json({ error: 'מקור לא מוכר' }, { status: 400 });
+    const days = clampInt(url.searchParams.get('days'), 60, 1, 365);
+    const limit = clampInt(url.searchParams.get('limit'), 12, 1, 50);
+
+    try {
+        const changes = (await listRecentOpinion(source, days, limit)).map((c) => ({
+            ...c,
+            officialUrl: `${url.origin}/officials/${c.officialId}`,
+        }));
+        return json({ changes }, { headers: { 'Cache-Control': 'public, max-age=300' } });
+    } catch (e) {
+        console.error('[public-opinion GET]', e);
+        return json({ changes: [] }, { status: 502 });
+    }
 };
 
 export const POST: RequestHandler = async ({ request, url }) => {

@@ -4,7 +4,7 @@
 // ============================================================
 
 import { strapiGet, strapiPost, strapiPut } from './strapiClient.js';
-import { invalidateRating } from './rating';
+import { invalidateRating, listOfficials } from './rating';
 import { OFFICIAL_CATEGORY, groupByKey } from '$lib/rating/types';
 import { heNormalize } from '$lib/rating/heSearch';
 import {
@@ -74,6 +74,70 @@ export async function getOpinionFor(officialId: string): Promise<OpinionEvent[]>
 
 export async function getOpinionStar(officialId: string): Promise<OpinionStar> {
     return computeOpinionStar(await getOpinionFor(officialId));
+}
+
+// ---- שינויים אחרונים (לבאנר באתר המקור) ----
+
+export interface RecentOpinionChange {
+    officialId: string;
+    name: string;
+    position: string;
+    org: string;
+    title: string;
+    outcome: OpinionEvent['outcome'];
+    reason: OpinionReason;
+    reasonLabel: string;
+    days: number | null;
+    sourceUrl: string;
+    /** מתי הכוכב הושפע (קליטה/עדכון האירוע) */
+    at: string;
+    /** הכוכב הנוכחי של המדורג, מכל האירועים שלו */
+    star: OpinionStar;
+}
+
+/**
+ * האירועים האחרונים ממקור אחד (חדש ראשון), עם שם המדורג והכוכב הנוכחי שלו.
+ * ציבורי: אותם נתונים שמוצגים בפרופיל המדורג.
+ */
+export async function listRecentOpinion(
+    source: string,
+    sinceDays: number,
+    limit: number,
+): Promise<RecentOpinionChange[]> {
+    const res = await strapiGet<{ data: RawItem[] }>(ITEMS, {
+        'filters[category][$eq]': OPINION_CATEGORY,
+        'filters[status1][$eq]': 'active',
+        'sort': 'updatedAt:desc',
+        'pagination[limit]': '1000',
+    });
+    const events = (res.data ?? []).map(mapEvent).filter((e) => e.source === source);
+
+    const byOfficial = new Map<string, OpinionEvent[]>();
+    for (const e of events) byOfficial.set(e.official_id, [...(byOfficial.get(e.official_id) ?? []), e]);
+
+    const officials = new Map((await listOfficials()).map((o) => [o.id, o]));
+    const since = Date.now() - sinceDays * 24 * 60 * 60 * 1000;
+
+    return events
+        .filter((e) => Date.parse(e.updated_at) >= since && officials.has(e.official_id))
+        .slice(0, limit)
+        .map((e) => {
+            const o = officials.get(e.official_id)!;
+            return {
+                officialId: o.id,
+                name: o.name,
+                position: o.position,
+                org: o.org,
+                title: e.title,
+                outcome: e.outcome,
+                reason: e.reason,
+                reasonLabel: OPINION_REASONS[e.reason].label,
+                days: e.days,
+                sourceUrl: e.source_url,
+                at: e.updated_at,
+                star: computeOpinionStar(byOfficial.get(e.official_id) ?? []),
+            };
+        });
 }
 
 // ---- איתור/יצירת המדורג ----
