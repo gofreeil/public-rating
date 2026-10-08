@@ -18,6 +18,9 @@
 
     let { currentUser, onLogout, onShowAuth }: Props = $props();
 
+    // תמונת הפרופיל לא נטענה (קישור שפג / חסום) → חוזרים לאות הראשונה
+    let avatarBroken = $state(false);
+
     let languages = [
         { name: "עברית", code: "he", flag: "il" },
         { name: "English", code: "en", flag: "us" },
@@ -240,13 +243,15 @@
 
                         {#if currentUser}
                             <a href="/my-ratings" class="relative group flex-shrink-0" aria-label="לדירוגים שלי – {currentUser.username ?? 'משתמש'}">
-                                {#if currentUser.avatar_url}
+                                {#if currentUser.avatar_url && !avatarBroken}
                                     <img
                                         src={currentUser.avatar_url}
                                         alt=""
                                         width="36"
                                         height="36"
                                         decoding="async"
+                                        referrerpolicy="no-referrer"
+                                        onerror={() => (avatarBroken = true)}
                                         class="h-9 w-9 rounded-full object-cover border-2 border-purple-500/40 shadow-lg"
                                     />
                                 {:else}
@@ -404,13 +409,15 @@
                                 onmouseleave={() => showProfileTooltip = false}
                                 onmousemove={handleProfileMouseMove}
                             >
-                                {#if currentUser.avatar_url}
+                                {#if currentUser.avatar_url && !avatarBroken}
                                     <img
                                         src={currentUser.avatar_url}
                                         alt=""
                                         width="56"
                                         height="56"
                                         decoding="async"
+                                        referrerpolicy="no-referrer"
+                                        onerror={() => (avatarBroken = true)}
                                         class="h-14 w-14 rounded-full object-cover border-2 border-purple-500/40
                                                shadow-lg hover:border-purple-400 transition-all"
                                     />

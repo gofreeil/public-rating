@@ -35,6 +35,8 @@ declare module '@auth/core/jwt' {
         dbUserId?: string;
         provider?: string;
         strapiJwt?: string;
+        /** מתי נמשכה תמונת הפרופיל מ-Strapi לאחרונה (userAvatar.ts) */
+        avatarAt?: number;
         role?: 'user' | 'rating_admin' | 'neighborhood_admin' | 'super_admin';
         neighborhood?: string;
         banned?: boolean;
