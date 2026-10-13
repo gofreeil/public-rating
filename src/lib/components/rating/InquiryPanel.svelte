@@ -3,6 +3,7 @@
     // ההיגיון בשרת (actions בדף הפרופיל); כאן תצוגה וטפסים בלבד.
     import { enhance } from '$app/forms';
     import BotFields from './BotFields.svelte';
+    import { withIntent } from '$lib/authIntent';
     import { absDate, isoDate, relDate } from '$lib/rating/time';
     import type { PublicInquiry } from '$lib/rating/types';
 
@@ -94,7 +95,7 @@
                 רק משתמשים מחוברים פונים — כך כל פנייה עומדת מאחורי אדם אמיתי
             </p>
             <a
-                href="/login?redirect=/officials/{officialId}"
+                href="/login?redirect={encodeURIComponent(withIntent(`/officials/${officialId}`, 'inquiry'))}"
                 class="btn-premium rounded-xl px-5 py-2 text-sm font-bold text-white"
             >התחברות לפנייה</a>
         </div>

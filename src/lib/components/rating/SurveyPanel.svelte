@@ -2,6 +2,8 @@
     // סקר "מה הכי חשוב לך במשרת ציבור?" — הציבור מדרג את חשיבות חמשת המדדים.
     // הצבעה אחת למשתמש (עדכון חוזר מותר); התוצאות המצטברות גלויות לכולם.
     import { enhance } from '$app/forms';
+    import { page } from '$app/state';
+    import { withIntent } from '$lib/authIntent';
     import { CRITERIA, type Scores } from '$lib/rating/criteria';
     import { fmtScore } from '$lib/rating/aggregate';
     import StarInput from './StarInput.svelte';
@@ -126,7 +128,7 @@
                     ? 'רוצים להשפיע על הסדר? הצביעו גם אתם'
                     : 'היו הראשונים לקבוע מה הכי חשוב'}
             </p>
-            <a href="/login?redirect=/" class="btn-premium rounded-xl px-5 py-2 text-sm font-bold text-white">
+            <a href="/login?redirect={encodeURIComponent(withIntent(page.url.pathname, 'survey'))}" class="btn-premium rounded-xl px-5 py-2 text-sm font-bold text-white">
                 התחברות להצבעה
             </a>
         </div>

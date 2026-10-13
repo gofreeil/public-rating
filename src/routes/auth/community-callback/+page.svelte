@@ -137,12 +137,12 @@
 						</button>
 						{/if}
 						<a
-							href="/register"
+							href="/register?redirect={encodeURIComponent(data.returnTo || '/')}"
 							class="mt-1 text-sm text-gray-400 hover:text-gray-200 underline"
 						>
 							מעדיפים אימייל וסיסמה? הרשמה ידנית
 						</a>
-						<a href="/login" class="text-sm text-gray-500 hover:text-gray-300 underline">
+						<a href="/login?redirect={encodeURIComponent(data.returnTo || '/')}" class="text-sm text-gray-500 hover:text-gray-300 underline">
 							חזרה להתחברות
 						</a>
 					</div>

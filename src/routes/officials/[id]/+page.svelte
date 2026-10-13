@@ -1,6 +1,7 @@
 <script lang="ts">
     // דף פרופיל מדורג — לב האתר: סיכום ציון, טופס דירוג ודירוגי הציבור
     import { enhance } from '$app/forms';
+    import { withIntent } from '$lib/authIntent';
     import { groupByKey } from '$lib/rating/types';
     import { absDate } from '$lib/rating/time';
     import { fmtScore } from '$lib/rating/aggregate';
@@ -274,7 +275,7 @@
                     רק משתמשים מחוברים מדרגים — כך נשמרת אמינות הדירוג
                 </p>
                 <a
-                    href="/login?redirect=/officials/{official.id}"
+                    href="/login?redirect={encodeURIComponent(withIntent(`/officials/${official.id}`, 'rate'))}"
                     class="btn-premium rounded-xl px-5 py-2 text-sm font-bold text-white"
                 >התחברות לדירוג</a>
             </div>

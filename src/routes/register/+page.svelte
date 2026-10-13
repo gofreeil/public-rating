@@ -281,7 +281,7 @@
 				<!-- לינק ללוגין -->
 				<p class="mt-6 text-center text-sm text-gray-500">
 					{tFn("already_registered")}
-					<a href="/login" class="text-purple-400 hover:text-purple-300 font-medium transition-colors">
+					<a href="/login?redirect={encodeURIComponent(data.redirectTo || '/')}" class="text-purple-400 hover:text-purple-300 font-medium transition-colors">
 						{tFn("login_here")}
 					</a>
 				</p>

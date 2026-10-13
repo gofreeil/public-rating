@@ -373,7 +373,7 @@
 					<!-- לינק להרשמה -->
 					<p class="text-center text-sm text-gray-500">
 						{tFn("no_account")}
-						<a href="/register" class="text-purple-400 hover:text-purple-300 font-medium transition-colors">
+						<a href="/register?redirect={encodeURIComponent(data.redirectTo || '/')}" class="text-purple-400 hover:text-purple-300 font-medium transition-colors">
 							{tFn("register_here")}
 						</a>
 					</p>
