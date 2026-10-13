@@ -16,6 +16,7 @@
 import { json } from '@sveltejs/kit';
 import { isAdmin as isSiteAdmin } from '$lib/server/auth';
 import { AdTooLargeError, getAd, updateAdContent } from '$lib/server/ads';
+import { notifyAdminsAdEdited } from '$lib/server/adsNotify';
 import { TOO_MANY, allowAction } from '$lib/server/rateLimit';
 import type { RequestHandler } from './$types';
 
@@ -66,6 +67,17 @@ export const PUT: RequestHandler = async (event) => {
             style: body.style,
             landing: body.landing,
         });
+        // העריכה לא חוזרת לתור (ראו למעלה) — הצוות חייב לדעת עליה. עריכה
+        // של אדמין לא שולחת התראה; כשל בהתראה לא מפיל את השמירה.
+        if (!isAdmin) {
+            await notifyAdminsAdEdited({
+                adTitle: title,
+                previousTitle: ad.title,
+                status: ad.status,
+                editorName: session?.user?.name,
+                editorEmail: session?.user?.email,
+            });
+        }
         return json({ ok: true });
     } catch (e) {
         if (e instanceof AdTooLargeError) {
