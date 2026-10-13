@@ -17,6 +17,7 @@ import {
     approveAd,
     computeAdSlots,
     computeAdExtraSlots,
+    computeSchedules,
     addAdExtraSlot,
     removeAdExtraSlot,
     extendAd,
@@ -111,6 +112,8 @@ export const load: PageServerLoad = async (event) => {
         pending: rows.filter((a) => a.status === 'pending').length,
         // חלון הקציבה (תקופה/תפוגה שרירותית) שמור לסופר-אדמין
         superAdmin: isSuperAdmin(session),
+        // טבלת התזמון (כמו בגמ"ח הארצי): כל המאושרות - פורסם/פג/נותר + ניהול מהשורה
+        schedules: computeSchedules(ads),
     };
 };
 

@@ -183,6 +183,25 @@
         approved: 'border-emerald-400/25 bg-emerald-500/[0.05]',
         rejected: 'border-white/10 bg-slate-800/80 opacity-70',
     };
+
+    // ===== טבלת תזמון הפרסומות - כמו בגמ"ח הארצי =====
+    // מסודרת לפי תאריך הפרסום - החדשות בראש
+    let schedulesByDate = $derived(
+        [...data.schedules].sort(
+            (a, b) => (Date.parse(b.publishedAt) || 0) - (Date.parse(a.publishedAt) || 0),
+        ),
+    );
+    // השורה המלאה של כל פרסומת - לחלון הקציבה
+    let rowById = $derived(new Map(data.rows.map((a) => [a.id, a] as const)));
+    // תאריך ושעה בשתי שורות נפרדות בטבלת התזמון - חוסך רוחב
+    function fmtDay(s?: string) {
+        if (!s) return '';
+        return new Date(s).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    }
+    function fmtTime(s?: string) {
+        if (!s) return '';
+        return new Date(s).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    }
 </script>
 
 <Seo title="ניהול פרסומות" description="אישור וניהול הפרסומות באתר" noindex />
@@ -735,6 +754,258 @@
             </section>
         {/if}
     {/each}
+
+    <!-- ============================================================ -->
+    <!-- תזמון פרסומות פעילות + תאריכי פקיעה - אותה טבלה כמו בגמ"ח   -->
+    <!-- הארצי: מקום + העבר, תקופה, וכל הניהול מהשורה                -->
+    <!-- ============================================================ -->
+    <section>
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">📅</span>
+                <h2 class="text-lg font-black text-white">תזמון פרסומות</h2>
+                <span class="text-xs font-bold bg-white/10 text-gray-300 border border-white/20 px-2 py-0.5 rounded-full">{data.schedules.length}</span>
+            </div>
+            <div class="flex items-center gap-2 text-[10px] md:text-xs">
+                <span class="inline-flex items-center gap-1 text-emerald-300"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>פעילה</span>
+                <span class="inline-flex items-center gap-1 text-amber-300"><span class="w-2 h-2 rounded-full bg-amber-400"></span>≤ 7 ימים</span>
+                <span class="inline-flex items-center gap-1 text-red-300"><span class="w-2 h-2 rounded-full bg-red-400"></span>פגה</span>
+                <span class="inline-flex items-center gap-1 text-blue-300"><span class="w-2 h-2 rounded-full bg-blue-400"></span>מושהית</span>
+            </div>
+        </div>
+
+        <!-- מקרא הרביעיות: רביעייה = המקומות שמתחלפים באותה משבצת בטור (1,5,9,13 וכו׳),
+             וכל רביעייה צבועה בצבע שלה. בכל רגע הטור מציג מקום אחד מכל רביעייה -->
+        <div class="flex items-center gap-2 mb-3 flex-wrap text-[10px] md:text-xs font-bold text-gray-300">
+            <span>כל רביעייה מתחלפת באותה משבצת בטור:</span>
+            {#each groupSlotOptions(slotOptions) as grp (grp.letter)}
+                <span class="px-2 py-0.5 rounded-full border border-black/20" style="background:{slotOptionBg(grp.nums[0])};color:#111">{grp.letter}׳ · {grp.nums.join(', ')}</span>
+            {/each}
+            <span class="text-gray-500">א׳ למעלה, ד׳ למטה; בכל רגע מוצג מקום אחד מכל רביעייה</span>
+        </div>
+
+        {#if data.schedules.length === 0}
+            <div class="text-center py-8 text-gray-500 text-sm italic border border-dashed border-white/10 rounded-2xl">
+                אין כרגע פרסומות פעילות באתר
+            </div>
+        {:else}
+            <div class="overflow-x-auto rounded-2xl border border-white/10 bg-white/5">
+                <table class="w-full text-sm" dir="rtl">
+                    <thead class="bg-white/5">
+                        <!-- 4 עמודות בלבד - המידע מוערם בכמה שורות בכל תא, כדי שבדסקטופ
+                             הכל ייכנס למסך אחד בלי גלילה אופקית -->
+                        <tr class="text-[11px] md:text-xs text-gray-400 uppercase tracking-wide">
+                            <th class="text-right font-bold px-2 py-2.5">מקום</th>
+                            <th class="text-right font-bold px-2 py-2.5">פרסומת ומפרסם</th>
+                            <th class="text-right font-bold px-2 py-2.5">תקופה</th>
+                            <th class="text-right font-bold px-2 py-2.5">ניהול</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#each schedulesByDate as s (s.id)}
+                            {@const stateColor = s.state === 'paused' ? 'bg-blue-500/15 text-blue-300 border-blue-500/40'
+                                : s.state === 'expired' ? 'bg-red-500/15 text-red-300 border-red-500/40'
+                                : s.state === 'ending' ? 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+                                : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'}
+                            {@const stateLabel = s.state === 'paused' ? 'מושהית'
+                                : s.state === 'expired' ? 'פגה'
+                                : s.state === 'ending' ? 'פגה בקרוב'
+                                : 'פעילה'}
+                            {@const daysColor = s.state === 'paused' ? 'text-blue-300'
+                                : s.daysLeft < 0 ? 'text-red-300'
+                                : s.daysLeft <= 7 ? 'text-amber-300'
+                                : 'text-emerald-300'}
+                            {@const progress = s.durationDays > 0
+                                ? Math.min(100, Math.max(0, ((s.durationDays - Math.max(0, s.daysLeft)) / s.durationDays) * 100))
+                                : 100}
+                            <!-- מקום מעל 16 (גלישה) מתווסף לבורר כדי שלא ייעלם -->
+                            {@const rowSlots = s.slot && !slotOptions.includes(s.slot)
+                                ? [...slotOptions, s.slot].sort((a, b) => a - b)
+                                : slotOptions}
+                            <tr class="border-t border-white/10 hover:bg-white/5">
+                                <!-- מספר המקום בטור + העברה ישירה למקום אחר (מקום תפוס - מתחלפות).
+                                     פריסה אנכית צרה - כדי שכל הטבלה תיכנס ברוחב המסך בלי גלילה -->
+                                <td class="px-2 py-2">
+                                    <form method="POST" action="?/setSlot" use:enhance class="flex flex-col items-start gap-1">
+                                        <input type="hidden" name="id" value={s.id} />
+                                        <div class="flex items-center gap-1">
+                                            <span class="inline-flex items-center justify-center min-w-6 h-6 px-1.5 rounded-lg border border-black/20 font-black text-xs whitespace-nowrap"
+                                                  style="background:{typeof s.slot === 'number' ? slotOptionBg(s.slot) : '#fff'};color:#111"
+                                                  title={typeof s.slot === 'number' ? `רביעייה ${slotGroupLetter(s.slot)}׳ · המשבצת ה${slotPosName(s.slot)} בטור` : ''}>
+                                                {typeof s.slot === 'number' ? `${s.slot} · ${slotGroupLetter(s.slot)}׳` : '-'}
+                                            </span>
+                                            <select name="slot"
+                                                    onchange={(e) => onSlotPick(e, s)}
+                                                    class="px-1.5 py-1 rounded-lg bg-black/40 border border-white/15 text-white text-[11px] focus:outline-none focus:border-amber-400/50">
+                                                <!-- כל רביעייה תחת כותרת משלה - הקשר מספר↔רביעייה קריא במילים,
+                                                     לא רק בצבע; מקום תפוס שומר את צבע הרביעייה ומסומן באדום מודגש -->
+                                                {#each groupSlotOptions(rowSlots) as grp (grp.letter)}
+                                                    <optgroup label="— רביעייה {grp.letter}׳ · המשבצת ה{slotPosName(grp.nums[0])} בטור —">
+                                                        {#each grp.nums as n (n)}
+                                                            {@const occ = slotOccupants.get(n)}
+                                                            {@const takenByOther = !!occ && occ.id !== s.id}
+                                                            <option value={n} selected={n === s.slot}
+                                                                    style="background:{slotOptionBg(n)};color:{takenByOther ? '#b91c1c' : '#111'};font-weight:{takenByOther ? '700' : '400'}">
+                                                                {slotOptionLabel(n, s.id)}
+                                                            </option>
+                                                        {/each}
+                                                    </optgroup>
+                                                {/each}
+                                            </select>
+                                        </div>
+                                        <button type="submit"
+                                                onclick={(e) => confirmSlotMove(e, { ...s, slot: s.slot ?? null })}
+                                                class="px-2 py-1 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-200 text-[11px] font-black hover:bg-purple-500/30 whitespace-nowrap"
+                                                title="העבר למקום שנבחר; מקום תפוס - תתבקש לאשר החלפה בין השתיים">
+                                            ⇄ העבר
+                                        </button>
+                                        {#if slotWarning[s.id]}
+                                            <span class="text-[10px] font-bold text-amber-300 leading-snug max-w-[150px]">
+                                                ⚠ {slotWarning[s.id]}
+                                            </span>
+                                        {/if}
+                                    </form>
+                                </td>
+                                <!-- פרסומת + מפרסם + סטטוס בתא אחד, מוערמים.
+                                     ריחוף על הכותרת = תצוגה מקדימה צפה; הקשה = מודאל עם הכרטיס עצמו -->
+                                <td class="px-2 py-2">
+                                    <button type="button"
+                                            onmouseenter={(e) => openHoverPreview(e, s.id)}
+                                            onmouseleave={() => hoverPreview = null}
+                                            onclick={() => { hoverPreview = null; modalPreviewId = s.id; }}
+                                            title="תצוגה מקדימה של הפרסומת כפי שהיא מוצגת באתר"
+                                            class="font-bold text-white line-clamp-2 break-words max-w-[160px] leading-snug text-right cursor-pointer underline decoration-dotted decoration-white/30 underline-offset-2 hover:text-amber-300">
+                                        {s.title}
+                                    </button>
+                                    <div class="text-xs text-gray-300 truncate max-w-[160px] mt-0.5">{s.advertiserName || '-'}</div>
+                                    <div class="text-[10px] text-gray-500 truncate max-w-[160px]">{s.advertiserEmail}</div>
+                                    <span class="inline-block mt-1 text-[11px] font-black border px-2 py-0.5 rounded-full whitespace-nowrap {stateColor}">{stateLabel}</span>
+                                </td>
+                                <!-- כל נתוני הזמן בתא אחד: פורסם, פג, וכמה נותר מתוך המשך -->
+                                <td class="px-2 py-2 text-xs leading-relaxed whitespace-nowrap">
+                                    <div class="text-gray-300">פורסם: {fmtDay(s.publishedAt)} <span class="text-[10px] text-gray-500">{fmtTime(s.publishedAt)}</span></div>
+                                    <div class="text-gray-300">פג: {fmtDay(s.expiresAt)} <span class="text-[10px] text-gray-500">{fmtTime(s.expiresAt)}</span></div>
+                                    <div class="font-black {daysColor} mt-0.5">
+                                        {s.daysLeft < 0 ? `${-s.daysLeft}- ימים` : `${s.daysLeft} ימים`}
+                                        <span class="font-bold text-gray-500 text-[10px]">מתוך {s.durationDays}</span>
+                                    </div>
+                                    <div class="mt-1 h-1.5 w-24 rounded-full bg-white/10 overflow-hidden">
+                                        <div class="h-full {s.state === 'expired' ? 'bg-red-400' : s.state === 'ending' ? 'bg-amber-400' : 'bg-emerald-400'}"
+                                             style="width: {progress}%"></div>
+                                    </div>
+                                </td>
+                                <!-- ניהול הפרסומת ישירות מהשורה: קציבת תקופה, השהיה, הורדה, מחיקה.
+                                     רוחב מוגבל - הכפתורים נערמים בשתי שורות במקום להרחיב את הטבלה -->
+                                <td class="px-2 py-2">
+                                    <div class="flex flex-wrap items-center gap-1.5 max-w-[240px]">
+                                        <!-- פותח את חלון הקציבה: פרטי תשלום ותאריכים + שינוי תקופה/תפוגה.
+                                             שמור לסופר-אדמין (כמו המחיקה) - אדמין רגיל לא רואה את הכפתור -->
+                                        {#if data.superAdmin && rowById.has(s.id)}
+                                            <button type="button"
+                                                    onclick={() => openDurationModal(rowById.get(s.id))}
+                                                    class="px-2.5 py-1 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-200 text-[11px] font-black hover:bg-blue-500/30 whitespace-nowrap"
+                                                    title="פרטי התקופה והתשלום + שינוי תקופה או תאריך תפוגה">
+                                                ⏱ קצוב
+                                            </button>
+                                        {/if}
+
+                                        {#if s.state === 'paused'}
+                                            <form method="POST" action="?/resume" use:enhance>
+                                                <input type="hidden" name="id" value={s.id} />
+                                                <button type="submit"
+                                                        class="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 text-[11px] font-black hover:bg-emerald-500/30 whitespace-nowrap"
+                                                        title="הימים השמורים נספרים מהיום">
+                                                    ▶ המשך
+                                                </button>
+                                            </form>
+                                        {:else}
+                                            <form method="POST" action="?/pause" use:enhance>
+                                                <input type="hidden" name="id" value={s.id} />
+                                                <button type="submit"
+                                                        class="px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 text-gray-200 text-[11px] font-black hover:bg-white/20 whitespace-nowrap"
+                                                        title="יורדת מהאתר ושומרת את הימים שנותרו"
+                                                        onclick={(e) => { if (!confirm('להשהות את הפרסומת? היא תרד מהאתר והימים שנותרו יישמרו לה.')) e.preventDefault(); }}>
+                                                    ⏸ השהה
+                                                </button>
+                                            </form>
+                                        {/if}
+
+                                        <form method="POST" action="?/unapprove" use:enhance>
+                                            <input type="hidden" name="id" value={s.id} />
+                                            <button type="submit"
+                                                    class="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-200 text-[11px] font-black hover:bg-amber-500/25 whitespace-nowrap"
+                                                    title="חוזרת לתור האישורים"
+                                                    onclick={(e) => { if (!confirm('להוריד את הפרסומת מהאתר ולהחזיר אותה לממתינות?')) e.preventDefault(); }}>
+                                                ⤴ הורד
+                                            </button>
+                                        </form>
+
+                                        {#if data.superAdmin}
+                                            <form method="POST" action="?/remove" use:enhance>
+                                                <input type="hidden" name="id" value={s.id} />
+                                                <button type="submit"
+                                                        class="px-2.5 py-1 rounded-lg bg-red-600/20 border border-red-500/40 text-red-300 text-[11px] font-black hover:bg-red-600/30 whitespace-nowrap"
+                                                        onclick={(e) => { if (!confirm(`למחוק לצמיתות את "${s.title}"?`)) e.preventDefault(); }}>
+                                                    🗑 מחק
+                                                </button>
+                                            </form>
+                                        {/if}
+                                        <!-- שכפל פרסומת (סופר-אדמין): אותה פרסומת גם במקומות נוספים - למשל
+                                             2 ו-6, כך שהיא נשארת באותו גובה ולא מתחלפת בסבב.
+                                             תג ⧉ = שכפול קיים; לחיצה עליו מבטלת אותו -->
+                                        {#if data.superAdmin}
+                                            {@const dup = dupOptions(s)}
+                                            <div style="display: contents">
+                                                {#each s.extraSlots ?? [] as n (n)}
+                                                    <form method="POST" action="?/removeExtraSlot" use:enhance>
+                                                        <input type="hidden" name="id" value={s.id} />
+                                                        <input type="hidden" name="slot" value={n} />
+                                                        <button type="submit"
+                                                                class="inline-flex h-6 items-center gap-1 rounded-lg border border-black/20 px-1.5 text-[11px] font-black whitespace-nowrap hover:opacity-80"
+                                                                style="background:{slotOptionBg(n)};color:#111"
+                                                                title="שכפול במקום {n} (המשבצת ה{slotPosName(n)} בטור) - לחיצה מבטלת את השכפול">
+                                                            ⧉ {n} · {slotGroupLetter(n)}׳ <span class="text-red-700">✕</span>
+                                                        </button>
+                                                    </form>
+                                                {/each}
+                                                {#if dup.same.length + dup.rest.length > 0}
+                                                    <form method="POST" action="?/addExtraSlot" use:enhance>
+                                                        <input type="hidden" name="id" value={s.id} />
+                                                        <select name="slot" aria-label="שכפל פרסומת"
+                                                                onchange={(e) => e.currentTarget.form?.requestSubmit()}
+                                                                class="rounded-lg border border-sky-500/40 bg-sky-500/15 px-1.5 py-1 text-[11px] font-black text-sky-200 focus:border-sky-400/60 focus:outline-none">
+                                                            <option value="" selected disabled>⧉ שכפל פרסומת</option>
+                                                            {#if dup.same.length > 1}
+                                                                <option value="same" style="background:#fff;color:#111;font-weight:700">
+                                                                    ★ קבועה בכל הסבב ({dup.same.join(', ')})
+                                                                </option>
+                                                            {/if}
+                                                            {#if dup.same.length > 0}
+                                                                <optgroup label="★ אותו גובה בטור">
+                                                                    {#each dup.same as n (n)}
+                                                                        <option value={n} style="background:{slotOptionBg(n)};color:#111">{n} · {slotPosName(n)}</option>
+                                                                    {/each}
+                                                                </optgroup>
+                                                            {/if}
+                                                            <optgroup label="מקומות פנויים אחרים">
+                                                                {#each dup.rest as n (n)}
+                                                                    <option value={n} style="background:{slotOptionBg(n)};color:#111">{n} · {slotPosName(n)}</option>
+                                                                {/each}
+                                                            </optgroup>
+                                                        </select>
+                                                    </form>
+                                                {/if}
+                                            </div>
+                                        {/if}
+                                    </div>
+                                </td>
+                            </tr>
+                        {/each}
+                    </tbody>
+                </table>
+            </div>
+        {/if}
+    </section>
 
     <!-- תצוגה מקדימה צפה בריחוף על כותרת מודעה שעל האוויר (דסקטופ בלבד) -->
     {#if hoverPreview}

@@ -1128,4 +1128,65 @@ export async function extendAd(id: string, durationDays: unknown): Promise<void>
     });
 }
 
+// ---------- טבלת התזמון במסך הניהול (הועתק מהגמ"ח הארצי) ----------
+
+export interface AdSchedule {
+    id: string;
+    title: string;
+    advertiserName: string;
+    advertiserEmail: string;
+    publishedAt: string;
+    expiresAt: string;
+    durationDays: number;
+    daysLeft: number;
+    state: 'expired' | 'ending' | 'active' | 'paused';   // ending = ≤7 ימים
+    /** מספר המקום בטור הפרסומות (1..16) — מוזן ב-computeSchedules */
+    slot?: number;
+    /** שכפל פרסומת: מקומות נוספים (1-based) — מוזן ב-computeSchedules */
+    extraSlots?: number[];
+}
+
+export function computeSchedule(ad: SubmittedAd): AdSchedule | null {
+    if (ad.status !== 'approved' || !ad.decidedAt) return null;
+    const days = ad.durationDays || DEFAULT_PLAN_DAYS;
+    const publishedAt = ad.decidedAt;
+    const expiresAt = ad.expiresAt || new Date(Date.parse(publishedAt) + days * DAY_MS).toISOString();
+    // מושהית: הזמן לא רץ. הימים שנותרו הם אלה שנשמרו ברגע ההשהיה.
+    const daysLeft = ad.paused
+        ? (ad.pausedDaysLeft ?? days)
+        : Math.ceil((Date.parse(expiresAt) - Date.now()) / DAY_MS);
+    const state: AdSchedule['state'] = ad.paused ? 'paused'
+        : daysLeft < 0 ? 'expired'
+        : daysLeft <= 7 ? 'ending'
+        : 'active';
+    return {
+        id: ad.id,
+        title: ad.title,
+        advertiserName: ad.submittedByName || '-',
+        advertiserEmail: ad.contactEmail ?? '',
+        publishedAt,
+        expiresAt,
+        durationDays: days,
+        daysLeft,
+        state,
+    };
+}
+
+/** טבלת התזמון של מסך הניהול — כל המאושרות, לפי סדר המקומות בטור. */
+export function computeSchedules(all: SubmittedAd[]): AdSchedule[] {
+    const slots = computeAdSlots(all);
+    const extras = computeAdExtraSlots(all);
+    return all
+        .map((ad) => {
+            const s = computeSchedule(ad);
+            if (s) {
+                s.slot = slots.get(ad.id);
+                s.extraSlots = extras.get(ad.id) ?? [];
+            }
+            return s;
+        })
+        .filter((s): s is AdSchedule => s !== null)
+        .sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
+}
+
 export { DEFAULT_PLAN_DAYS };
