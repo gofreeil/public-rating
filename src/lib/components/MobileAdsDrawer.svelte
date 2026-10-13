@@ -49,6 +49,12 @@
 	let open = $state(false);
 	let collapsed = $state(false);
 
+	// כל התמונות במגירה (פרסומות, אווטאר, ארנק) נכנסות ל-DOM רק אחרי שהגולש
+	// נגע בלשונית. loading="lazy" לבדו לא הספיק: המגירה הסגורה יושבת ב-left
+	// שלילי *צמוד* לקצה המסך, בתוך מרווח הטעינה-מראש של כרום, כך שכל התמונות
+	// ירדו בכל טעינת דף בנייד. הקישורים והטקסט נשארים ב-SSR, ורק ה-img נדחה.
+	let adImagesReady = $state(false);
+
 	function closeAll() {
 		open = false;
 		collapsed = false;
@@ -97,6 +103,7 @@
 	});
 
 	function onTabTouchStart(e: TouchEvent) {
+		adImagesReady = true;
 		tabTouchStartX        = e.touches[0].clientX;
 		tabTouchStartY        = e.touches[0].clientY;
 		tabDragStartClientY   = e.touches[0].clientY;
@@ -195,6 +202,7 @@
 	}
 
 	function onTabClick() {
+		adImagesReady = true;
 		if (tabSwipeHandled) {
 			tabSwipeHandled = false;
 			return;
@@ -255,8 +263,13 @@
 					<!-- תמונה + מעגל מילוי -->
 					<div class="relative flex-shrink-0">
 						{#if layoutUser.avatar_url}
+							<!-- ראה adImagesReady; עד אז שומר-מקום באותו גודל, בלי קפיצה -->
+							{#if adImagesReady}
 							<img src={layoutUser.avatar_url} alt="" width="64" height="64" loading="lazy" decoding="async"
 								class="w-16 h-16 rounded-full object-cover border-2 border-purple-500/40" />
+							{:else}
+							<div class="w-16 h-16 rounded-full bg-gray-700 border-2 border-purple-500/40"></div>
+							{/if}
 						{:else}
 							<div class="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center border-2 border-gray-600">
 								<svg viewBox="0 0 24 24" class="w-8 h-8 text-gray-400" fill="currentColor">
@@ -295,7 +308,11 @@
 
 					<!-- יתרה -->
 					<div class="flex-shrink-0 flex flex-col items-center gap-1 mr-auto">
+						{#if adImagesReady}
 						<img src="/images/wallet.webp" alt="ארנק — יתרה" width="40" height="40" loading="lazy" decoding="async" class="w-10 h-10 object-contain" />
+						{:else}
+						<span class="w-10 h-10"></span>
+						{/if}
 						<span class="text-green-400 text-xs font-black">{layoutUser.balance ?? 0}₪</span>
 					</div>
 
@@ -303,8 +320,10 @@
 			</a>
 			{:else if currentUser}
 			<a href="/my-ratings" class="profile-btn" onclick={closeAll}>
-				{#if currentUser.avatar_url}
+				{#if currentUser.avatar_url && adImagesReady}
 				<img src={currentUser.avatar_url} alt="" loading="lazy" decoding="async" class="profile-avatar" />
+				{:else if currentUser.avatar_url}
+				<span class="profile-avatar-placeholder"></span>
 				{:else}
 				<span class="profile-avatar-placeholder">👤</span>
 				{/if}
@@ -347,6 +366,10 @@
 				onclick={closeAll}
 			>
 				<div class="benefit-img-wrap">
+					<!-- ראה adImagesReady. הריבוע 72px שמסביב קבוע, ולכן אין קפיצת
+					     תצוגה כשהתמונות נכנסות; loading="lazy" מדלג בנוסף על הכרטיסים
+					     שנמצאים מתחת לגלילה ברשימה. -->
+					{#if adImagesReady}
 					<!-- שלב 1: תמונה מפוקסלת מהפרונטאנד - נטענת מיד, מוסתרת מאחורי blur -->
 					<img
 						src={ad.image}
@@ -366,6 +389,7 @@
 						style={ad.imageScale ? `transform: scale(${ad.imageScale});` : ''}
 						onload={(e) => (e.currentTarget as HTMLImageElement).classList.add('loaded')}
 					/>
+					{/if}
 				</div>
 				<div class="benefit-body">
 					<p class="benefit-title">{ad.title}</p>
