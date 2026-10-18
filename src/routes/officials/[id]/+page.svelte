@@ -1,6 +1,8 @@
 <script lang="ts">
     // דף פרופיל מדורג — לב האתר: סיכום ציון, טופס דירוג ודירוגי הציבור
+    import { onMount, tick } from 'svelte';
     import { enhance } from '$app/forms';
+    import { page } from '$app/state';
     import { withIntent } from '$lib/authIntent';
     import { groupByKey } from '$lib/rating/types';
     import { absDate } from '$lib/rating/time';
@@ -40,6 +42,37 @@
             document.getElementById('public-reviews')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
+
+    const loginToRate = $derived(
+        `/login?redirect=${encodeURIComponent(withIntent(`/officials/${official.id}`, 'rate'))}`,
+    );
+
+    // מי שכבר דירג רואה שורת סיכום מקופלת; הטופס המלא פתוח לדירוג ראשון או בעריכה
+    let editing = $state(false);
+    const showForm = $derived(!data.myReview || editing);
+
+    $effect(() => {
+        if (form?.success) editing = false;
+    });
+
+    /** קפיצה לטופס הדירוג: פותח אותו, גולל אליו ומעביר פוקוס לכוכבים של המדד הראשון */
+    async function goRate(e?: MouseEvent) {
+        e?.preventDefault();
+        editing = true;
+        await tick();
+        const section = document.getElementById('rate');
+        section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        section
+            ?.querySelector<HTMLElement>('[role="radiogroup"] [tabindex="0"]')
+            ?.focus({ preventScroll: true });
+    }
+
+    // הגעה מ"דרגו" בדף אחר או חזרה מהתחברות לצורך דירוג — ישר לטופס
+    onMount(() => {
+        if (data.me && (page.url.searchParams.get('intent') === 'rate' || page.url.hash === '#rate')) {
+            goRate();
+        }
+    });
 
     // תגובות מקובצות לפי הדירוג שעליו הגיבו
     const commentsByReview = $derived.by(() => {
@@ -192,7 +225,15 @@
                 {stats.count > 0 ? fmtScore(stats.average) : '0.0'}
             </span>
             <Stars value={stats.average ?? 0} size={22} />
-            <span class="text-xs text-gray-400">{stats.count} דירוגים</span>
+            <a href="#public-reviews" class="text-xs text-gray-400 transition-colors hover:text-gray-200">
+                {stats.count} דירוגים
+            </a>
+            <!-- הפעולה המרכזית של הדף — צמודה לציון, בלי לחפש את הטופס -->
+            <a
+                href={data.me ? '#rate' : loginToRate}
+                onclick={data.me ? goRate : undefined}
+                class="btn-premium mt-1 rounded-xl px-4 py-1.5 text-sm font-bold whitespace-nowrap text-white"
+            >{data.myReview ? '✏️ הדירוג שלי' : '⭐ דרגו עכשיו'}</a>
         </div>
 
         <!-- כוכב "דעת הציבור" — נפרד מהמדדים: נבנה רק מהטיפול בפניות ציבור
@@ -232,6 +273,58 @@
         </div>
     </section>
 
+    <!-- דרגו בעצמכם — מיד אחרי הכותרת, לפני הרזומה והפרטים הארוכים -->
+    <section id="rate" class="scroll-mt-32rounded-2xl border border-white/10 bg-slate-800/80 p-4">
+        {#if form?.success}
+            <p class="mb-3 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+                ✅ הדירוג פורסם — תודה שתרמתם לשקיפות הציבורית
+            </p>
+        {:else if form?.error}
+            <p class="mb-3 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                {form.error}
+            </p>
+        {/if}
+
+        {#if !data.me}
+            <div class="flex flex-wrap items-center gap-3">
+                <h2 class="text-lg font-bold text-white">⭐ דרגו את {official.name}</h2>
+                <p class="flex-1 text-sm text-gray-400" style="min-width: 14rem">
+                    רק משתמשים מחוברים מדרגים — כך נשמרת אמינות הדירוג
+                </p>
+                <a href={loginToRate} class="btn-premium rounded-xl px-5 py-2 text-sm font-bold text-white">
+                    התחברות לדירוג
+                </a>
+            </div>
+        {:else if showForm}
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-lg font-bold text-white">
+                    {data.myReview ? '✏️ עדכון הדירוג שלכם' : `⭐ דרגו את ${official.name}`}
+                </h2>
+                {#if data.myReview}
+                    <button
+                        type="button"
+                        onclick={() => (editing = false)}
+                        class="cursor-pointer text-sm text-gray-400 transition-colors hover:text-white"
+                    >סגירה</button>
+                {/if}
+            </div>
+            <RateForm myReview={data.myReview} officialId={official.id} />
+        {:else if data.myReview}
+            <!-- כבר דירגתם: שורה אחת עם הציון שנתתם, הטופס נפתח בלחיצה -->
+            <div class="flex flex-wrap items-center gap-3">
+                <h2 class="text-base font-bold text-white">הדירוג שלכם</h2>
+                <Stars value={data.myReview.overall} size={18} />
+                <span class="font-black text-amber-400 tabular-nums">{fmtScore(data.myReview.overall)}</span>
+                <span class="text-xs text-gray-500">· {absDate(data.myReview.created_at)}</span>
+                <button
+                    type="button"
+                    onclick={goRate}
+                    class="ms-auto cursor-pointer rounded-xl border border-white/15 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10"
+                >✏️ עריכת הדירוג</button>
+            </div>
+        {/if}
+    </section>
+
     <!-- תעודת זהות ציבורית: קשר, שקיפות בפועל, התמחויות והבטחות -->
     <ProfileDetails {official} lastResponseAt={data.lastResponseAt} />
 
@@ -253,34 +346,6 @@
 
     <!-- מגמה לאורך זמן — מוצגת רק כשיש מספיק דירוגים לאורך יותר מחודש אחד -->
     <TrendChart reviews={data.reviews} />
-
-    <!-- דרגו בעצמכם -->
-    <section id="rate" class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
-        <h2 class="mb-3 text-lg font-bold text-white">דרגו בעצמכם</h2>
-
-        {#if data.me}
-            {#if form?.success}
-                <p class="mb-3 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
-                    ✅ הדירוג פורסם — תודה שתרמתם לשקיפות הציבורית
-                </p>
-            {:else if form?.error}
-                <p class="mb-3 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-                    {form.error}
-                </p>
-            {/if}
-            <RateForm myReview={data.myReview} officialId={official.id} />
-        {:else}
-            <div class="flex flex-wrap items-center gap-3">
-                <p class="flex-1 text-sm text-gray-400" style="min-width: 14rem">
-                    רק משתמשים מחוברים מדרגים — כך נשמרת אמינות הדירוג
-                </p>
-                <a
-                    href="/login?redirect={encodeURIComponent(withIntent(`/officials/${official.id}`, 'rate'))}"
-                    class="btn-premium rounded-xl px-5 py-2 text-sm font-bold text-white"
-                >התחברות לדירוג</a>
-            </div>
-        {/if}
-    </section>
 
     <!-- דירוגי הציבור -->
     <section id="public-reviews" class="flex flex-col gap-2">

@@ -95,6 +95,10 @@
                 </span>
                 <Stars value={stats.average ?? 0} size={20} />
                 <span class="text-xs text-gray-400">{stats.count} דירוגי ציבור</span>
+                <a
+                    href="{profileUrl}#rate"
+                    class="btn-premium mt-1 rounded-xl px-4 py-1.5 text-sm font-bold whitespace-nowrap text-white"
+                >⭐ דרגו עכשיו</a>
             </div>
         </div>
 
