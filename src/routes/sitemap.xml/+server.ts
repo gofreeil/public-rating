@@ -24,6 +24,7 @@ const STATIC_ENTRIES: Entry[] = [
     // /officials (אינדקס מלא) הוסר מהמפה בשלב זה יחד עם קישורי הכניסה אליו.
     // הנתיב עצמו נשאר קיים — להחזרה מספיק לשחזר את השורה הזו ואת הקישורים.
     { loc: '/about', changefreq: 'monthly', priority: '0.6' },
+    { loc: '/public-hearing', changefreq: 'monthly', priority: '0.5' },
     { loc: '/suggest', changefreq: 'monthly', priority: '0.5' },
     { loc: '/legal', changefreq: 'monthly', priority: '0.3' },
     { loc: '/accessibility', changefreq: 'monthly', priority: '0.3' },
