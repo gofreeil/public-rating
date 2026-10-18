@@ -13,6 +13,12 @@
 
     // נקודת זמן אחת לכל הדף — לא Date.now() בתוך הרינדור
     const now = Date.now();
+
+    // כותרת שתואמת את מספר המוצגים בפועל (בקטגוריה עם פחות מ-3 מדורגים)
+    function rankTitle(n: number, dir: string) {
+        if (n === 1) return `המדורג ה${dir} ביותר`;
+        return `${n === 2 ? 'שני' : 'שלושת'} המדורגים ה${dir} ביותר`;
+    }
 </script>
 
 <Seo
@@ -94,7 +100,7 @@
                     </div>
                     <div class="grid grid-cols-1 gap-3 {s.bottom.length ? 'lg:grid-cols-2' : ''}">
                         <div class="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.04] p-3">
-                            <h4 class="mb-2 text-sm font-bold text-emerald-300">🏆 שלושת המדורגים הגבוה ביותר</h4>
+                            <h4 class="mb-2 text-sm font-bold text-emerald-300">🏆 {rankTitle(s.top.length, 'גבוה')}</h4>
                             <div class="flex flex-col gap-2">
                                 {#each s.top as official, i (official.id)}
                                     <OfficialCard {official} rank={i + 1} compact />
@@ -103,7 +109,7 @@
                         </div>
                         {#if s.bottom.length}
                             <div class="rounded-2xl border border-red-400/20 bg-red-500/[0.04] p-3">
-                                <h4 class="mb-2 text-sm font-bold text-red-300">📉 שלושת המדורגים הנמוך ביותר</h4>
+                                <h4 class="mb-2 text-sm font-bold text-red-300">📉 {rankTitle(s.bottom.length, 'נמוך')}</h4>
                                 <div class="flex flex-col gap-2">
                                     {#each s.bottom as official (official.id)}
                                         <OfficialCard {official} compact />
