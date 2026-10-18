@@ -10,13 +10,18 @@
         currentUser?: any;
         onLogout?: () => void;
         onShowAuth?: () => void;
+        /** אדמין: פריטים שממתינים לטיפול — בועה אדומה על תמונת הפרופיל */
+        pendingCount?: number;
     }
 
     import { fade } from "svelte/transition";
     import { ads, type Ad } from "$lib/adsData";
     import FullAdModal from "$lib/components/FullAdModal.svelte";
 
-    let { currentUser, onLogout, onShowAuth }: Props = $props();
+    let { currentUser, onLogout, onShowAuth, pendingCount = 0 }: Props = $props();
+
+    // כשיש מה לאשר — הקישור נוחת ישר על פאנל הניהול שבאזור האישי
+    const profileHref = $derived(pendingCount > 0 ? '/my-ratings#admin' : '/my-ratings');
 
     // תמונת הפרופיל לא נטענה (קישור שפג / חסום) → חוזרים לאות הראשונה
     let avatarBroken = $state(false);
@@ -242,7 +247,7 @@
                         </div>
 
                         {#if currentUser}
-                            <a href="/my-ratings" class="relative group flex-shrink-0" aria-label="לדירוגים שלי – {currentUser.username ?? 'משתמש'}">
+                            <a href={profileHref} class="relative group flex-shrink-0" aria-label="לדירוגים שלי – {currentUser.username ?? 'משתמש'}{pendingCount > 0 ? ` — ${pendingCount} ממתינים לטיפול` : ''}">
                                 {#if currentUser.avatar_url && !avatarBroken}
                                     <img
                                         src={currentUser.avatar_url}
@@ -258,6 +263,9 @@
                                     <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-green-400 to-blue-500 shadow-lg border border-white/10" aria-hidden="true">
                                         <span class="font-bold text-white text-xs">{currentUser.username?.charAt(0) || "U"}</span>
                                     </div>
+                                {/if}
+                                {#if pendingCount > 0}
+                                    <span class="absolute -top-1 -left-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-black leading-none text-white ring-2 ring-[#0f172a]" aria-hidden="true">{pendingCount}</span>
                                 {/if}
                             </a>
                         {:else}
@@ -402,9 +410,9 @@
                         <div class="flex items-center gap-3">
                             <!-- תמונת פרופיל עם hover -->
                             <a
-                                href="/my-ratings"
+                                href={profileHref}
                                 class="relative flex-shrink-0"
-                                aria-label="לדירוגים שלי – {userName}"
+                                aria-label="לדירוגים שלי – {userName}{pendingCount > 0 ? ` — ${pendingCount} ממתינים לטיפול` : ''}"
                                 onmouseenter={() => showProfileTooltip = true}
                                 onmouseleave={() => showProfileTooltip = false}
                                 onmousemove={handleProfileMouseMove}
@@ -428,6 +436,9 @@
                                          aria-hidden="true">
                                         <span class="font-bold text-white text-sm">{userName.charAt(0)}</span>
                                     </div>
+                                {/if}
+                                {#if pendingCount > 0}
+                                    <span class="absolute -top-1 -left-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[11px] font-black leading-none text-white shadow-lg ring-2 ring-[#0f172a]" aria-hidden="true">{pendingCount}</span>
                                 {/if}
                             </a>
                         </div>

@@ -69,6 +69,7 @@
 		currentUser={currentUser}
 		onLogout={handleLogout}
 		onShowAuth={handleShowAuth}
+		pendingCount={data.pendingCount ?? 0}
 	/>
 
 	<NavBar loggedIn={Boolean(data.session?.user)} />

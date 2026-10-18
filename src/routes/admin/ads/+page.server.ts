@@ -17,7 +17,12 @@ import {
     approveAd,
     computeAdSlots,
     computeAdExtraSlots,
+    computeAdsStats,
+    computeAdvertisers,
     computeSchedules,
+    purgeAd,
+    unrejectAd,
+    updateAdFields,
     addAdExtraSlot,
     removeAdExtraSlot,
     extendAd,
@@ -38,6 +43,7 @@ import {
     unapproveAd,
 } from '$lib/server/ads';
 import { getAdStats, type AdStatRow } from '$lib/server/adStats';
+import { resettingCounts } from '$lib/server/adminPanel';
 import type { SubmittedAd } from '$lib/ads/types';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -152,8 +158,19 @@ export const load: PageServerLoad = async (event) => {
         superAdmin: isSuperAdmin(session),
         // טבלת התזמון (כמו בגמ"ח הארצי): כל המאושרות - פורסם/פג/נותר + ניהול מהשורה
         schedules: computeSchedules(ads),
+        // מוני הכותרת וטבלת המפרסמים (כמו בגמ"ח הארצי)
+        stats: computeAdsStats(ads),
+        advertisers: computeAdvertisers(ads),
     };
 };
+
+/** מזהים מרובים — גם id חוזר וגם ids מופרד בפסיקים (בחירה רב-פריטית) */
+function parseIds(fd: FormData): string[] {
+    const single = fd.getAll('id').map(String).filter(Boolean);
+    if (single.length) return [...new Set(single)];
+    const csv = String(fd.get('ids') ?? '');
+    return [...new Set(csv.split(',').map((s) => s.trim()).filter(Boolean))];
+}
 
 /** כל פעולה מאמתת הרשאה בעצמה ומחזירה את המזהה של המבצע */
 async function adminOf(event: Parameters<Actions[string]>[0]): Promise<string> {
@@ -162,7 +179,7 @@ async function adminOf(event: Parameters<Actions[string]>[0]): Promise<string> {
     return session?.user?.email ?? session?.user?.name ?? 'admin';
 }
 
-export const actions: Actions = {
+const adActions = {
     approve: async (event) => {
         const by = await adminOf(event);
         const fd = await event.request.formData();
@@ -198,6 +215,107 @@ export const actions: Actions = {
             return { success: true, message: 'הפרסומת נדחתה' };
         } catch (e) {
             return fail(500, { error: `שגיאה בדחייה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // בחירה רב-פריטית בטאב הממתינות — כל מודעה במסלול שהמפרסם ביקש
+    bulkApprove: async (event) => {
+        const by = await adminOf(event);
+        const ids = parseIds(await event.request.formData());
+        if (ids.length === 0) return fail(400, { error: 'לא נבחרו פרסומות' });
+        const rows = await listAllForAdmin().catch(() => [] as SubmittedAd[]);
+        let ok = 0;
+        let replaced = 0;
+        for (const id of ids) {
+            try {
+                const r = await approveAd(id, {
+                    durationDays: rows.find((a) => a.id === id)?.requestedDurationDays,
+                    decidedBy: by,
+                });
+                ok++;
+                if (r.replacedTitle) replaced++;
+            } catch (e) {
+                console.warn('[admin/ads] bulkApprove item failed:', e instanceof Error ? e.message : e);
+            }
+        }
+        return {
+            success: true,
+            message:
+                `אושרו ${ok} מתוך ${ids.length} פרסומות` +
+                (replaced > 0 ? ` (${replaced} החליפו גרסה קודמת שירדה מהאוויר)` : ''),
+        };
+    },
+
+    bulkReject: async (event) => {
+        const by = await adminOf(event);
+        const fd = await event.request.formData();
+        const ids = parseIds(fd);
+        if (ids.length === 0) return fail(400, { error: 'לא נבחרו פרסומות' });
+        const reason = String(fd.get('reason') ?? '');
+        let ok = 0;
+        for (const id of ids) {
+            try {
+                await rejectAd(id, { reason, decidedBy: by });
+                ok++;
+            } catch (e) {
+                console.warn('[admin/ads] bulkReject item failed:', e instanceof Error ? e.message : e);
+            }
+        }
+        return { success: true, message: `נדחו ${ok} מתוך ${ids.length} פרסומות` };
+    },
+
+    // דחייה בטעות — חזרה לתור הממתינות
+    unreject: async (event) => {
+        await adminOf(event);
+        const id = String((await event.request.formData()).get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            const r = await unrejectAd(id);
+            if (!r) return fail(404, { error: 'הפרסומת לא נמצאה' });
+            return { success: true, message: `"${r.title}" הוחזרה לממתינות` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בהחזרה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // עריכת הטקסטים של המודעה לפני/אחרי אישור — בלי לגעת בתמונות ובסטטוס
+    update: async (event) => {
+        await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        const field = (k: string) => {
+            const v = fd.get(k);
+            return typeof v === 'string' ? v : undefined;
+        };
+        try {
+            const r = await updateAdFields(id, {
+                title: field('title'),
+                subtitle: field('subtitle'),
+                cta: field('cta'),
+                hoverText: field('hoverText'),
+            });
+            if (!r) return fail(404, { error: 'הפרסומת לא נמצאה או שלא נשלח שינוי' });
+            return { success: true, message: `"${r.title}" עודכנה` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בעדכון: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // מחיקה לצמיתות מהאשפה — סופר-אדמין בלבד, ואין דרך חזרה
+    purge: async (event) => {
+        await adminOf(event);
+        if (!isSuperAdmin(await event.locals.auth())) {
+            return fail(403, { error: 'מחיקה לצמיתות שמורה לסופר-אדמין' });
+        }
+        const id = String((await event.request.formData()).get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            const r = await purgeAd(id);
+            if (!r) return fail(404, { error: 'אפשר למחוק לצמיתות רק פרסומת שכבר באשפה' });
+            return { success: true, message: `"${r.title}" נמחקה לצמיתות` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה במחיקה: ${e instanceof Error ? e.message : e}` });
         }
     },
 
@@ -446,4 +564,7 @@ export const actions: Actions = {
             return fail(500, { error: `שגיאה ביצירה: ${e instanceof Error ? e.message : e}` });
         }
     },
-};
+} satisfies Actions;
+
+// כל פעולה מאפסת את מוני "ממתין לטיפול" — הבועות מתעדכנות מיד
+export const actions: Actions = resettingCounts(adActions);

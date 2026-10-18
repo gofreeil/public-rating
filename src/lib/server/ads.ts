@@ -18,7 +18,7 @@
 //    לשימוש טרנזקציוני.
 // ============================================================
 
-import { strapiGet, strapiPost, strapiPut } from './strapiClient.js';
+import { strapiDelete, strapiGet, strapiPost, strapiPut } from './strapiClient.js';
 import { imageStamp, decodeDataImage } from './inlineImage.js';
 import { MAX_AD_TOTAL_BYTES } from '$lib/ads/adImage';
 import { normalizeGradientId } from '$lib/ads/gradients';
@@ -1229,6 +1229,131 @@ export function computeSchedules(all: SubmittedAd[]): AdSchedule[] {
         })
         .filter((s): s is AdSchedule => s !== null)
         .sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
+}
+
+// ---------- השלמות מסך הניהול (הועתקו מהגמ"ח הארצי) ----------
+
+/** החזרת פרסומת נדחית לתור הממתינות — ההיפך של rejectAd */
+export async function unrejectAd(id: string): Promise<{ title: string } | null> {
+    const ad = await getAd(id);
+    if (!ad) return null;
+    await mergeExtra(
+        id,
+        { rejection_reason: '', decided_at: null, decided_by: '' },
+        { status1: 'pending' },
+    );
+    return { title: ad.title };
+}
+
+export interface EditableAdFields {
+    title?: string;
+    subtitle?: string;
+    cta?: string;
+    hoverText?: string;
+}
+
+/** עריכת טקסטים בידי האדמין מתוך מסך הניהול — רק השדות שנשלחו משתנים */
+export async function updateAdFields(id: string, fields: EditableAdFields): Promise<{ title: string } | null> {
+    const ad = await getAd(id);
+    if (!ad) return null;
+    const top: Record<string, unknown> = {};
+    if (typeof fields.title === 'string' && fields.title.trim()) top.label = clamp(fields.title, 40);
+    if (typeof fields.subtitle === 'string') top.description = clamp(fields.subtitle, 70);
+    const patch: Record<string, unknown> = {};
+    if (typeof fields.cta === 'string') patch.cta = clamp(fields.cta, 30) || 'לפרטים';
+    if (typeof fields.hoverText === 'string') patch.hover_text = clamp(fields.hoverText, 90);
+    if (Object.keys(top).length === 0 && Object.keys(patch).length === 0) return null;
+    await mergeExtra(id, patch, top);
+    return { title: typeof top.label === 'string' ? top.label : ad.title };
+}
+
+/**
+ * מחיקה לצמיתות — רק ממה שכבר באשפה (status1=deleted), כדי שלחיצה אחת
+ * לא תעקוף את רשת הביטחון של השחזור. שמור לסופר-אדמין (נאכף ב-action).
+ */
+export async function purgeAd(id: string): Promise<{ title: string } | null> {
+    const res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
+    const item = res.data;
+    if (!item || item.category !== AD_CATEGORY || item.status1 !== 'deleted') return null;
+    await strapiDelete(`${ITEMS}/${item.documentId}`);
+    invalidateAdsCache();
+    return { title: item.label ?? '' };
+}
+
+export interface AdsStats {
+    pending: number;
+    rejected: number;
+    approved: number;
+    approvedThisWeek: number;
+    submittedThisWeek: number;
+    total: number;
+}
+
+export function computeAdsStats(all: SubmittedAd[]): AdsStats {
+    const weekAgo = Date.now() - 7 * DAY_MS;
+    const of = (s: AdStatus) => all.filter((a) => a.status === s);
+    const approved = of('approved');
+    return {
+        pending: of('pending').length,
+        rejected: of('rejected').length,
+        approved: approved.length,
+        approvedThisWeek: approved.filter((a) => a.decidedAt && Date.parse(a.decidedAt) >= weekAgo).length,
+        submittedThisWeek: all.filter((a) => Date.parse(a.submittedAt || '') >= weekAgo).length,
+        total: all.length,
+    };
+}
+
+export interface AdvertiserSummary {
+    key: string;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    companyName: string;
+    adsCount: number;
+    activeCount: number;
+    firstSubmittedAt: string;
+    lastSubmittedAt: string;
+    isReturning: boolean;
+}
+
+/** מפרסמים — קיבוץ לפי אימייל (או בעלים), הפעילים ביותר בראש */
+export function computeAdvertisers(all: SubmittedAd[]): AdvertiserSummary[] {
+    // גרסאות שהוחלפו הן אותה פרסומת בגלגול קודם — ספירה שלהן הייתה מציגה
+    // "3 פרסומות" למפרסם שפשוט שיפר פעמיים את הפרסומת האחת שלו
+    const list = all.filter((a) => !a.supersededBy);
+    const map = new Map<string, AdvertiserSummary>();
+    for (const ad of list) {
+        const key = ad.contactEmail || ad.ownerId || ad.id;
+        // "פעילה עכשיו" = באמת על האתר: לא פגה ולא מושהית
+        const isActiveNow = ad.status === 'approved' && !ad.paused && !isExpired(ad);
+        const existing = map.get(key);
+        if (!existing) {
+            map.set(key, {
+                key,
+                name: ad.submittedByName,
+                email: ad.contactEmail,
+                phone: ad.landing?.phone ?? '',
+                address: ad.landing?.address ?? '',
+                companyName: ad.title,
+                adsCount: 1,
+                activeCount: isActiveNow ? 1 : 0,
+                firstSubmittedAt: ad.submittedAt,
+                lastSubmittedAt: ad.submittedAt,
+                isReturning: false,
+            });
+            continue;
+        }
+        existing.adsCount++;
+        existing.activeCount += isActiveNow ? 1 : 0;
+        if (!existing.name && ad.submittedByName) existing.name = ad.submittedByName;
+        if (!existing.phone && ad.landing?.phone) existing.phone = ad.landing.phone;
+        if (!existing.address && ad.landing?.address) existing.address = ad.landing.address;
+        if (Date.parse(ad.submittedAt) < Date.parse(existing.firstSubmittedAt)) existing.firstSubmittedAt = ad.submittedAt;
+        if (Date.parse(ad.submittedAt) > Date.parse(existing.lastSubmittedAt)) existing.lastSubmittedAt = ad.submittedAt;
+        existing.isReturning = existing.adsCount > 1;
+    }
+    return [...map.values()].sort((a, b) => b.adsCount - a.adsCount || b.activeCount - a.activeCount);
 }
 
 export { DEFAULT_PLAN_DAYS };

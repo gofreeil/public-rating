@@ -13,7 +13,35 @@ import {
     listPendingOfficials,
     softDeleteRatingItem,
 } from '$lib/server/rating';
+import { adminRoleOf } from '$lib/server/auth';
+import { emptyPending, getAdminOverview, getAdminPending } from '$lib/server/adminPanel';
+import { listPendingBrief } from '$lib/server/ads';
+import { getAllUsers } from '$lib/server/db';
 import type { Actions, PageServerLoad } from './$types';
+
+/**
+ * פאנל הניהול שבאזור האישי (כמו /profile#admin בגמ"ח הארצי): מונים לאריחים,
+ * מה שממתין לטיפול, והפרסומות שממתינות לאישור. רק לאדמין; כשל בכל חלק
+ * מחזיר אפסים ולא מפיל את הדף.
+ */
+async function loadAdminPanel(role: 'super_admin' | 'admin', jwt: string | undefined) {
+    const isSuper = role === 'super_admin';
+    const [pending, overview, pendingAds, users] = await Promise.all([
+        getAdminPending().catch(() => emptyPending()),
+        getAdminOverview().catch(() => ({ officials: 0, reviews: 0, liveAds: 0 })),
+        listPendingBrief().catch(() => []),
+        // מוני המשתמשים והאדמינים — רק לסופר-אדמין (רשימת המשתמשים שמורה לו)
+        isSuper ? getAllUsers(jwt).catch(() => []) : Promise.resolve([]),
+    ]);
+    return {
+        role,
+        pending,
+        overview,
+        pendingAds: pendingAds.slice(0, 5),
+        users: users.length,
+        admins: users.filter((u) => u.role !== 'user').length,
+    };
+}
 
 export const load: PageServerLoad = async (event) => {
     let session = null;
@@ -23,6 +51,9 @@ export const load: PageServerLoad = async (event) => {
 
     const meId = session?.user?.id;
     if (!meId) redirect(303, '/login?redirect=/my-ratings');
+
+    const role = adminRoleOf(session);
+    const admin = role ? await loadAdminPanel(role, event.cookies.get('strapi_jwt')) : null;
 
     try {
         const [officials, reviews, pending] = await Promise.all([
@@ -70,10 +101,10 @@ export const load: PageServerLoad = async (event) => {
             ? mine.reduce((sum, m) => sum + m.overall, 0) / mine.length
             : null;
 
-        return { mine, mySuggestions, avgGiven, name: session?.user?.name ?? '' };
+        return { mine, mySuggestions, avgGiven, name: session?.user?.name ?? '', admin };
     } catch (e) {
         console.warn('[my-ratings] load failed:', e instanceof Error ? e.message : e);
-        return { mine: [], mySuggestions: [], avgGiven: null, name: session?.user?.name ?? '' };
+        return { mine: [], mySuggestions: [], avgGiven: null, name: session?.user?.name ?? '', admin };
     }
 };
 

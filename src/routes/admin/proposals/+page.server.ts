@@ -14,6 +14,7 @@ import {
     softDeleteRatingItem,
 } from '$lib/server/rating';
 import { proposalStatusOf, type CivicProposal, type Official } from '$lib/rating/types';
+import { resettingCounts } from '$lib/server/adminPanel';
 
 export const load: PageServerLoad = async (event) => {
     const session = await event.locals.auth();
@@ -46,7 +47,7 @@ export const load: PageServerLoad = async (event) => {
     return { pending, proposals, officials };
 };
 
-export const actions: Actions = {
+const pageActions = {
     // אישור הצעה — עולה למרחב הציבורי
     approve: async (event) => {
         const session = await event.locals.auth();
@@ -121,4 +122,7 @@ export const actions: Actions = {
             return fail(500, { error: `שגיאה בהסרה: ${e instanceof Error ? e.message : e}` });
         }
     },
-};
+} satisfies Actions;
+
+// כל פעולה מאפסת את מוני "ממתין לטיפול" — הבועות בהאדר ובפאנל מתעדכנות מיד
+export const actions: Actions = resettingCounts(pageActions);

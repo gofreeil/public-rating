@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { goto } from '$app/navigation';
 	import { PROPOSAL_STATUSES, proposalStatusLabel, type CivicProposal } from '$lib/rating/types';
 	import { absDate } from '$lib/rating/time';
 
@@ -33,21 +32,15 @@
 	<meta name="description" content="ניהול מרחב ההצעות האזרחיות — אישור, סטטוס וקישור מדורגים" />
 </svelte:head>
 
-<div class="min-h-screen bg-[#070b14] text-white" dir="rtl">
-	<div class="max-w-6xl mx-auto px-4 py-8">
+<div class="text-white" dir="rtl">
+	<div>
 
 		<!-- כותרת -->
-		<div class="flex items-center justify-between gap-3 flex-wrap mb-6">
+		<div class="flex items-center justify-between gap-3 flex-wrap mb-3">
 			<div>
-				<h1 class="text-3xl font-black">📜 ניהול הצעות</h1>
-				<p class="text-gray-400 mt-1">אישור הצעות, עדכון סטטוס וקישור מדורגים</p>
+				<h2 class="text-lg font-black">📜 ניהול הצעות</h2>
+				<p class="text-gray-400 text-sm">אישור הצעות, עדכון סטטוס וקישור מדורגים</p>
 			</div>
-			<button
-				onclick={() => goto('/admin')}
-				class="px-4 py-2 rounded-xl bg-slate-800/80 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-			>
-				← לוח ניהול
-			</button>
 		</div>
 
 		<!-- הודעת הצלחה/שגיאה -->

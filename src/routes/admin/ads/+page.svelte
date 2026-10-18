@@ -1,7 +1,10 @@
 <script lang="ts">
     // ניהול הפרסומות — אישור, דחייה, הארכה, הסרה והזנה ידנית
     import { enhance } from '$app/forms';
+    import { invalidateAll } from '$app/navigation';
+    import { onDestroy, onMount } from 'svelte';
     import { AD_GRADIENTS, gradientCss } from '$lib/ads/gradients';
+    import { heMatches } from '$lib/rating/heSearch';
     import { absDate } from '$lib/rating/time';
     import Seo from '$lib/components/rating/Seo.svelte';
     import AdCardPreview from '$lib/components/AdCardPreview.svelte';
@@ -10,8 +13,72 @@
     let { data, form }: { data: PageData; form: ActionData } = $props();
 
     let showCreate = $state(false);
-    // האשפה: הוסרו (שחזור) ופג תוקפן (חידוש) — נפתחת מכפתור בכותרת
-    let showTrash = $state(false);
+
+    // ===== טאבים, חיפוש, מיון ובחירה רב-פריטית — כמו בגמ"ח הארצי =====
+    type Tab = 'pending' | 'live' | 'inactive' | 'trash';
+    let activeTab = $state<Tab>('pending');
+    let searchQuery = $state('');
+    // 'default' = הממתינות לפי הגעה, שעל האוויר לפי המקום בטור
+    let sortOrder = $state<'default' | 'newest' | 'oldest'>('default');
+
+    let selected = $state<Set<string>>(new Set());
+    function toggleSelect(id: string) {
+        const next = new Set(selected);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        selected = next;
+    }
+    function clearSelection() {
+        selected = new Set();
+    }
+    function setTab(t: Tab) {
+        activeTab = t;
+        clearSelection();
+    }
+
+    // עריכת הטקסטים בשורה (כותרת, משנה, כפתור, ריחוף)
+    let editingId = $state<string | null>(null);
+    let edit = $state({ title: '', subtitle: '', cta: '', hoverText: '' });
+    function startEdit(ad: { id: string; title: string; subtitle: string; cta: string; hoverText: string }) {
+        editingId = ad.id;
+        edit = { title: ad.title, subtitle: ad.subtitle, cta: ad.cta, hoverText: ad.hoverText };
+    }
+
+    // רענון אוטומטי כל 30 שניות: חתימה קלה מ-/admin/ads/signal, ו-invalidateAll
+    // (שמושך מחדש את כל המודעות עם התמונות) רק כשהיא השתנתה
+    let autoRefresh = $state(true);
+    let refreshTimer: ReturnType<typeof setInterval> | null = null;
+    let lastSig: string | null = null;
+    onMount(() => {
+        // קישור ישיר למודעה (#ad-…) מהאזור האישי — פותח את הטאב שלה
+        const m = location.hash.match(/^#ad-(.+)$/);
+        if (m) {
+            const ad = data.rows.find((a) => a.id === decodeURIComponent(m[1]));
+            if (ad) {
+                activeTab = ad.status === 'pending' ? 'pending' : ad.status === 'approved' && !ad.expired ? 'live' : 'inactive';
+                setTimeout(() => document.getElementById(`ad-${ad.id}`)?.scrollIntoView({ block: 'center' }), 50);
+            }
+        }
+        refreshTimer = setInterval(async () => {
+            if (!autoRefresh || document.visibilityState !== 'visible' || editingId) return;
+            try {
+                const res = await fetch('/admin/ads/signal');
+                if (!res.ok) return;
+                const { sig } = (await res.json()) as { sig?: string };
+                if (typeof sig !== 'string') return;
+                // הפעימה הראשונה רק לומדת את המצב — הדף הרגע נטען
+                if (lastSig !== null && sig !== lastSig) await invalidateAll();
+                lastSig = sig;
+            } catch {
+                /* תקלת רשת זמנית — ננסה בפעימה הבאה */
+            }
+        }, 30_000);
+    });
+    onDestroy(() => {
+        if (refreshTimer) clearInterval(refreshTimer);
+    });
+
+    // האשפה: הוסרו (שחזור) ופג תוקפן (חידוש)
     let trashPreview = $state<any>(null);
     function openTrashPreview(t: any) {
         trashPreview = t.card ?? data.rows.find((a) => a.id === t.id) ?? null;
@@ -181,6 +248,50 @@
         data.rows.filter((a) => a.status === 'rejected' || (a.status === 'approved' && a.expired)),
     );
 
+    /** חיפוש + מיון על הרשימה של הטאב הפעיל */
+    function applyFilter<T extends (typeof data.rows)[number]>(list: T[], bySlot = false): T[] {
+        const q = searchQuery.trim();
+        const filtered = q
+            ? list.filter((a) => heMatches(q, a.title, a.subtitle, a.submittedByName, a.contactEmail, a.landing.phone))
+            : [...list];
+        if (sortOrder === 'default') {
+            return bySlot ? filtered.sort((x, y) => (x.slot ?? 999) - (y.slot ?? 999)) : filtered;
+        }
+        return filtered.sort((x, y) => {
+            const d = (Date.parse(x.submittedAt) || 0) - (Date.parse(y.submittedAt) || 0);
+            return sortOrder === 'newest' ? -d : d;
+        });
+    }
+    const visibleList = $derived(
+        activeTab === 'pending'
+            ? applyFilter(pending)
+            : activeTab === 'live'
+              ? applyFilter(liveAds, true)
+              : activeTab === 'inactive'
+                ? applyFilter(inactive)
+                : [],
+    );
+    const visibleSelectedIds = $derived([...selected].filter((id) => visibleList.some((a) => a.id === id)));
+
+    const STAT_CARDS = $derived([
+        { label: 'ממתינות', n: data.stats.pending, cls: 'border-amber-500/30 bg-amber-500/5 text-amber-200' },
+        { label: 'אושרו', n: data.stats.approved, cls: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-200' },
+        { label: 'נדחו', n: data.stats.rejected, cls: 'border-red-500/30 bg-red-500/5 text-red-200' },
+        { label: 'נשלחו השבוע', n: data.stats.submittedThisWeek, cls: 'border-blue-500/30 bg-blue-500/5 text-blue-200' },
+        { label: 'אושרו השבוע', n: data.stats.approvedThisWeek, cls: 'border-purple-500/30 bg-purple-500/5 text-purple-200' },
+    ]);
+
+    function confirmPurge(title: string, cancel: () => void) {
+        if (!confirm(`למחוק לצמיתות את "${title}"? אין דרך חזרה.`)) cancel();
+    }
+
+    const TABS = $derived([
+        { key: 'pending' as const, label: `⏳ ממתינות (${pending.length})`, on: 'bg-amber-500 text-black' },
+        { key: 'live' as const, label: `✅ על האוויר (${liveAds.length})`, on: 'bg-emerald-500 text-black' },
+        { key: 'inactive' as const, label: `❌ לא פעילות (${inactive.length})`, on: 'bg-red-500 text-white' },
+        { key: 'trash' as const, label: `🗑 אשפה (${data.trash.length})`, on: 'bg-gray-200 text-black' },
+    ]);
+
     const inputCls =
         'w-full rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none';
 
@@ -212,77 +323,31 @@
 
 <Seo title="ניהול פרסומות" description="אישור וניהול הפרסומות באתר" noindex />
 
-<div class="flex flex-col gap-4 py-6">
-    <header class="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 class="text-2xl font-black text-white">📢 ניהול פרסומות</h1>
-        <span class="text-sm text-gray-400">
-            {data.live} על האוויר מתוך {data.slotCount} משבצות · {data.pending} ממתינות
-            <button type="button" onclick={() => (showTrash = !showTrash)}
-                    title="פרסומות שהוסרו או שפג תוקפן — לשחזור או לחידוש"
-                    class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black mr-2 border border-white/15 {showTrash ? 'bg-gray-200 text-black' : 'bg-white/5 text-gray-300 hover:bg-white/10'}">
-                🗑 אשפה ({data.trash.length})
+<div class="flex flex-col gap-3">
+    <header class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-lg font-black text-white">📢 ניהול פרסומות</h2>
+        <div class="flex flex-wrap items-center gap-2 text-xs text-gray-400">
+            <span>{data.live} על האוויר מתוך {data.slotCount} משבצות</span>
+            <button type="button" onclick={() => invalidateAll()} title="רענן עכשיו"
+                    class="cursor-pointer rounded-lg border border-amber-500/40 bg-amber-500/15 px-2.5 py-1 font-bold text-amber-200 hover:bg-amber-500/25">
+                🔄 רענן
             </button>
-        </span>
+            <label class="flex cursor-pointer items-center gap-1">
+                <input type="checkbox" bind:checked={autoRefresh} class="accent-amber-500" />
+                רענון אוטומטי
+            </label>
+        </div>
     </header>
 
-    {#if showTrash}
-        <!-- אשפה: הוסרה = שחזור למצב הקודם (המקום והתוקף נשמרו); פגה = חידוש לתקופה חדשה -->
-        <section class="flex flex-col gap-2 rounded-2xl border border-white/10 bg-slate-800/80 p-3">
-            {#if data.trash.length === 0}
-                <p class="text-center text-sm text-gray-400 italic">האשפה ריקה</p>
-            {/if}
-            {#each data.trash as t (t.id)}
-                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                    <div class="flex min-w-0 flex-col gap-0.5">
-                        <button type="button" onclick={() => openTrashPreview(t)} title="תצוגה מקדימה של הפרסומת"
-                                class="cursor-pointer text-right text-sm font-black text-white hover:text-amber-300">{t.title}</button>
-                        <span class="flex items-center gap-1.5 text-xs text-gray-400">
-                            <span class="rounded-full px-2 py-0.5 text-[11px] font-black
-                                         {t.kind === 'deleted' ? 'bg-red-500/15 text-red-300' : 'bg-amber-500/15 text-amber-300'}">{t.kind === 'deleted' ? 'הוסרה' : 'פג התוקף'}</span>
-                            {fmtDay(t.at)} · {t.advertiserName}
-                        </span>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-1.5">
-                        {#if t.kind === 'deleted'}
-                            <form method="POST" action="?/restore" use:enhance>
-                                <input type="hidden" name="id" value={t.id} />
-                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black bg-emerald-600 text-white hover:bg-emerald-500" title="חזרה למצב שלפני ההסרה">♻ שחזר</button>
-                            </form>
-                        {:else}
-                            <form method="POST" action="?/approve" use:enhance>
-                                <input type="hidden" name="id" value={t.id} />
-                                <input type="hidden" name="duration_days" value={t.requestedDurationDays ?? ''} />
-                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black bg-emerald-600 text-white hover:bg-emerald-500" title="פרסום מחדש לתקופה חדשה מהיום, באותו מקום בלוח">♻ חדש</button>
-                            </form>
-                            <form method="POST" action="?/remove" use:enhance>
-                                <input type="hidden" name="id" value={t.id} />
-                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10" title="העברה לאשפה — אפשר לשחזר">🗑 הסרה</button>
-                            </form>
-                        {/if}
-                    </div>
-                </div>
-            {/each}
-        </section>
-        {#if trashPreview}
-            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-            <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4" role="presentation"
-                 onclick={() => (trashPreview = null)}>
-                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-                <div class="my-auto flex flex-col items-center gap-3" role="dialog" aria-modal="true" aria-label="תצוגה מקדימה של הפרסומת"
-                     tabindex="-1" onclick={(e) => e.stopPropagation()}>
-                    <AdCardPreview ad={trashPreview} />
-                    <button type="button" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black border border-white/20 bg-white/10 text-gray-200 hover:bg-white/20"
-                            onclick={() => (trashPreview = null)}>✕ סגור</button>
-                </div>
+    <!-- מונים (כמו בגמ"ח הארצי) -->
+    <section class="grid grid-cols-3 gap-2 sm:grid-cols-5">
+        {#each STAT_CARDS as c (c.label)}
+            <div class="rounded-xl border px-2 py-1.5 text-center {c.cls}">
+                <div class="text-[10px] font-bold opacity-80">{c.label}</div>
+                <div class="text-xl leading-tight font-black">{c.n}</div>
             </div>
-        {/if}
-    {/if}
-
-    <nav class="flex flex-wrap gap-2 text-sm">
-        <a href="/admin" class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 hover:text-white">← ניהול</a>
-        <a href="/admin/officials" class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 hover:text-white">מדורגים</a>
-        <a href="/admin/reports" class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 hover:text-white">דיווחים</a>
-    </nav>
+        {/each}
+    </section>
 
     {#if data.backendUnavailable}
         <p class="rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
@@ -404,22 +469,139 @@
         {/if}
     </section>
 
-    {#if data.rows.length === 0 && !data.backendUnavailable}
-        <div class="rounded-2xl border border-dashed border-white/10 bg-slate-800/80 p-8 text-center">
-            <div class="text-4xl">📢</div>
-            <p class="mt-2 font-bold text-white">אין עדיין פרסומות</p>
-            <p class="mt-1 text-sm text-gray-400">כל {data.slotCount} המשבצות בטור הימני פנויות</p>
+    <!-- טאבים -->
+    <div class="flex gap-1.5 overflow-x-auto pb-1">
+        {#each TABS as t (t.key)}
+            <button type="button" onclick={() => setTab(t.key)}
+                    class="cursor-pointer whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-black transition-all
+                           {activeTab === t.key ? t.on : 'border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'}">
+                {t.label}
+            </button>
+        {/each}
+    </div>
+
+    {#if activeTab !== 'trash'}
+        <!-- חיפוש + מיון -->
+        <div class="flex flex-wrap gap-2">
+            <input type="search" bind:value={searchQuery} placeholder="🔎 חיפוש לפי כותרת, מפרסם, אימייל או טלפון…"
+                   class="min-w-[200px] flex-1 {inputCls}" />
+            <select bind:value={sortOrder} class="rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white">
+                <option value="default" class="bg-slate-900">{activeTab === 'live' ? 'לפי המקום בטור' : 'סדר ברירת מחדל'}</option>
+                <option value="newest" class="bg-slate-900">חדש לישן</option>
+                <option value="oldest" class="bg-slate-900">ישן לחדש</option>
+            </select>
         </div>
     {/if}
 
-    {#each [{ title: 'ממתינות לאישור', list: pending }, { title: 'על האוויר', list: liveAds }, { title: 'לא פעילות', list: inactive }] as section (section.title)}
-        {#if section.list.length}
-            <section class="flex flex-col gap-2">
-                <h2 class="text-lg font-black text-white">{section.title} ({section.list.length})</h2>
+    <!-- בחירה רב-פריטית (ממתינות) -->
+    {#if activeTab === 'pending' && visibleList.length > 0}
+        <div class="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5">
+            <button type="button" onclick={() => (selected = new Set([...selected, ...visibleList.map((a) => a.id)]))}
+                    class="cursor-pointer text-xs font-bold text-amber-300 hover:text-amber-200">
+                בחר הכל ({visibleList.length})
+            </button>
+            <span class="text-xs text-gray-600">·</span>
+            <button type="button" onclick={clearSelection} class="cursor-pointer text-xs font-bold text-gray-400 hover:text-gray-300">נקה</button>
+            {#if visibleSelectedIds.length > 0}
+                <span class="mr-2 text-xs text-gray-300">נבחרו {visibleSelectedIds.length}</span>
+                <form method="POST" action="?/bulkApprove" use:enhance={() => async ({ update }) => { clearSelection(); await update(); }}>
+                    <input type="hidden" name="ids" value={visibleSelectedIds.join(',')} />
+                    <button type="submit" class="cursor-pointer rounded-lg bg-emerald-500 px-3 py-1 text-xs font-black text-black hover:bg-emerald-400">
+                        ✅ אשר את הנבחרות
+                    </button>
+                </form>
+                <form method="POST" action="?/bulkReject" class="flex gap-1"
+                      use:enhance={() => async ({ update }) => { clearSelection(); await update(); }}>
+                    <input type="hidden" name="ids" value={visibleSelectedIds.join(',')} />
+                    <input type="text" name="reason" maxlength="300" placeholder="סיבת דחייה (לא חובה)"
+                           class="w-40 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-xs text-white" />
+                    <button type="submit" class="cursor-pointer rounded-lg bg-red-600 px-3 py-1 text-xs font-black text-white hover:bg-red-500">
+                        ❌ דחה את הנבחרות
+                    </button>
+                </form>
+            {/if}
+        </div>
+    {/if}
 
-                {#each section.list as ad (ad.id)}
-                    <article class="flex flex-col gap-2 rounded-2xl border p-3 {TONE[ad.status]}">
+    {#if activeTab === 'trash'}
+        <!-- אשפה: הוסרה = שחזור למצב הקודם (המקום והתוקף נשמרו); פגה = חידוש לתקופה חדשה.
+             מחיקה לצמיתות — סופר-אדמין בלבד, ורק ממה שכבר באשפה -->
+        <section class="flex flex-col gap-2">
+            {#if data.trash.length === 0}
+                <p class="rounded-2xl border border-dashed border-white/10 py-8 text-center text-sm text-gray-500 italic">האשפה ריקה</p>
+            {/if}
+            {#each data.trash as t (t.id)}
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <div class="flex min-w-0 flex-col gap-0.5">
+                        <button type="button" onclick={() => openTrashPreview(t)} title="תצוגה מקדימה של הפרסומת"
+                                class="cursor-pointer text-right text-sm font-black text-white hover:text-amber-300">{t.title}</button>
+                        <span class="flex items-center gap-1.5 text-xs text-gray-400">
+                            <span class="rounded-full px-2 py-0.5 text-[11px] font-black
+                                         {t.kind === 'deleted' ? 'bg-red-500/15 text-red-300' : 'bg-amber-500/15 text-amber-300'}">{t.kind === 'deleted' ? 'הוסרה' : 'פג התוקף'}</span>
+                            {fmtDay(t.at)} · {t.advertiserName}
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        {#if t.kind === 'deleted'}
+                            <form method="POST" action="?/restore" use:enhance>
+                                <input type="hidden" name="id" value={t.id} />
+                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black bg-emerald-600 text-white hover:bg-emerald-500" title="חזרה למצב שלפני ההסרה">♻ שחזר</button>
+                            </form>
+                            {#if data.superAdmin}
+                                <form method="POST" action="?/purge" use:enhance={({ cancel }) => confirmPurge(t.title, cancel)}>
+                                    <input type="hidden" name="id" value={t.id} />
+                                    <button type="submit" class="cursor-pointer rounded-lg border border-red-500/40 bg-red-600/20 px-3 py-1.5 text-xs font-black text-red-300 hover:bg-red-600/30">✕ מחק לצמיתות</button>
+                                </form>
+                            {/if}
+                        {:else}
+                            <form method="POST" action="?/approve" use:enhance>
+                                <input type="hidden" name="id" value={t.id} />
+                                <input type="hidden" name="duration_days" value={t.requestedDurationDays ?? ''} />
+                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black bg-emerald-600 text-white hover:bg-emerald-500" title="פרסום מחדש לתקופה חדשה מהיום, באותו מקום בלוח">♻ חדש</button>
+                            </form>
+                            <form method="POST" action="?/remove" use:enhance>
+                                <input type="hidden" name="id" value={t.id} />
+                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10" title="העברה לאשפה — אפשר לשחזר">🗑 הסרה</button>
+                            </form>
+                        {/if}
+                    </div>
+                </div>
+            {/each}
+        </section>
+        {#if trashPreview}
+            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+            <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4" role="presentation"
+                 onclick={() => (trashPreview = null)}>
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <div class="my-auto flex flex-col items-center gap-3" role="dialog" aria-modal="true" aria-label="תצוגה מקדימה של הפרסומת"
+                     tabindex="-1" onclick={(e) => e.stopPropagation()}>
+                    <AdCardPreview ad={trashPreview} />
+                    <button type="button" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black border border-white/20 bg-white/10 text-gray-200 hover:bg-white/20"
+                            onclick={() => (trashPreview = null)}>✕ סגור</button>
+                </div>
+            </div>
+        {/if}
+    {:else if visibleList.length === 0}
+        <div class="rounded-2xl border border-dashed border-white/10 bg-slate-800/80 p-6 text-center">
+            <p class="font-bold text-white">
+                {searchQuery ? 'לא נמצאו תוצאות לחיפוש'
+                    : activeTab === 'pending' ? 'אין פרסומות שממתינות לאישור'
+                    : activeTab === 'live' ? 'אין פרסומות על האוויר'
+                    : 'אין פרסומות לא פעילות'}
+            </p>
+            {#if activeTab === 'live' && !searchQuery}
+                <p class="mt-1 text-sm text-gray-400">כל {data.slotCount} המשבצות בטור הימני פנויות</p>
+            {/if}
+        </div>
+    {:else}
+            <section class="flex flex-col gap-2">
+                {#each visibleList as ad (ad.id)}
+                    <article id="ad-{ad.id}" class="flex scroll-mt-24 flex-col gap-2 rounded-2xl border p-3 {TONE[ad.status]}">
                         <div class="flex flex-wrap items-center gap-2">
+                            {#if activeTab === 'pending'}
+                                <input type="checkbox" checked={selected.has(ad.id)} onchange={() => toggleSelect(ad.id)}
+                                       aria-label="בחירת {ad.title}" class="h-4 w-4 cursor-pointer accent-amber-500" />
+                            {/if}
                             <span
                                 class="h-8 w-8 shrink-0 rounded-lg"
                                 style="background: {gradientCss(ad.gradientId)}"
@@ -483,6 +665,22 @@
                                 {ad.submittedAt ? absDate(ad.submittedAt) : ''}
                             </span>
                         </div>
+
+                        {#if editingId === ad.id}
+                            <!-- עריכת הטקסטים בשורה (כמו בגמ"ח הארצי) — תמונות ועיצוב נשארים של המפרסם -->
+                            <form method="POST" action="?/update" class="grid gap-1.5 rounded-xl border border-amber-400/30 bg-black/20 p-2 sm:grid-cols-2"
+                                  use:enhance={() => async ({ result, update }) => { if (result.type === 'success') editingId = null; await update(); }}>
+                                <input type="hidden" name="id" value={ad.id} />
+                                <input name="title" bind:value={edit.title} maxlength="40" required placeholder="כותרת" class="{inputCls} font-bold" />
+                                <input name="subtitle" bind:value={edit.subtitle} maxlength="70" placeholder="שורת משנה" class={inputCls} />
+                                <input name="cta" bind:value={edit.cta} maxlength="30" placeholder="טקסט הכפתור" class={inputCls} />
+                                <input name="hoverText" bind:value={edit.hoverText} maxlength="90" placeholder="טקסט ריחוף" class={inputCls} />
+                                <div class="flex gap-2 sm:col-span-2">
+                                    <button type="submit" class="cursor-pointer rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-black text-black">💾 שמור</button>
+                                    <button type="button" onclick={() => (editingId = null)} class="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-xs text-gray-300">ביטול</button>
+                                </div>
+                            </form>
+                        {/if}
 
                         {#if ad.status === 'approved' && !ad.expired && ad.slotIndex >= 0}
                             {@const slotN = ad.slot ?? ad.slotIndex + 1}
@@ -616,6 +814,12 @@
                                 rel="noopener"
                                 class="rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
                             >👁 תצוגה מקדימה</a>
+                            {#if editingId !== ad.id}
+                                <button type="button" onclick={() => startEdit(ad)}
+                                        class="cursor-pointer rounded-xl border border-blue-400/40 bg-blue-500/15 px-3 py-1.5 text-xs font-bold text-blue-200 hover:bg-blue-500/25">
+                                    ✏️ {ad.status === 'pending' ? 'ערוך לפני אישור' : 'ערוך'}
+                                </button>
+                            {/if}
 
                             {#if ad.status !== 'approved' || ad.expired}
                                 <form method="POST" action="?/approve" use:enhance class="flex items-center gap-1">
@@ -733,6 +937,14 @@
                                         ✕ דחייה
                                     </button>
                                 </form>
+                                                        {:else}
+                                <!-- דחייה בטעות — חזרה לתור הממתינות -->
+                                <form method="POST" action="?/unreject" use:enhance>
+                                    <input type="hidden" name="id" value={ad.id} />
+                                    <button type="submit" class="cursor-pointer rounded-xl border border-amber-400/40 bg-amber-500/15 px-3 py-1.5 text-xs font-bold text-amber-200 hover:bg-amber-500/25">
+                                        ↩️ החזר לממתינות
+                                    </button>
+                                </form>
                             {/if}
 
                             <form
@@ -816,8 +1028,7 @@
                     </article>
                 {/each}
             </section>
-        {/if}
-    {/each}
+    {/if}
 
     <!-- ============================================================ -->
     <!-- תזמון פרסומות פעילות + תאריכי פקיעה - אותה טבלה כמו בגמ"ח   -->
@@ -1070,6 +1281,60 @@
             </div>
         {/if}
     </section>
+
+    <!-- ============================================================ -->
+    <!-- מפרסמים — קיבוץ לפי אימייל (כמו בגמ"ח הארצי). מקופל כברירת  -->
+    <!-- מחדל, כדי לא להאריך את הדף                                    -->
+    <!-- ============================================================ -->
+    <details class="rounded-2xl border border-white/10 bg-slate-800/80">
+        <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2">
+            <span aria-hidden="true">👤</span>
+            <h2 class="text-lg font-black text-white">מפרסמים</h2>
+            <span class="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-xs font-bold text-gray-300">{data.advertisers.length}</span>
+            <span class="mr-auto text-xs text-gray-500">▾</span>
+        </summary>
+        {#if data.advertisers.length === 0}
+            <p class="px-3 pb-3 text-sm text-gray-500 italic">עוד אין מפרסמים במערכת</p>
+        {:else}
+            <div class="overflow-x-auto border-t border-white/10">
+                <table class="w-full text-sm" dir="rtl">
+                    <thead class="bg-white/5">
+                        <tr class="text-[11px] text-gray-400">
+                            <th class="px-3 py-2 text-right font-bold">שם</th>
+                            <th class="hidden px-3 py-2 text-right font-bold md:table-cell">פרסומת</th>
+                            <th class="hidden px-3 py-2 text-right font-bold md:table-cell">כתובת</th>
+                            <th class="hidden px-3 py-2 text-right font-bold lg:table-cell">טלפון</th>
+                            <th class="px-3 py-2 text-right font-bold">פרסומות</th>
+                            <th class="px-3 py-2 text-right font-bold">פעילות</th>
+                            <th class="hidden px-3 py-2 text-right font-bold md:table-cell">סוג</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {#each data.advertisers as a (a.key)}
+                            <tr class="border-t border-white/10 hover:bg-white/5">
+                                <td class="px-3 py-1.5 font-bold text-white">
+                                    <div class="max-w-[160px] truncate">{a.name || '-'}</div>
+                                    <div class="max-w-[160px] truncate text-[10px] text-gray-500">{a.email}</div>
+                                </td>
+                                <td class="hidden max-w-[160px] truncate px-3 py-1.5 text-gray-300 md:table-cell">{a.companyName || '-'}</td>
+                                <td class="hidden max-w-[160px] truncate px-3 py-1.5 text-gray-300 md:table-cell">{a.address || '-'}</td>
+                                <td class="hidden px-3 py-1.5 whitespace-nowrap text-gray-300 lg:table-cell" dir="ltr">{a.phone || '-'}</td>
+                                <td class="px-3 py-1.5 text-gray-300">{a.adsCount}</td>
+                                <td class="px-3 py-1.5 {a.activeCount > 0 ? 'font-black text-emerald-300' : 'text-gray-500'}">{a.activeCount}</td>
+                                <td class="hidden px-3 py-1.5 md:table-cell">
+                                    {#if a.isReturning}
+                                        <span class="rounded-full border border-purple-500/40 bg-purple-500/15 px-2 py-0.5 text-[11px] font-black whitespace-nowrap text-purple-300">🔁 חוזר</span>
+                                    {:else}
+                                        <span class="rounded-full border border-blue-500/40 bg-blue-500/15 px-2 py-0.5 text-[11px] font-black whitespace-nowrap text-blue-300">חדש</span>
+                                    {/if}
+                                </td>
+                            </tr>
+                        {/each}
+                    </tbody>
+                </table>
+            </div>
+        {/if}
+    </details>
 
     <!-- תצוגה מקדימה צפה בריחוף על כותרת מודעה שעל האוויר (דסקטופ בלבד) -->
     {#if hoverPreview}

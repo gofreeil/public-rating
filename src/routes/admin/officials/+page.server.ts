@@ -17,6 +17,7 @@ import {
     type SyncLog,
 } from '$lib/server/rating';
 import { runKnessetSync, runRecordSync, syncOneRecord } from '$lib/server/knessetSync';
+import { resettingCounts } from '$lib/server/adminPanel';
 
 // הסנכרון מדבר עם ה-OData של הכנסת + שקוף + עשרות כתיבות ל-Strapi —
 // יותר מ-10 שניות ברירת המחדל של Vercel (נקרא ע"י adapter-vercel, מיותר ב-node)
@@ -84,7 +85,7 @@ export const load: PageServerLoad = async (event) => {
     return { pending, officials, syncLog, recordLog };
 };
 
-export const actions: Actions = {
+const pageActions = {
     // סנכרון נתונים חיצוני: מצבת המכהנים מה-OData של הכנסת + מדד שקוף
     sync: async (event) => {
         const session = await event.locals.auth();
@@ -290,4 +291,7 @@ export const actions: Actions = {
             return fail(500, { error: `שגיאה בהסרה: ${e instanceof Error ? e.message : e}` });
         }
     },
-};
+} satisfies Actions;
+
+// כל פעולה מאפסת את מוני "ממתין לטיפול" — הבועות בהאדר ובפאנל מתעדכנות מיד
+export const actions: Actions = resettingCounts(pageActions);

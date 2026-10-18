@@ -58,6 +58,19 @@ export async function strapiPut<T = unknown>(path: string, body: unknown, jwt?: 
     return res.json() as Promise<T>;
 }
 
+/** מחיקה לצמיתות — רק למסלולים מפורשים (מחיקה מהאשפה בפאנל הניהול);
+ *  כל השאר באתר עובד בהסרה רכה (status1=deleted) */
+export async function strapiDelete(path: string, jwt?: string): Promise<void> {
+    const res = await fetch(STRAPI_URL + path, {
+        method:  'DELETE',
+        headers: getHeaders(jwt),
+    });
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`[Strapi] DELETE ${path} → ${res.status}: ${text}`);
+    }
+}
+
 // ============================================================
 // ---- Auth (users-permissions plugin - ללא token) ----
 // ============================================================

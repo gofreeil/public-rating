@@ -18,18 +18,14 @@
 
 <Seo title="דיווחי תוכן — ניהול" description="תור טיפול בדיווחי תוכן" noindex />
 
-<div class="flex flex-col gap-4 py-6">
+<div class="flex flex-col gap-3">
     <header class="flex flex-wrap items-baseline justify-between gap-2">
-        <h1 class="text-2xl font-black text-white">🚩 דיווחי תוכן</h1>
+        <h2 class="text-lg font-black text-white">🚩 דיווחי תוכן</h2>
         <span class="text-sm text-gray-400">
             {pending.length} ממתינים · {handled.length} טופלו
         </span>
     </header>
 
-    <nav class="flex flex-wrap gap-2 text-sm">
-        <a href="/admin" class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 hover:text-white">← ניהול</a>
-        <a href="/admin/officials" class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 hover:text-white">מדורגים</a>
-    </nav>
 
     {#if form?.success}
         <p class="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">

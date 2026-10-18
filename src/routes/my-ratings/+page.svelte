@@ -5,6 +5,7 @@
     import { fmtScore } from '$lib/rating/aggregate';
     import { absDate, isoDate, relDate } from '$lib/rating/time';
     import { groupByKey } from '$lib/rating/types';
+    import AdminPanel from '$lib/components/rating/AdminPanel.svelte';
     import Avatar from '$lib/components/rating/Avatar.svelte';
     import Seo from '$lib/components/rating/Seo.svelte';
     import Stars from '$lib/components/rating/Stars.svelte';
@@ -40,6 +41,12 @@
             </span>
         {/if}
     </header>
+
+    <!-- פאנל הניהול חי כאן ולא ככפתור נפרד בהדר (כמו בגמ"ח הארצי);
+         id="admin" הוא העוגן לקישור הישיר /my-ratings#admin -->
+    {#if data.admin}
+        <AdminPanel admin={data.admin} />
+    {/if}
 
     {#if form?.success}
         <p class="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">

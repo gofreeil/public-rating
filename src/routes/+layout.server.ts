@@ -1,5 +1,7 @@
 import type { LayoutServerLoad } from './$types';
 import { getUserById } from '$lib/server/db';
+import { adminRoleOf } from '$lib/server/auth';
+import { getAdminPending } from '$lib/server/adminPanel';
 
 export const load: LayoutServerLoad = async (event) => {
     let session = null;
@@ -18,5 +20,12 @@ export const load: LayoutServerLoad = async (event) => {
         } catch { /* שקט */ }
     }
 
-    return { session, layoutUser };
+    // תפקיד הניהול + מה שממתין לטיפול — לבועה האדומה על תמונת הפרופיל
+    // בהאדר ולפאנל שבאזור האישי. רק לאדמין, ומקאש קצר (adminPanel).
+    const adminRole = adminRoleOf(session);
+    const pendingCount = adminRole
+        ? await getAdminPending().then((p) => p.total).catch(() => 0)
+        : 0;
+
+    return { session, layoutUser, adminRole, pendingCount };
 };

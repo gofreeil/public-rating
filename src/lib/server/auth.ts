@@ -29,6 +29,12 @@ export function isAdmin(session: Session | null): boolean {
     return role === 'rating_admin' || role === 'neighborhood_admin';
 }
 
+/** תפקיד הניהול לתצוגה (סרגל הניווט ופאנל האזור האישי); null = משתמש רגיל */
+export function adminRoleOf(session: Session | null): 'super_admin' | 'admin' | null {
+    if (isSuperAdmin(session)) return 'super_admin';
+    return isAdmin(session) ? 'admin' : null;
+}
+
 /** דרוש הרשאת אדמין - זורק 403 אם אין */
 export function requireAdmin(session: Session | null): void {
     if (!isAdmin(session)) {

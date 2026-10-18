@@ -8,6 +8,7 @@ import { isAdmin, requireAdmin } from '$lib/server/auth';
 import { listReports, markReportHandled, softDeleteRatingItem } from '$lib/server/rating';
 import type { ContentReport } from '$lib/rating/types';
 import type { Actions, PageServerLoad } from './$types';
+import { resettingCounts } from '$lib/server/adminPanel';
 
 export const load: PageServerLoad = async (event) => {
     const session = await event.locals.auth();
@@ -29,7 +30,7 @@ export const load: PageServerLoad = async (event) => {
     return { reports };
 };
 
-export const actions: Actions = {
+const pageActions = {
     // הסרת התוכן המדווח + סגירת הדיווח
     remove_content: async (event) => {
         const session = await event.locals.auth();
@@ -65,4 +66,7 @@ export const actions: Actions = {
             return fail(500, { error: `שגיאה בסימון: ${e instanceof Error ? e.message : e}` });
         }
     },
-};
+} satisfies Actions;
+
+// כל פעולה מאפסת את מוני "ממתין לטיפול" — הבועות בהאדר ובפאנל מתעדכנות מיד
+export const actions: Actions = resettingCounts(pageActions);
