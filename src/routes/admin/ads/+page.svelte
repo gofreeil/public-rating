@@ -10,6 +10,12 @@
     let { data, form }: { data: PageData; form: ActionData } = $props();
 
     let showCreate = $state(false);
+    // האשפה: הוסרו (שחזור) ופג תוקפן (חידוש) — נפתחת מכפתור בכותרת
+    let showTrash = $state(false);
+    let trashPreview = $state<any>(null);
+    function openTrashPreview(t: any) {
+        trashPreview = t.card ?? data.rows.find((a) => a.id === t.id) ?? null;
+    }
 
     // תצוגה מקדימה של הכרטיס כפי שהוא באמת מוצג בטור הפרסומות באתר:
     // ריחוף על כותרת מודעה שעל האוויר (דסקטופ) או הקשה עליה (נייד/דסקטופ)
@@ -211,8 +217,66 @@
         <h1 class="text-2xl font-black text-white">📢 ניהול פרסומות</h1>
         <span class="text-sm text-gray-400">
             {data.live} על האוויר מתוך {data.slotCount} משבצות · {data.pending} ממתינות
+            <button type="button" onclick={() => (showTrash = !showTrash)}
+                    title="פרסומות שהוסרו או שפג תוקפן — לשחזור או לחידוש"
+                    class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black mr-2 border border-white/15 {showTrash ? 'bg-gray-200 text-black' : 'bg-white/5 text-gray-300 hover:bg-white/10'}">
+                🗑 אשפה ({data.trash.length})
+            </button>
         </span>
     </header>
+
+    {#if showTrash}
+        <!-- אשפה: הוסרה = שחזור למצב הקודם (המקום והתוקף נשמרו); פגה = חידוש לתקופה חדשה -->
+        <section class="flex flex-col gap-2 rounded-2xl border border-white/10 bg-slate-800/80 p-3">
+            {#if data.trash.length === 0}
+                <p class="text-center text-sm text-gray-400 italic">האשפה ריקה</p>
+            {/if}
+            {#each data.trash as t (t.id)}
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <div class="flex min-w-0 flex-col gap-0.5">
+                        <button type="button" onclick={() => openTrashPreview(t)} title="תצוגה מקדימה של הפרסומת"
+                                class="cursor-pointer text-right text-sm font-black text-white hover:text-amber-300">{t.title}</button>
+                        <span class="flex items-center gap-1.5 text-xs text-gray-400">
+                            <span class="rounded-full px-2 py-0.5 text-[11px] font-black
+                                         {t.kind === 'deleted' ? 'bg-red-500/15 text-red-300' : 'bg-amber-500/15 text-amber-300'}">{t.kind === 'deleted' ? 'הוסרה' : 'פג התוקף'}</span>
+                            {fmtDay(t.at)} · {t.advertiserName}
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        {#if t.kind === 'deleted'}
+                            <form method="POST" action="?/restore" use:enhance>
+                                <input type="hidden" name="id" value={t.id} />
+                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black bg-emerald-600 text-white hover:bg-emerald-500" title="חזרה למצב שלפני ההסרה">♻ שחזר</button>
+                            </form>
+                        {:else}
+                            <form method="POST" action="?/approve" use:enhance>
+                                <input type="hidden" name="id" value={t.id} />
+                                <input type="hidden" name="duration_days" value={t.requestedDurationDays ?? ''} />
+                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black bg-emerald-600 text-white hover:bg-emerald-500" title="פרסום מחדש לתקופה חדשה מהיום, באותו מקום בלוח">♻ חדש</button>
+                            </form>
+                            <form method="POST" action="?/remove" use:enhance>
+                                <input type="hidden" name="id" value={t.id} />
+                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10" title="העברה לאשפה — אפשר לשחזר">🗑 הסרה</button>
+                            </form>
+                        {/if}
+                    </div>
+                </div>
+            {/each}
+        </section>
+        {#if trashPreview}
+            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+            <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4" role="presentation"
+                 onclick={() => (trashPreview = null)}>
+                <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                <div class="my-auto flex flex-col items-center gap-3" role="dialog" aria-modal="true" aria-label="תצוגה מקדימה של הפרסומת"
+                     tabindex="-1" onclick={(e) => e.stopPropagation()}>
+                    <AdCardPreview ad={trashPreview} />
+                    <button type="button" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black border border-white/20 bg-white/10 text-gray-200 hover:bg-white/20"
+                            onclick={() => (trashPreview = null)}>✕ סגור</button>
+                </div>
+            </div>
+        {/if}
+    {/if}
 
     <nav class="flex flex-wrap gap-2 text-sm">
         <a href="/admin" class="rounded-full border border-white/10 bg-slate-800/80 px-3 py-1 text-gray-300 hover:text-white">← ניהול</a>
@@ -676,7 +740,7 @@
                                 action="?/remove"
                                 class="mr-auto"
                                 use:enhance={({ cancel }) => {
-                                    if (!confirm(`להסיר את "${ad.title}" לצמיתות?`)) {
+                                    if (!confirm(`להעביר את "${ad.title}" לאשפה? אפשר לשחזר אותה משם.`)) {
                                         cancel();
                                         return;
                                     }
@@ -945,7 +1009,7 @@
                                                 <input type="hidden" name="id" value={s.id} />
                                                 <button type="submit"
                                                         class="px-2.5 py-1 rounded-lg bg-red-600/20 border border-red-500/40 text-red-300 text-[11px] font-black hover:bg-red-600/30 whitespace-nowrap"
-                                                        onclick={(e) => { if (!confirm(`למחוק לצמיתות את "${s.title}"?`)) e.preventDefault(); }}>
+                                                        onclick={(e) => { if (!confirm(`להעביר את "${s.title}" לאשפה? אפשר לשחזר אותה משם.`)) e.preventDefault(); }}>
                                                     🗑 מחק
                                                 </button>
                                             </form>

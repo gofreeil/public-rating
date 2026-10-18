@@ -752,7 +752,49 @@ export async function rejectAd(
  * הסרה רכה עקבית עם softDeleteRatingItem שבשכבת הדירוג.
  */
 export async function removeAd(id: string, byAdmin: string): Promise<void> {
-    await mergeExtra(id, { decided_by: clamp(byAdmin, 120) }, { status1: 'deleted' });
+    // המצב הקודם נשמר לשחזור מהאשפה (restoreAd), יחד עם המקום בלוח והתוקף
+    const res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
+    const prev = res.data?.status1;
+    await mergeExtra(
+        id,
+        {
+            decided_by: clamp(byAdmin, 120),
+            deleted_at: new Date().toISOString(),
+            deleted_status: prev && prev !== 'deleted' ? prev : 'pending',
+        },
+        { status1: 'deleted' },
+    );
+}
+
+/**
+ * שחזור מהאשפה למצב שלפני ההסרה. מאושרת חוזרת לאוויר אם התוקף שלה עוד
+ * לא עבר; אם עבר — היא נשארת פגה, לחידוש. הסרה מלפני שמירת המצב → ממתינה.
+ */
+export async function restoreAd(id: string): Promise<{ title: string } | null> {
+    const res = await strapiGet<{ data: StrapiItem }>(`${ITEMS}/${encodeURIComponent(id)}`);
+    const item = res.data;
+    if (!item || item.category !== AD_CATEGORY || item.status1 !== 'deleted') return null;
+    const x = { ...ef(item) };
+    const prev = x.deleted_status;
+    const status1 = prev === 'active' || prev === 'rejected' ? prev : 'pending';
+    delete x.deleted_at;
+    delete x.deleted_status;
+    await strapiPut(`${ITEMS}/${item.documentId}`, { data: { status1, extra_fields: x } });
+    invalidateAdsCache();
+    return { title: item.label ?? '' };
+}
+
+/** האשפה של מסך הניהול: המודעות שהוסרו (status1=deleted), החדשות בראש. */
+export async function listDeletedForAdmin(): Promise<Array<SubmittedAd & { deletedAt: string }>> {
+    const rows = await fetchAds({
+        'filters[status1][$eq]': 'deleted',
+        sort: 'updatedAt:desc',
+        'pagination[limit]': '100',
+    });
+    return rows.map((r) => ({
+        ...mapAd(r),
+        deletedAt: typeof ef(r).deleted_at === 'string' ? String(ef(r).deleted_at) : r.updatedAt,
+    }));
 }
 
 /**

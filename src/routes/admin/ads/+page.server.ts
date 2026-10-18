@@ -23,6 +23,8 @@ import {
     extendAd,
     isExpired,
     listAllForAdmin,
+    listDeletedForAdmin,
+    restoreAd,
     moveApprovedAd,
     normalizeDurationDays,
     pauseAd,
@@ -103,8 +105,44 @@ export const load: PageServerLoad = async (event) => {
 
     const live = rows.filter((a) => a.status === 'approved' && !a.expired).length;
 
+    // האשפה: מה שהוסר (לשחזור) ומאושרות שפג תוקפן (לחידוש), החדשות בראש.
+    // למוסרות מצורפים נתוני הכרטיס לתצוגה המקדימה; הפגות כבר ב-rows.
+    const deleted = await listDeletedForAdmin().catch(() => []);
+    const trash = [
+        ...deleted.map((a) => ({
+            id: a.id,
+            title: a.title,
+            advertiserName: a.submittedByName || a.contactEmail || '-',
+            kind: 'deleted' as const,
+            at: a.deletedAt,
+            requestedDurationDays: a.requestedDurationDays,
+            card: {
+                id: a.id,
+                title: a.title,
+                subtitle: a.subtitle,
+                cta: a.cta,
+                gradientId: a.gradientId,
+                logo: a.logo,
+                mainImage: a.mainImage,
+                style: a.style,
+            },
+        })),
+        ...ads
+            .filter((a) => a.status === 'approved' && !a.paused && isExpired(a, now))
+            .map((a) => ({
+                id: a.id,
+                title: a.title,
+                advertiserName: a.submittedByName || a.contactEmail || '-',
+                kind: 'expired' as const,
+                at: a.expiresAt,
+                requestedDurationDays: a.requestedDurationDays,
+                card: null,
+            })),
+    ].sort((x, y) => (Date.parse(y.at) || 0) - (Date.parse(x.at) || 0));
+
     return {
         rows,
+        trash,
         backendUnavailable,
         plans: adPlans,
         slotCount: AD_SLOTS.length,
@@ -183,9 +221,24 @@ export const actions: Actions = {
         if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
         try {
             await removeAd(id, by);
-            return { success: true, message: 'הפרסומת הוסרה' };
+            return { success: true, message: 'הפרסומת הועברה לאשפה — אפשר לשחזר אותה משם' };
         } catch (e) {
             return fail(500, { error: `שגיאה בהסרה: ${e instanceof Error ? e.message : e}` });
+        }
+    },
+
+    // שחזור מהאשפה — למצב שלפני ההסרה (המקום בלוח והתוקף נשמרו)
+    restore: async (event) => {
+        await adminOf(event);
+        const fd = await event.request.formData();
+        const id = String(fd.get('id') ?? '');
+        if (!id) return fail(400, { error: 'חסר מזהה פרסומת' });
+        try {
+            const r = await restoreAd(id);
+            if (!r) return fail(404, { error: 'הפרסומת לא נמצאה באשפה' });
+            return { success: true, message: `"${r.title}" שוחזרה` };
+        } catch (e) {
+            return fail(500, { error: `שגיאה בשחזור: ${e instanceof Error ? e.message : e}` });
         }
     },
 
