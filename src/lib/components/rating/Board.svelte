@@ -5,7 +5,7 @@
     import { page } from '$app/state';
     import type { Group, RatedOfficial } from '$lib/rating/types';
     import { heMatches } from '$lib/rating/heSearch';
-    import { partyLeaderOf } from '$lib/rating/leaders';
+    import { partyLeaderOf, pinPrimeMinister } from '$lib/rating/leaders';
     import { FAQ_COMPACT } from '$lib/rating/faq';
     import FaqAccordion from './FaqAccordion.svelte';
     import OfficialCard from './OfficialCard.svelte';
@@ -70,7 +70,7 @@
             .map(([name, count]) => ({ name, count }));
     });
 
-    const shown = $derived.by(() => {
+    const sorted = $derived.by(() => {
         let filtered = officials.filter((o) => heMatches(query, o.name, o.position, o.org));
         if (orgFilter) filtered = filtered.filter((o) => o.org === orgFilter);
         if (ratedOnly) filtered = filtered.filter((o) => o.stats.count > 0);
@@ -79,10 +79,23 @@
         return filtered; // ברירת מחדל: הסדר הנכנס (דירוג הוגן משוקלל)
     });
 
+    // במיון ברירת המחדל ראש הממשלה מוצמד ראשון (נראות); שאר הסדר נשאר הדירוג ההוגן
+    const shown = $derived(sort === 'rank' ? pinPrimeMinister(sorted) : sorted);
+
     const anyFilter = $derived(Boolean(query.trim() || orgFilter || ratedOnly));
 
     // מדליות רק במיון ברירת המחדל, בלי סינון, ורק למי שבאמת דורג
     const showRanks = $derived(sort === 'rank' && !anyFilter);
+
+    // המדליות לפי הדירוג ההוגן עצמו (לפני ההצמדה) — ההצמדה לא מעניקה ולא שוללת מדליה
+    const medals = $derived.by(() => {
+        const m = new Map<string, number>();
+        if (!showRanks) return m;
+        sorted.slice(0, 3).forEach((o, i) => {
+            if (o.stats.count > 0) m.set(o.id, i + 1);
+        });
+        return m;
+    });
 
     // סינון מציג את כל התוצאות; שכבת "נמוך ביותר" קיימת רק במיון דירוג וברשימה גדולה
     const flat = $derived(anyFilter);
@@ -238,11 +251,8 @@
         </div>
     {:else}
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {#each visible as official, i (official.id)}
-                <OfficialCard
-                    {official}
-                    rank={showRanks && i < 3 && official.stats.count > 0 ? i + 1 : null}
-                />
+            {#each visible as official (official.id)}
+                <OfficialCard {official} rank={medals.get(official.id) ?? null} />
             {/each}
         </div>
 

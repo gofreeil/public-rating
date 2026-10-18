@@ -74,3 +74,18 @@ export function partyLeaderOf(name: string): PartyLeader | null {
 export function leaderOrder(name: string): number {
     return findEntry(name)?.order ?? Infinity;
 }
+
+/** ראש הממשלה המכהן — לפי התפקיד ממצבת הכנסת, לא לפי שם (מתעדכן לבד בחילופי שלטון) */
+export function isPrimeMinister(o: { position?: string | null }): boolean {
+    const p = (o.position ?? '').trim();
+    return p === 'ראש הממשלה' || p.startsWith('ראש הממשלה ו');
+}
+
+/**
+ * ראש הממשלה פותח את לוח הכנסת בכל מצב — החלטת נראות, לא דירוג:
+ * הציון, הדירוג ההוגן והמדליות לא משתנים, רק המקום בתצוגה.
+ */
+export function pinPrimeMinister<T extends { position?: string | null }>(list: T[]): T[] {
+    const i = list.findIndex(isPrimeMinister);
+    return i <= 0 ? list : [list[i], ...list.slice(0, i), ...list.slice(i + 1)];
+}
