@@ -64,7 +64,8 @@ export const PUT: RequestHandler = async (event) => {
             gradientId: String(body.gradientId ?? ''),
             logo: String(body.logo ?? ''),
             mainImage: String(body.mainImage ?? ''),
-            style: body.style,
+            adStyle: body.adStyle,
+            mainImageFit: body.mainImageFit,
             landing: body.landing,
         });
         // העריכה לא חוזרת לתור (ראו למעלה) — הצוות חייב לדעת עליה. עריכה

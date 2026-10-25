@@ -54,6 +54,9 @@ export async function compressImage(
 
     const original = await readAsDataUrl(file);
     const img = await loadImage(original);
+    // קובץ שכבר מתחת לתקרה נשמר כמו שהוא - כמו בבילדר של קהילה בשכונה.
+    // דחיסה ל-JPEG הייתה מוחקת את השקיפות של לוגו PNG (רקע שחור במסגרת)
+    if (file.size <= maxBytes && /^image\/(png|jpeg|webp)$/.test(file.type)) return original;
 
     let width = img.naturalWidth;
     let height = img.naturalHeight;

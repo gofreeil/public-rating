@@ -154,6 +154,8 @@
                     <!-- קיצורי הניהול לאדמין — הפעולות השכיחות ישר מכאן, בלי לעבור
                          למסך הניהול. המסלול = מה שנבחר בשליחה; שינוי מסלול, מקום
                          בטור וקציבה — במסך הניהול. -->
+                    <!-- עריכה בבילדר: כל השדות נטענים, כולל עיצוב הכרטיס -->
+                    <a href="/advertise/builder?edit={encodeURIComponent(ad.id)}" class={btnGhost}>✏️ עריכה</a>
                     {#if data.isAdmin}
                         {#if ad.status === 'pending'}
                             <form method="POST" action="?/approve" use:enhance>

@@ -11,6 +11,9 @@
 // היא הגבול שמונע דליפת אימיילים לדף שנשמר בקאש ציבורי.
 // ============================================================
 
+import type { AdStyle } from '$lib/adStyle';
+import type { AdImageFit } from '$lib/adImageFit';
+
 export const AD_CATEGORY = 'pr_ad';
 export const AD_STATS_CATEGORY = 'pr_ad_stats';
 
@@ -48,44 +51,10 @@ export interface AdLanding {
     products: AdProduct[];
 }
 
-/** עיצוב הכרטיס בטור הימני — נשמר, בניגוד לגמ"ח ששמר אותו ב-localStorage בלבד */
-export interface AdCardStyle {
-    title_color: string;
-    /** הזזת הכותרת אנכית, באחוזים מגובה הכרטיס */
-    title_offset_y: number;
-    /** גובה הפס האלכסוני התחתון, באחוזים */
-    diag_height: number;
-    logo_shape: 'circle' | 'square';
-    logo_position: 'top' | 'bottom';
-    /** מרכז הלוגו באחוזי מסגרת הכרטיס, כשהמפרסם גרר אותו בעצמו לנקודה
-     *  משלו. null בשני הצירים = הלוגו יושב על העוגן של logo_position. */
-    logo_x: number | null;
-    logo_y: number | null;
-    /** מיקום התמונה בתוך המסגרת, באחוזים (-50..50) */
-    image_x: number;
-    image_y: number;
-    /** זום התמונה (1 = מלא מסגרת) */
-    image_zoom: number;
-}
-
-/** ברירות המחדל של עיצוב הכרטיס — מקור אמת יחיד לעורך ולתצוגה */
-export const DEFAULT_CARD_STYLE: AdCardStyle = {
-    title_color: '#ffffff',
-    title_offset_y: 0,
-    diag_height: 0,
-    logo_shape: 'circle',
-    logo_position: 'top',
-    logo_x: null,
-    logo_y: null,
-    image_x: 0,
-    image_y: 0,
-    image_zoom: 1,
-};
-
-/** האם הלוגו יושב על נקודה חופשית שהמפרסם גרר אליה */
-export function isLogoFree(style: Partial<AdCardStyle>): boolean {
-    return typeof style.logo_x === 'number' && typeof style.logo_y === 'number';
-}
+// עיצוב הכרטיס בטור הימני (AdStyle) ומיקום+זום התמונה (AdImageFit) הם
+// אותם מודולים של קהילה בשכונה — $lib/adStyle ו-$lib/adImageFit, עותק
+// זהה. במסד הם יושבים בתוך ה-JSON של דף הנחיתה, בשמות שבהם קהילה
+// בשכונה כותבת לאתרי הרשת: extra_fields.landing._adStyle / _mainImageFit.
 
 /** הצורה המלאה בשרת — כוללת שדות שלעולם לא עוזבים אותו */
 export interface SubmittedAd {
@@ -107,7 +76,10 @@ export interface SubmittedAd {
      * (/api/ad-image), כדי שקאש "לנצח" יתחלף ברגע שתמונה מוחלפת.
      */
     imgVersion: string;
-    style: Partial<AdCardStyle>;
+    /** העיצוב מהבילדר; null = מודעה שנשמרה בלעדיו (legacyAdStyle בתצוגה) */
+    adStyle: AdStyle | null;
+    /** מיקום וזום התמונה הראשית */
+    mainImageFit: AdImageFit;
     landing: AdLanding;
 
     // ---- זהות ותפעול: שרת בלבד ----
@@ -162,7 +134,9 @@ export interface ApprovedAdPublic {
     gradientId: string;
     logo: string;
     mainImage: string;
-    style: Partial<AdCardStyle>;
+    /** העיצוב מהבילדר; null במודעות שנשלחו לפני שהוא נשמר */
+    adStyle: AdStyle | null;
+    mainImageFit: AdImageFit;
     /** מספר המקום בלוח (1-based) — נקבע במסך הניהול, מחושב תמיד בשרת */
     slot?: number;
     /** שכפל פרסומת: מקומות נוספים בלוח (1-based) שבהם אותה מודעה מוצגת */

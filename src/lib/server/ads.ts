@@ -22,6 +22,8 @@ import { strapiDelete, strapiGet, strapiPost, strapiPut } from './strapiClient.j
 import { imageStamp, decodeDataImage } from './inlineImage.js';
 import { MAX_AD_TOTAL_BYTES } from '$lib/ads/adImage';
 import { normalizeGradientId } from '$lib/ads/gradients';
+import { parseAdStyle, type AdStyle } from '$lib/adStyle';
+import { parseAdImageFit, type AdImageFit } from '$lib/adImageFit';
 import { DEFAULT_PLAN_DAYS, normalizePlanDays } from '$lib/ads/plans';
 import { AD_SLOTS } from '$lib/ads/slots';
 import {
@@ -34,7 +36,7 @@ import {
 } from '$lib/ads/sanitize';
 import {
     AD_CATEGORY,
-    type AdCardStyle,
+    type AdLanding,
     type AdPayment,
     type AdStatus,
     type ApprovedAdPublic,
@@ -92,35 +94,33 @@ function toItemStatus(status: AdStatus): string {
     return status === 'approved' ? 'active' : status;
 }
 
-function normalizeStyle(raw: unknown): Partial<AdCardStyle> {
-    const s = (raw ?? {}) as Record<string, unknown>;
-    const num = (v: unknown, min: number, max: number): number | undefined => {
-        const n = Number(v);
-        return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : undefined;
-    };
-    const out: Partial<AdCardStyle> = {};
-    if (typeof s.title_color === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(s.title_color)) {
-        out.title_color = s.title_color;
-    }
-    const ty = num(s.title_offset_y, -200, 200);
-    if (ty !== undefined) out.title_offset_y = ty;
-    const dh = num(s.diag_height, 0, 100);
-    if (dh !== undefined) out.diag_height = dh;
-    if (s.logo_shape === 'circle' || s.logo_shape === 'square') out.logo_shape = s.logo_shape;
-    if (s.logo_position === 'top' || s.logo_position === 'bottom') out.logo_position = s.logo_position;
-    // מיקום חופשי של הלוגו תקף רק כששני הצירים קיימים — אחרת נופלים לעוגן
-    const lx = num(s.logo_x, 0, 100);
-    const ly = num(s.logo_y, 0, 100);
-    if (lx !== undefined && ly !== undefined) {
-        out.logo_x = lx;
-        out.logo_y = ly;
-    }
-    const ix = num(s.image_x, -50, 50);
-    if (ix !== undefined) out.image_x = ix;
-    const iy = num(s.image_y, -50, 50);
-    if (iy !== undefined) out.image_y = iy;
-    const iz = num(s.image_zoom, 0.5, 4);
-    if (iz !== undefined) out.image_zoom = iz;
+// ---- העיצוב שנוסע עם המודעה ----
+// AdStyle ו-AdImageFit יושבים בתוך ה-JSON של דף הנחיתה, באותם מפתחות
+// שקהילה בשכונה כותבת לאתרי הרשת (_adStyle / _mainImageFit). נקראים גם
+// מהשמות בלי קו תחתון ומ-extra_fields (ad_style / main_image_fit), כדי
+// שכרטיס שמופץ בכל אחת מהצורות יוצג כפי שעוצב. normalizeLanding מסנן
+// מפתחות לא מוכרים, ולכן הקריאה היא מה-JSON הגולמי.
+
+function rawLanding(x: Record<string, unknown>): Record<string, unknown> {
+    const l = x.landing;
+    return l && typeof l === 'object' ? (l as Record<string, unknown>) : {};
+}
+
+function readAdStyle(x: Record<string, unknown>): AdStyle | null {
+    const l = rawLanding(x);
+    return parseAdStyle(l._adStyle ?? l.adStyle ?? x.ad_style);
+}
+
+function readImageFit(x: Record<string, unknown>): AdImageFit {
+    const l = rawLanding(x);
+    return parseAdImageFit(l._mainImageFit ?? l.mainImageFit ?? x.main_image_fit);
+}
+
+/** דף הנחיתה לשמירה: התוכן המחוטא + העיצוב, מנורמל ב-parseAdStyle / parseAdImageFit */
+function storedLanding(landing: AdLanding, adStyle: unknown, fit: unknown): Record<string, unknown> {
+    const out: Record<string, unknown> = { ...landing, _mainImageFit: parseAdImageFit(fit) };
+    const style = parseAdStyle(adStyle);
+    if (style) out._adStyle = style;
     return out;
 }
 
@@ -148,7 +148,8 @@ function mapAd(item: StrapiItem): SubmittedAd {
         // ?v=, ולכן החלפת אחת מהן חייבת להחליף אותו - אחרת קאש ה-immutable
         // יחזיק ישנה
         imgVersion: imageStamp(logo, mainImage, landing.image, ...landing.products.map((p) => p.image)),
-        style: normalizeStyle(x.style),
+        adStyle: readAdStyle(x),
+        mainImageFit: readImageFit(x),
         shop: typeof x.shop_product === 'string' && x.shop_product !== '',
         landing,
 
@@ -266,7 +267,8 @@ export function toApprovedPublic(ad: SubmittedAd): ApprovedAdPublic {
         gradientId: ad.gradientId,
         logo: adImageUrl(ad, 'logo'),
         mainImage: adImageUrl(ad, 'main'),
-        style: ad.style,
+        adStyle: ad.adStyle,
+        mainImageFit: ad.mainImageFit,
         shop: ad.shop === true,
     };
 }
@@ -441,7 +443,9 @@ export interface SubmitAdInput {
     gradientId: string;
     logo: string;
     mainImage: string;
-    style: unknown;
+    /** העיצוב מהבילדר — מנורמל ב-parseAdStyle לפני שמירה */
+    adStyle: unknown;
+    mainImageFit: unknown;
     landing: unknown;
     requestedDurationDays: unknown;
     ownerId: string;
@@ -577,8 +581,7 @@ export async function submitAd(input: SubmitAdInput): Promise<SubmitAdResult> {
                 gradient_id: normalizeGradientId(input.gradientId),
                 logo,
                 main_image: mainImage,
-                style: normalizeStyle(input.style),
-                landing,
+                landing: storedLanding(landing, input.adStyle, input.mainImageFit),
                 submitted_by: { name: clamp(input.ownerName, 60) },
                 contact_email: safeEmail(input.contactEmail),
                 submitted_at: new Date().toISOString(),
@@ -647,7 +650,8 @@ export async function updateAdContent(
         gradientId: string;
         logo: string;
         mainImage: string;
-        style: unknown;
+        adStyle: unknown;
+        mainImageFit: unknown;
         landing: unknown;
     },
 ): Promise<void> {
@@ -665,8 +669,7 @@ export async function updateAdContent(
             gradient_id: normalizeGradientId(patch.gradientId),
             logo,
             main_image: mainImage,
-            style: normalizeStyle(patch.style),
-            landing,
+            landing: storedLanding(landing, patch.adStyle, patch.mainImageFit),
             edited_at: new Date().toISOString(),
             bytes,
         },

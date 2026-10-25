@@ -63,31 +63,15 @@
         <div class="ads-group space-y-3" class:active={gi === active}>
         {#each grp as item (item.kind === 'real' ? `${item.ad.id}-${item.no}` : `v${item.no}`)}
             {#if item.kind === 'real'}
-                <!-- מודעה בתשלום — הקליק נשאר באתר ונוחת בדף הנחיתה המקומי -->
-                <a
-                    href="/ads/{item.ad.id}"
-                    onclick={() => trackAdClick(item.ad.id)}
-                    aria-label="{item.ad.title} — {item.ad.subtitle}"
-                    class="real-ad block h-[470px]"
-                >
-                    <AdCard
-                        title={item.ad.title}
-                        subtitle={item.ad.subtitle}
-                        hoverText={item.ad.hoverText}
-                        cta={item.ad.cta}
-                        gradientId={item.ad.gradientId}
-                        mainImage={item.ad.mainImage}
-                        logo={item.ad.logo}
-                        style={item.ad.style}
-                        hideCta={item.ad.shop === true}
-                    />
-                </a>
+                <!-- מודעה בתשלום — הקליק נשאר באתר ונוחת בדף הנחיתה המקומי.
+                     הכרטיס עצמו זהה לזה של קהילה בשכונה (מידות, צבעים, עיצוב) -->
+                <AdCard ad={item.ad} href="/ads/{item.ad.id}" onclick={() => trackAdClick(item.ad.id)} />
             {:else}
                 {@const ad = item.slot}
                 <a
                     href="/advertise"
                     aria-label="{ad.text} — {ad.description}: לפרטים על פרסום באתר"
-                    class="vacant-card relative flex h-[470px] flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed p-3 text-center transition-all duration-700 {ad.borderColor} {ad.bgColor} {ad.hoverBorder} {ad.hoverBg}"
+                    class="vacant-card relative flex h-[490px] flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed p-3 text-center transition-all duration-700 {ad.borderColor} {ad.bgColor} {ad.hoverBorder} {ad.hoverBg}"
                 >
                     <span class="absolute top-3 right-3 rounded-full border border-white/5 bg-white/10 px-3 py-1 text-sm font-black text-white/60 shadow-sm backdrop-blur-sm">
                         {item.no}
@@ -144,14 +128,7 @@
     }
 
     /* Tailwind v4: group-hover שבור בפרויקט הזה — CSS מפורש.
-       שאר עיצוב הכרטיס חי ב-AdCard.svelte: אותו מרנדר משמש גם את
-       התצוגה המקדימה בבילדר, כדי שמה שהמפרסם עיצב יהיה מה שיעלה. */
-    .real-ad {
-        transition: transform 200ms ease;
-    }
-    .real-ad:hover {
-        transform: scale(1.04);
-    }
+       עיצוב הכרטיס בתשלום חי ב-AdCard.svelte (העתק של קהילה בשכונה). */
     .vacant-icon {
         transition: transform 300ms ease;
     }
@@ -164,7 +141,6 @@
         .ads-group.active {
             transition: none;
         }
-        .real-ad,
         .vacant-icon {
             transition-duration: 1ms;
         }

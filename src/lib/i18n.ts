@@ -1,4 +1,5 @@
-import { register, init } from 'svelte-i18n';
+import { register, init, addMessages } from 'svelte-i18n';
+import * as advertise from './translations/advertise';
 
 register('he', () => Promise.resolve({
     welcome: "דירוג ציבורי",
@@ -612,6 +613,11 @@ register('ru', () => Promise.resolve({
     already_registered: "Уже зарегистрированы?",
     login_here: "Войдите здесь",
 }));
+
+// מחרוזות בילדר הפרסומת - אותן שלוש שפות של הבילדר בקהילה בשכונה
+addMessages('he', advertise.he);
+addMessages('en', advertise.en);
+addMessages('ru', advertise.ru);
 
 init({
     fallbackLocale: 'he',

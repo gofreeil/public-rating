@@ -1,318 +1,333 @@
 <script lang="ts">
     // ============================================================
-    // כרטיס הפרסומת — מרנדר יחיד לטור הימני ולתצוגה המקדימה בבילדר.
+    // כרטיס הפרסומת בטור הימני — עותק של הכרטיס ב-RightAdBanner של
+    // קהילה בשכונה: אותן מידות, שכבות, צבעים ו-CSS, ואותם מודולים
+    // משותפים (adStyle / adImageFit / logoClearance). פרסומת שמופצת משם
+    // (עם landing._adStyle) נראית כאן בדיוק כמו שם, בלי שום התאמה.
     //
-    // זו הנקודה החשובה בעורך WYSIWYG: אם התצוגה המקדימה והכרטיס האמיתי
-    // הם שני קטעי קוד, הם ייפרדו — והמפרסם יעצב דבר אחד ויקבל אחר.
+    // מה שכן שונה, ובכוונה: הריחוף כתוב ב-CSS מפורש (group-hover שבור
+    // בפרויקט הזה), והגדלים של טקסט הריחוף והכפתור כתובים בערכים ולא
+    // במחלקות text-xs/text-sm — כאן הסקאלה שלהן הוגדלה ב-app.css, ובקהילה
+    // בשכונה לא. הערכים הם המידות שם.
     //
-    // במצב editable התמונה נגררת בתוך המסגרת. הגרירה במצביע (Pointer
-    // Events) ולא במגע/עכבר בנפרד, כך שאותו קוד עובד באצבע, בעכבר
-    // ובעט — ו-touch-action:none מונע מהדף לגלול תוך כדי גרירה בנייד.
+    // still = עותק סטטי (מסך הניהול): בלי ריחוף, בלי הגדלה ובלי tooltip.
     // ============================================================
-    import { gradientCss, gradientInk } from '$lib/ads/gradients';
-    import { DEFAULT_CARD_STYLE, type AdCardStyle } from '$lib/ads/types';
+    import { adImgFit, parseAdImageFit } from '$lib/adImageFit';
+    import {
+        parseAdStyle, legacyAdStyle, adStyleVars, logoAnchorClass, logoFreeStyle, logoCornerSide,
+    } from '$lib/adStyle';
+    import { normalizeGradientId } from '$lib/ads/gradients';
+    import { logoClearance } from '$lib/logoClearance';
 
-    let {
-        title = '',
-        subtitle = '',
-        hoverText = '',
-        cta = 'לפרטים',
-        gradientId = 'amber',
-        mainImage = '',
-        logo = '',
-        style = {},
-        hideCta = false,
-        editable = false,
-        onmove = undefined,
-        onlogomove = undefined,
-    }: {
-        title?: string;
+    interface CardAd {
+        title: string;
         subtitle?: string;
         hoverText?: string;
         cta?: string;
         gradientId?: string;
-        mainImage?: string;
+        /** לוגו המפרסם; ריק כשלא הועלה לוגו */
         logo?: string;
-        style?: Partial<AdCardStyle>;
-        /** בלי רצועת ה-CTA בתחתית (כרטיס מוצר מהחנות) - התמונה ממלאת את הגובה */
-        hideCta?: boolean;
-        /** מצב עריכה — גרירת התמונה בתוך המסגרת */
-        editable?: boolean;
-        onmove?: (next: { image_x: number; image_y: number }) => void;
-        /** גרירת הלוגו עצמו לנקודה חופשית בכרטיס (מצב עריכה בלבד) */
-        onlogomove?: (next: { logo_x: number; logo_y: number }) => void;
+        mainImage?: string;
+        /** מיקום+זום מהבילדר; חסר = מרכז, מילוי המשבצת */
+        mainImageFit?: unknown;
+        /** העיצוב מהבילדר; חסר/null במודעות שנשלחו לפני שהוא נשמר */
+        adStyle?: unknown;
+        /** כרטיס מוצר מחנות החירות - בלי רצועת המחיר בתחתית */
+        shop?: boolean;
+    }
+
+    let {
+        ad,
+        href = undefined,
+        onclick = undefined,
+        still = false,
+    }: {
+        ad: CardAd;
+        href?: string;
+        onclick?: () => void;
+        still?: boolean;
     } = $props();
 
-    const s = $derived({ ...DEFAULT_CARD_STYLE, ...style });
-    /** הלוגו יושב על נקודה שהמפרסם גרר אליה, ולא על עוגן למעלה/למטה */
-    const logoFree = $derived(typeof s.logo_x === 'number' && typeof s.logo_y === 'number');
-
-    let frame = $state<HTMLElement>();
-    let dragging = $state(false);
-    let start = { px: 0, py: 0, x: 0, y: 0 };
-
-    // ---- גרירת הלוגו ----
-    // נפרדת מגרירת התמונה: הלוגו הוא המטרה הקטנה, ולכן הוא תופס את
-    // המצביע לעצמו (stopPropagation) כדי שגרירה עליו לא תזיז את התמונה.
-    let logoDragging = $state(false);
-
-    /** מרכז הלוגו באחוזי המסגרת, תחום כך שלא יברח מהכרטיס */
-    function commitLogo(clientX: number, clientY: number, el: HTMLElement) {
-        if (!frame) return;
-        const fr = frame.getBoundingClientRect();
-        const lr = el.getBoundingClientRect();
-        if (!fr.width || !fr.height) return;
-        const halfX = (lr.width / 2 / fr.width) * 100;
-        const halfY = (lr.height / 2 / fr.height) * 100;
-        const x = ((clientX - fr.left) / fr.width) * 100;
-        const y = ((clientY - fr.top) / fr.height) * 100;
-        onlogomove?.({
-            logo_x: Math.round(Math.max(halfX, Math.min(100 - halfX, x)) * 10) / 10,
-            logo_y: Math.round(Math.max(halfY, Math.min(100 - halfY, y)) * 10) / 10,
-        });
-    }
-
-    function onLogoPointerDown(e: PointerEvent) {
-        if (!editable || !onlogomove) return;
-        e.preventDefault();
-        e.stopPropagation();
-        const el = e.currentTarget as HTMLElement;
-        el.setPointerCapture(e.pointerId);
-        logoDragging = true;
-        commitLogo(e.clientX, e.clientY, el);
-    }
-
-    function onLogoPointerMove(e: PointerEvent) {
-        if (!logoDragging) return;
-        e.stopPropagation();
-        commitLogo(e.clientX, e.clientY, e.currentTarget as HTMLElement);
-    }
-
-    function endLogoDrag(e: PointerEvent) {
-        if (!logoDragging) return;
-        logoDragging = false;
-        try {
-            (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-        } catch {
-            /* המצביע כבר שוחרר */
-        }
-    }
-
-    /** מקבילת מקלדת לגרירה: חיצים מזיזים 1% מהכרטיס, עם Shift — 5% */
-    function onLogoKeyDown(e: KeyboardEvent) {
-        if (!editable || !onlogomove || !frame) return;
-        const dirs: Record<string, [number, number]> = {
-            ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
-        };
-        const dir = dirs[e.key];
-        if (!dir) return;
-        e.preventDefault();
-        const el = e.currentTarget as HTMLElement;
-        const fr = frame.getBoundingClientRect();
-        const lr = el.getBoundingClientRect();
-        const step = e.shiftKey ? 5 : 1;
-        // נקודת המוצא: המיקום הנוכחי בפועל, גם כשהלוגו עדיין על העוגן
-        const curX = ((lr.left - fr.left + lr.width / 2) / fr.width) * 100;
-        const curY = ((lr.top - fr.top + lr.height / 2) / fr.height) * 100;
-        commitLogo(
-            fr.left + ((curX + dir[0] * step) / 100) * fr.width,
-            fr.top + ((curY + dir[1] * step) / 100) * fr.height,
-            el,
-        );
-    }
-
-    function onPointerDown(e: PointerEvent) {
-        if (!editable || !mainImage) return;
-        e.preventDefault();
-        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-        dragging = true;
-        start = { px: e.clientX, py: e.clientY, x: s.image_x, y: s.image_y };
-    }
-
-    function onPointerMove(e: PointerEvent) {
-        if (!dragging || !frame) return;
-        const rect = frame.getBoundingClientRect();
-        // ההזזה באחוזים מגודל המסגרת — כך הגרירה מרגישה זהה בכל גודל תצוגה
-        const dx = ((e.clientX - start.px) / rect.width) * 100;
-        const dy = ((e.clientY - start.py) / rect.height) * 100;
-        onmove?.({
-            image_x: Math.max(-50, Math.min(50, start.x + dx)),
-            image_y: Math.max(-50, Math.min(50, start.y + dy)),
-        });
-    }
-
-    function endDrag(e: PointerEvent) {
-        if (!dragging) return;
-        dragging = false;
-        try {
-            (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-        } catch {
-            /* המצביע כבר שוחרר */
-        }
-    }
+    // העיצוב שהמפרסם קבע בבילדר; מודעה שנשלחה לפני שהעיצוב נשמר מקבלת
+    // את הכלל הישן (כותרת ארוכה ← לוגו מעל רצועת ה-CTA) - בדיוק כמו
+    // בקהילה בשכונה
+    const st = $derived(parseAdStyle(ad.adStyle) ?? legacyAdStyle(ad.title));
+    const fit = $derived(parseAdImageFit(ad.mainImageFit));
+    const gradient = $derived(normalizeGradientId(ad.gradientId));
+    const cornerSide = $derived(logoCornerSide(st, Boolean(ad.logo)));
 </script>
 
-<div class="promo-card relative flex h-full w-full flex-col overflow-hidden rounded-2xl shadow-lg" class:is-static={!editable}>
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-        bind:this={frame}
-        class="relative flex-1 overflow-hidden bg-black/30"
-        class:draggable={editable && mainImage}
-        class:dragging
-        onpointerdown={onPointerDown}
-        onpointermove={onPointerMove}
-        onpointerup={endDrag}
-        onpointercancel={endDrag}
-    >
-        {#if mainImage}
-            <img
-                src={mainImage}
-                alt=""
-                draggable="false"
-                loading="lazy"
-                decoding="async"
-                class="ad-photo absolute inset-0 h-full w-full object-cover"
-                style="transform: translate({s.image_x}%, {s.image_y}%) scale({s.image_zoom}); transform-origin: center"
-            />
-        {/if}
-
-        {#if logo}
-            <!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
-            <!-- במצב עריכה הלוגו עצמו הוא ידית הגרירה: אפשר להניח אותו בכל
-                 נקודה בכרטיס, ולא רק למעלה/למטה בצד ימין. role=button
-                 ו-tabindex נותנים לו מקבילת מקלדת מלאה (חיצים מזיזים). -->
-            <img
-                src={logo}
-                alt=""
-                draggable="false"
-                width="48"
-                height="48"
-                loading="lazy"
-                decoding="async"
-                class="absolute z-10 h-12 w-12 border-2 border-white/40 object-cover shadow-lg
-                    {s.logo_shape === 'circle' ? 'rounded-full' : 'rounded-lg'}
-                    {logoFree ? '' : s.logo_position === 'top' ? 'top-2 right-2' : 'bottom-16 right-2'}
-                    {editable && onlogomove ? 'logo-draggable' : 'pointer-events-none'}
-                    {logoDragging ? 'logo-dragging' : ''}"
-                style={logoFree
-                    ? `left:${s.logo_x}%; top:${s.logo_y}%; right:auto; bottom:auto; transform:translate(-50%,-50%);`
-                    : ''}
-                role={editable && onlogomove ? 'button' : undefined}
-                tabindex={editable && onlogomove ? 0 : undefined}
-                aria-label={editable && onlogomove ? 'לוגו — אפשר לגרור אותו למקום אחר בכרטיס' : undefined}
-                onpointerdown={onLogoPointerDown}
-                onpointermove={onLogoPointerMove}
-                onpointerup={endLogoDrag}
-                onpointercancel={endLogoDrag}
-                onkeydown={onLogoKeyDown}
-            />
-        {/if}
-
-        <!-- הפס האלכסוני — 0 מכבה אותו לגמרי -->
-        {#if s.diag_height > 0}
-            <div
-                class="pointer-events-none absolute inset-x-0 bottom-0"
-                style="height: {s.diag_height}%; background: {gradientCss(gradientId)};
-                       clip-path: polygon(0 35%, 100% 0, 100% 100%, 0 100%); opacity: 0.92"
-            ></div>
-        {/if}
-
-        <div
-            class="promo-caption pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-2 pt-8 text-center"
-            style="transform: translateY({s.title_offset_y}%)"
-        >
-            <span class="block text-sm leading-tight font-black" style="color: {s.title_color}">
-                {title || 'כותרת הפרסומת'}
-            </span>
-            {#if subtitle}
-                <span class="mt-0.5 block text-[11px] leading-tight text-gray-200">{subtitle}</span>
+<!-- onclick מגיע רק יחד עם href, כלומר על <a> (ספירת הקליק בטור) -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<svelte:element
+    this={href ? 'a' : 'div'}
+    {href}
+    {onclick}
+    aria-label={href ? `${ad.title} — ${ad.subtitle ?? ''}` : undefined}
+    class="promo-card relative block overflow-hidden rounded-lg shadow-lg {still ? '' : 'is-live transition-transform hover:scale-105'}"
+    style={adStyleVars(st)}
+>
+    <!-- aspect-[144/450] = בדיוק היחס שהבילדר מציג בתצוגה החיה
+         (live-demo-img-wrap). המפרסם מכוון שם מיקום וזום על מסגרת
+         צרה וגבוהה, ולכן חייבים לשמור את אותו יחס - אחרת החיתוך
+         שהוא בחר נשבר. -->
+    <!-- הכותרת ותת-הכותרת עוקפות את הלוגו בכל מיקום שלו (logoClearance) -->
+    <div class="relative aspect-[144/450] w-full overflow-hidden" use:logoClearance={ad}>
+        <div class="absolute inset-0 overflow-hidden">
+            {#if ad.mainImage}
+                <!-- המיקום/זום שנבחרו בבילדר מוחלים גם כאן — הדמו הוא מה שרואים -->
+                <img
+                    src={ad.mainImage}
+                    alt={ad.title}
+                    loading="lazy"
+                    decoding="async"
+                    class="promo-fade h-full w-full object-cover"
+                    use:adImgFit={fit}
+                />
             {/if}
         </div>
-
-        <!-- שכבת הריחוף קיימת רק בכרטיס החי; בעורך היא הייתה מסתירה את התמונה -->
-        {#if !editable}
-            <div class="ad-hover pointer-events-none absolute inset-0 flex items-center justify-center bg-black/70 p-3 text-center backdrop-blur-sm">
-                <div>
-                    <span class="mb-1 block text-sm leading-tight font-black text-white">{title}</span>
-                    {#if subtitle}
-                        <span class="block text-[11px] leading-tight text-gray-200">{subtitle}</span>
-                    {/if}
-                    {#if hoverText}
-                        <!-- pre-line: ירידות שורה שהמפרסם הקליד בבילדר נשמרות -->
-                        <span class="mt-2 block border-t border-white/20 pt-2 text-[11px] leading-snug font-bold whitespace-pre-line text-amber-200">
-                            {hoverText}
-                        </span>
-                    {/if}
+        <!-- כותרת, רצועה אלכסונית, תת-כותרת ולוגו - אותן שכבות בדיוק
+             של התצוגה החיה בבילדר -->
+        <div class="promo-diag promo-fade bg-gradient-to-br {gradient}"></div>
+        <div
+            class="promo-title-top promo-fade"
+            class:has-corner-logo-right={cornerSide === 'right'}
+            class:has-corner-logo-left={cornerSide === 'left'}
+            style="transform: translateY({st.titleOffsetY}px);"
+        >
+            <h3 class="promo-title" style="color: {st.titleColor};"><span class="logo-avoid" aria-hidden="true"></span>{ad.title}</h3>
+        </div>
+        {#if ad.subtitle}
+            <div class="promo-sub-wrap promo-fade">
+                <p class="promo-sub"><span class="logo-avoid" data-anchor="bottom" aria-hidden="true"></span>{ad.subtitle}</p>
+            </div>
+        {/if}
+        {#if ad.logo}
+            <img
+                src={ad.logo}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                data-ad-logo
+                class="promo-logo promo-fade {logoAnchorClass(st, 'promo')} {st.logoShape === 'circle' ? 'promo-logo-circle' : ''}"
+                style={logoFreeStyle(st)}
+            />
+        {/if}
+        {#if !still}
+            <div class="promo-hover absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                <div class="relative z-10 px-3 text-center">
+                    <h3 class="promo-hover-title text-white">{ad.title}</h3>
+                    <p class="promo-hover-sub text-gray-200">{ad.subtitle}</p>
                 </div>
             </div>
         {/if}
     </div>
-
-    {#if !hideCta}
-    <div
-        class="p-2.5 text-center"
-        style="background: {gradientCss(gradientId)}; color: {gradientInk(gradientId)}"
-    >
-        <span class="text-xs leading-tight font-bold">{cta || 'לפרטים'}</span>
-    </div>
+    <!-- כרטיס מוצר מהחנות - בלי רצועת המחיר ("₪.. · לצפייה בחנות").
+         גם פרסומת שטקסט הכפתור שלה נמחק מוצגת בלי רצועה -->
+    {#if !ad.shop && ad.cta}
+        <div class="promo-cta relative bg-gradient-to-r {gradient} p-2.5 text-center">
+            <p class="promo-cta-text text-white">{ad.cta || ad.title}</p>
+            {#if ad.hoverText && !still}
+                <!-- pre-line + w-max: משפט בשורה אחת נשאר בשורה אחת, אבל ירידות שורה
+                     שהמפרסם הקליד נשמרות, וטקסט ארוך נגמר ב-max-w במקום לגלוש -->
+                <span
+                    class="promo-cta-tip pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-[15rem] -translate-x-1/2
+                           rounded-lg border border-white/10 bg-gray-900 px-3 py-1.5 text-center whitespace-pre-line text-white shadow-xl"
+                >
+                    {ad.hoverText}
+                </span>
+            {/if}
+        </div>
     {/if}
-</div>
+</svelte:element>
 
 <style>
-    .draggable {
-        cursor: grab;
-        /* בלי זה הדף גולל תחת האצבע במקום שהתמונה תזוז */
-        touch-action: none;
+    /* הריחוף - group-hover של קהילה בשכונה, ב-CSS מפורש. אותו משך (1500ms)
+       ואותו תנאי (@media hover:hover, כמו group-hover ב-Tailwind 4) */
+    .promo-fade,
+    .promo-hover {
+        transition: opacity 1500ms cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .draggable.dragging {
-        cursor: grabbing;
-    }
-
-    /* הלוגו כידית גרירה: סמן יד וטבעת מקווקוות בריחוף/פוקוס, כדי
-       שיהיה ברור שאפשר להזיז אותו. touch-action:none הוא מה שמאפשר
-       גרירה באצבע במקום גלילת הדף. */
-    .logo-draggable {
-        cursor: grab;
-        touch-action: none;
-        user-select: none;
-        -webkit-user-drag: none;
-    }
-    .logo-draggable:hover {
-        outline: 2px dashed rgba(251, 191, 36, 0.9);
-        outline-offset: 2px;
-    }
-    .logo-draggable:focus-visible {
-        outline: 2px solid #fbbf24;
-        outline-offset: 2px;
-    }
-    .logo-draggable.logo-dragging {
-        cursor: grabbing;
-        outline: 2px solid #fbbf24;
-        outline-offset: 2px;
-    }
-
-    /* Tailwind v4: group-hover שבור בפרויקט הזה — CSS מפורש */
-    .ad-hover {
-        opacity: 0;
-        transition: opacity 700ms ease;
-    }
-    .promo-card.is-static:hover .ad-hover {
-        opacity: 1;
-    }
-    .ad-photo,
-    .promo-caption {
-        transition: opacity 700ms ease;
-    }
-    .promo-card.is-static:hover .ad-photo,
-    .promo-card.is-static:hover .promo-caption {
+    .promo-hover {
         opacity: 0;
     }
-
-    @media (prefers-reduced-motion: reduce) {
-        .ad-hover,
-        .ad-photo,
-        .promo-caption {
-            transition-duration: 1ms;
+    .promo-cta-tip {
+        display: none;
+    }
+    @media (hover: hover) {
+        .is-live:hover .promo-fade {
+            opacity: 0;
         }
+        .is-live:hover .promo-hover {
+            opacity: 1;
+        }
+        .promo-cta:hover .promo-cta-tip {
+            display: block;
+        }
+    }
+    /* text-sm / text-xs / leading-tight של קהילה בשכונה, בערכים */
+    .promo-hover-title {
+        margin: 0 0 0.25rem;
+        font-weight: 700;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+    }
+    .promo-hover-sub {
+        margin: 0;
+        font-size: 0.75rem;
+        line-height: 1rem;
+    }
+    .promo-cta-text {
+        margin: 0;
+        font-weight: 700;
+        font-size: 0.75rem;
+        line-height: 1.25;
+    }
+    .promo-cta-tip {
+        font-weight: 700;
+        font-size: 0.75rem;
+        line-height: 1rem;
+    }
+
+    /* מכאן והלאה - העתק של ה-CSS ב-RightAdBanner של קהילה בשכונה */
+
+    /* שמות המחלקות מתחילים ב-promo ולא ב-ad בכוונה: EasyList מכילה כלל
+       קוסמטי גנרי `##.ad-title` שמסתיר כל אלמנט עם המחלקה הזאת בכל אתר. */
+    .promo-title-top {
+        position: absolute;
+        inset-inline: 0;
+        top: 0;
+        z-index: 5;
+        padding: 0.55rem 0.7rem 0.85rem;
+        text-align: center;
+        background: linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.78) 0%,
+            rgba(0, 0, 0, 0.45) 55%,
+            rgba(0, 0, 0, 0) 100%
+        );
+        pointer-events: none;
+    }
+    /* לוגו בפינה העליונה יושב באותו גובה של הכותרת. בלי שמירת המקום הזאת
+       הוא היה מכסה את המילה האחרונה - המשבצת רחבה 144px בלבד.
+       padding פיזי ולא inset-inline: הדף כולו RTL, והקצה הלוגי הפוך
+       לצד שבו הלוגו באמת נמצא. אותם כללים בדיוק קיימים בבילדר. */
+    .promo-title-top.has-corner-logo-right {
+        padding-right: 46px;
+    }
+    .promo-title-top.has-corner-logo-left {
+        padding-left: 46px;
+    }
+
+    /* הרצועה האלכסונית שמתחת לתמונה - אותו clip-path של .pro-diag בבילדר.
+       המשתנים --diag-top-* מגיעים מ-adStyleVars על הכרטיס. */
+    .promo-diag {
+        position: absolute;
+        inset: 0;
+        clip-path: polygon(
+            0 var(--diag-top-left, 88%),
+            100% var(--diag-top-right, 78%),
+            100% 100%,
+            0 100%
+        );
+        opacity: 0.96;
+        pointer-events: none;
+    }
+    /* פס הברק הלבן שחוצה את האלכסון */
+    .promo-diag::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            125deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.18) 45%,
+            transparent 60%
+        );
+        pointer-events: none;
+    }
+    /* גודל/רווח/יישור מגיעים מ-adStyleVars — מה שהמפרסם כיוון בשלב 5.
+       ה-fallback הוא הערך שהיה קבוע כאן, כדי שמודעות ותיקות לא ישתנו. */
+    .promo-sub-wrap {
+        position: absolute;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 4;
+        padding: 0.55rem 0.7rem 1.1rem;
+        text-align: var(--sub-align, right);
+        pointer-events: none;
+    }
+    .promo-sub {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.95);
+        font-weight: 600;
+        font-size: var(--sub-size, 0.88rem);
+        line-height: var(--sub-lh, 1.3);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    }
+    /* משולש בלתי-נראה שגורם לשורה הראשונה להתקצר לפי שיפוע האלכסון.
+       כשהלוגו בצד שמאל, logoClearance מחליף אותו ב-float משולב ומכבה
+       אותו דרך --logo-avoid-tri. */
+    .promo-sub::before {
+        content: "";
+        display: var(--logo-avoid-tri, block);
+        float: left;
+        width: 28%;
+        height: 1.35em;
+        shape-outside: polygon(0 0, 100% 0, 0 100%);
+    }
+    .promo-title {
+        margin: 0;
+        color: white;
+        font-weight: 900;
+        font-size: 1.15rem;
+        line-height: 1.15;
+        letter-spacing: 0.005em;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85), 0 1px 2px rgba(0, 0, 0, 0.95);
+    }
+    /* ה-float שגורם לטקסט לעקוף את הלוגו - מוצג ומוצב רק ע"י logoClearance */
+    .logo-avoid {
+        display: none;
+    }
+    .promo-logo {
+        position: absolute;
+        z-index: 6;
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        background: white;
+        padding: 3px;
+        object-fit: contain;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    }
+    /* right/left פיזיים - כמו בבילדר. עם inset-inline-end הלוגו קפץ לצד
+       שמאל, כי הדף RTL והקצה הלוגי שם הוא שמאל. */
+    .promo-logo-right {
+        top: 6px;
+        right: 6px;
+        left: auto;
+    }
+    .promo-logo-left {
+        top: 6px;
+        left: 6px;
+        right: auto;
+    }
+    /* עוגן "מעל ה-CTA": הלוגו רוכב על הפינה הימנית של הרצועה האלכסונית,
+       מרכזו על --diag-top-right (18px = חצי מגובה הלוגו) */
+    .promo-logo-cta {
+        top: auto;
+        bottom: calc(100% - var(--diag-top-right, 78%) - 18px);
+        right: 6px;
+        left: auto;
+    }
+    /* מיקום חופשי שהמפרסם גרר: הנקודה המדויקת מגיעה ב-style inline */
+    .promo-logo-free {
+        top: auto;
+        bottom: auto;
+        right: auto;
+        left: auto;
+    }
+    .promo-logo-circle {
+        border-radius: 50%;
     }
 </style>

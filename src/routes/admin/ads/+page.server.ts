@@ -130,7 +130,9 @@ export const load: PageServerLoad = async (event) => {
                 gradientId: a.gradientId,
                 logo: a.logo,
                 mainImage: a.mainImage,
-                style: a.style,
+                adStyle: a.adStyle,
+                mainImageFit: a.mainImageFit,
+                shop: a.shop,
             },
         })),
         ...ads
@@ -541,7 +543,8 @@ const adActions = {
                 gradientId: String(fd.get('gradient_id') ?? ''),
                 logo: '',
                 mainImage: '',
-                style: {},
+                adStyle: null,
+                mainImageFit: null,
                 landing: {
                     headline: String(fd.get('headline') ?? title),
                     pitch: String(fd.get('pitch') ?? ''),
