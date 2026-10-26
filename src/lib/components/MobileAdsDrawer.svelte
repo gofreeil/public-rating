@@ -19,10 +19,19 @@
 	}
 
 	interface Props {
-		currentUser?: { username: string; avatar_url?: string | null };
+		currentUser?: { username: string; email?: string | null; nickname?: string | null; avatar_url?: string | null };
 		layoutUser?: LayoutUser | null;
 	}
 	let { currentUser, layoutUser }: Props = $props();
+
+	// username שנוצר בהתחברות חברתית (google_1164…) הוא מזהה ולא שם - מדלגים עליו
+	function friendlyUserName(u?: { nickname?: string | null; name?: string | null; username?: string | null; email?: string | null } | null): string {
+		for (const raw of [u?.nickname, u?.name, u?.username]) {
+			const s = (raw ?? '').trim();
+			if (s && !s.includes('@') && !/^[a-z][a-z0-9]*[_-]\d{5,}$/i.test(s)) return s;
+		}
+		return (u?.email ?? '').split('@')[0].trim();
+	}
 
 	// חישוב אחוז מילוי פרופיל
 	let profileCompletion = $derived(layoutUser ? Math.round([
@@ -306,7 +315,7 @@
 					<!-- שם + הודעות -->
 					<div class="flex flex-col gap-1 min-w-0">
 						<span class="text-white font-black text-base truncate">
-							{layoutUser.nickname || layoutUser.name || currentUser.username}
+							{friendlyUserName({ ...layoutUser, username: currentUser.username, email: layoutUser.email ?? currentUser.email })}
 						</span>
 						<span class="text-orange-400 text-xs font-bold">📩 הודעות אישיות</span>
 						<span class="text-gray-400 text-xs">בדף עצמו אפשר לדרג, לשנמך או לשדרג דירוג קודם, לכתוב תגובות ודעות, להעלות תמונות ולשתף כל דירוג (כמו ציוץ) בכל הרשתות החברתיות ←</span>
@@ -334,7 +343,7 @@
 				<span class="profile-avatar-placeholder">👤</span>
 				{/if}
 				<div class="profile-btn-text">
-					<span class="profile-btn-name">{currentUser.username}</span>
+					<span class="profile-btn-name">{friendlyUserName(currentUser)}</span>
 					<span class="profile-btn-sub">בדף עצמו אפשר לדרג, לשנמך או לשדרג דירוג קודם, לכתוב תגובות ודעות, להעלות תמונות ולשתף כל דירוג (כמו ציוץ) בכל הרשתות החברתיות ←</span>
 				</div>
 			</a>
