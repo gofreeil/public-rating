@@ -14,7 +14,7 @@
     // ============================================================
     import { adImgFit, parseAdImageFit } from '$lib/adImageFit';
     import {
-        parseAdStyle, legacyAdStyle, adStyleVars, logoAnchorClass, logoFreeStyle, logoCornerSide,
+        parseAdStyle, legacyAdStyle, adStyleVars, logoAnchorClass, logoFreeStyle, logoBgStyle, logoCornerSide,
     } from '$lib/adStyle';
     import { normalizeGradientId } from '$lib/ads/gradients';
     import { logoClearance } from '$lib/logoClearance';
@@ -110,7 +110,7 @@
                 decoding="async"
                 data-ad-logo
                 class="promo-logo promo-fade {logoAnchorClass(st, 'promo')} {st.logoShape === 'circle' ? 'promo-logo-circle' : ''}"
-                style={logoFreeStyle(st)}
+                style={logoFreeStyle(st) + logoBgStyle(st.logoBg)}
             />
         {/if}
         {#if !still}

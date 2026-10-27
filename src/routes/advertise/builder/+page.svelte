@@ -652,7 +652,6 @@
                                     </button>
                                 </div>
                             </div>
-                            </div>
                             <div>
                                 <p class="seg-label">{$_('advertise.b_logo_bg')}</p>
                                 <div class="seg">
