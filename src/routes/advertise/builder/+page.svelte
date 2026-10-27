@@ -14,7 +14,7 @@
     import { _ } from 'svelte-i18n';
     import { adImgFit, AD_ZOOM_MIN, AD_ZOOM_MAX } from '$lib/adImageFit';
     import {
-        adStyleVars, logoCornerSide, type AdStyle, type SubAlign,
+        adStyleVars, logoCornerSide, logoBgStyle, type AdStyle, type SubAlign,
         DEFAULT_BAND_HEIGHT, BAND_MIN, BAND_MAX, TITLE_OFFSET_MIN, TITLE_OFFSET_MAX,
         DEFAULT_SUB_FONT_SIZE, SUB_FONT_SIZE_MIN, SUB_FONT_SIZE_MAX,
         DEFAULT_SUB_LINE_HEIGHT, SUB_LINE_HEIGHT_MIN, SUB_LINE_HEIGHT_MAX,
@@ -36,6 +36,7 @@
     let logo = $state(edit?.logo ?? '');                 // מה שמוצג (חיתוך עגול או המקור)
     let logoOriginal = $state(edit?.logo ?? '');         // ההעלאה הגולמית - מקור לחיתוך
     let logoShape = $state<'square' | 'circle'>(editStyle?.logoShape ?? 'square');
+    let logoBg = $state<'white' | 'black' | 'clear'>(editStyle?.logoBg ?? 'white');
     let hasCircleCrop = $state(editStyle?.logoShape === 'circle');
     let logoPosition = $state<'right' | 'left' | 'cta'>(editStyle?.logoAnchor ?? 'right');
     // כל עוד המפרסם לא בחר מיקום בעצמו: כותרת ארוכה ← הלוגו מעל ה-CTA
@@ -52,9 +53,9 @@
         logoPosition === 'left' ? 'ad-logo-left' : logoPosition === 'cta' ? 'ad-logo-cta' : 'ad-logo-right',
     );
     let logoFreeStyle = $derived(
-        logoFree
+        (logoFree
             ? `left:${logoFreeX}%; top:${logoFreeY}%; right:auto; bottom:auto; transform:translate(-50%,-50%);`
-            : '',
+            : '') + logoBgStyle(logoBg),
     );
 
     let dragWrapW = 0, dragWrapH = 0;
@@ -244,6 +245,7 @@
     // ===== העיצוב שנוסע עם המודעה =====
     let adStyle = $derived<AdStyle>({
         logoShape,
+        logoBg,
         logoAnchor: logoPosition,
         logoX: logoFreeX,
         logoY: logoFreeY,
@@ -647,6 +649,21 @@
                                     </button>
                                     <button type="button" onclick={chooseCircle} class="seg-btn" class:is-on={logoShape === 'circle'}>
                                         {$_('advertise.b_circle')}
+                                    </button>
+                                </div>
+                            </div>
+                            </div>
+                            <div>
+                                <p class="seg-label">{$_('advertise.b_logo_bg')}</p>
+                                <div class="seg">
+                                    <button type="button" onclick={() => (logoBg = 'white')} class="seg-btn" class:is-on={logoBg === 'white'}>
+                                        {$_('advertise.b_bg_white')}
+                                    </button>
+                                    <button type="button" onclick={() => (logoBg = 'black')} class="seg-btn" class:is-on={logoBg === 'black'}>
+                                        {$_('advertise.b_bg_black')}
+                                    </button>
+                                    <button type="button" onclick={() => (logoBg = 'clear')} class="seg-btn" class:is-on={logoBg === 'clear'}>
+                                        {$_('advertise.b_bg_clear')}
                                     </button>
                                 </div>
                             </div>
@@ -1418,8 +1435,8 @@
     .crop-reset:hover { background: rgba(245,158,11,0.85); color: black; transform: translate(-50%, -50%) scale(1.12); }
     .crop-zoom {
         position: absolute;
-        background: rgba(0,0,0,0.5);
-        border: 1px solid rgba(255,255,255,0.5);
+        background: rgba(8,145,178,0.85);
+        border: 1px solid rgba(103,232,249,0.9);
         color: white;
         width: 32px; height: 32px;
         border-radius: 50%;
@@ -1433,7 +1450,7 @@
         transition: background 150ms, transform 150ms;
         padding: 0;
     }
-    .crop-zoom:hover { background: rgba(245,158,11,0.85); color: black; transform: scale(1.12); }
+    .crop-zoom:hover { background: rgba(103,232,249,0.95); color: black; transform: scale(1.12); }
     .crop-zoom.zoom-in  { bottom: 8px; right: 8px; }
     .crop-zoom.zoom-out { bottom: 8px; left: 8px; }
     .crop-hint {
