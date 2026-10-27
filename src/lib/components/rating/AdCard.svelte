@@ -14,7 +14,7 @@
     // ============================================================
     import { adImgFit, parseAdImageFit } from '$lib/adImageFit';
     import {
-        parseAdStyle, legacyAdStyle, adStyleVars, logoAnchorClass, logoFreeStyle, logoBgStyle, logoSizeStyle, titleSizeStyle, logoCornerSide,
+        parseAdStyle, legacyAdStyle, adStyleVars, logoAnchorClass, logoFreeStyle, logoBgStyle, logoSizeStyle, titleSizeStyle, hoverLogoStyle, logoCornerSide,
     } from '$lib/adStyle';
     import { normalizeGradientId } from '$lib/ads/gradients';
     import { logoClearance } from '$lib/logoClearance';
@@ -119,6 +119,9 @@
                     <h3 class="promo-hover-title text-white">{ad.title}</h3>
                     <p class="promo-hover-sub text-gray-200">{ad.subtitle}</p>
                 </div>
+                {#if ad.logo && st.hoverLogo}
+                    <img src={ad.logo} alt="" class="bg-white p-[3px] shadow-md" style={hoverLogoStyle(st, logoBgStyle(st.logoBg))} />
+                {/if}
             </div>
         {/if}
     </div>

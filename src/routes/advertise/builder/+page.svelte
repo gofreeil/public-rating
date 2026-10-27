@@ -38,6 +38,10 @@
     let logoShape = $state<'square' | 'circle'>(editStyle?.logoShape ?? 'square');
     let logoBg = $state<'white' | 'black' | 'clear'>(editStyle?.logoBg ?? 'white');
     let logoSize = $state<number>(editStyle?.logoSize ?? 36);
+    let hoverLogo = $state<boolean>(editStyle?.hoverLogo ?? false);
+    let hoverLogoX = $state<number>(editStyle?.hoverLogoX ?? 50);
+    let hoverLogoY = $state<number>(editStyle?.hoverLogoY ?? 22);
+    let hoverLogoSize = $state<number>(editStyle?.hoverLogoSize ?? 56);
     let hasCircleCrop = $state(editStyle?.logoShape === 'circle');
     let logoPosition = $state<'right' | 'left' | 'cta'>(editStyle?.logoAnchor ?? 'right');
     // כל עוד המפרסם לא בחר מיקום בעצמו: כותרת ארוכה ← הלוגו מעל ה-CTA
@@ -249,6 +253,10 @@
         logoShape,
         logoBg,
         logoSize,
+        hoverLogo,
+        hoverLogoX,
+        hoverLogoY,
+        hoverLogoSize,
         logoAnchor: logoPosition,
         logoX: logoFreeX,
         logoY: logoFreeY,
@@ -982,6 +990,29 @@
                           class="text-input hover-textarea"></textarea>
                 <div class="mt-2 text-end text-xs text-gray-500">{hoverText.length}/90</div>
 
+                {#if logo}
+                    <div class="mt-3 rounded-lg border border-white/10 bg-black/20 p-2.5 space-y-2">
+                        <label class="flex items-center gap-2 text-sm font-bold text-gray-300 cursor-pointer">
+                            <input type="checkbox" bind:checked={hoverLogo} class="accent-amber-500" />
+                            {$_('advertise.b_hover_logo')}
+                        </label>
+                        {#if hoverLogo}
+                            <div class="flex items-center gap-2 text-xs text-gray-400">
+                                <span class="w-16 shrink-0">{$_('advertise.b_hover_logo_x')}</span>
+                                <input type="range" min="0" max="100" step="1" class="flex-1 accent-amber-500" bind:value={hoverLogoX} />
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-gray-400">
+                                <span class="w-16 shrink-0">{$_('advertise.b_hover_logo_y')}</span>
+                                <input type="range" min="0" max="100" step="1" class="flex-1 accent-amber-500" bind:value={hoverLogoY} />
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-gray-400">
+                                <span class="w-16 shrink-0">{$_('advertise.b_hover_logo_size')}</span>
+                                <input type="range" min="20" max="120" step="2" class="flex-1 accent-amber-500" bind:value={hoverLogoSize} />
+                            </div>
+                        {/if}
+                    </div>
+                {/if}
+
                 {#if !shopCard}
                     <label class="mt-3 block">
                         <span class="field-label">{$_('advertise.r_cta_label')}</span>
@@ -1055,6 +1086,9 @@
                         <div class="hover-overlay" style:opacity={activeStep === 'hover' ? 1 : 0}>
                             <h3 class="hover-title">{title || $_('advertise.b_ph_title_short')}</h3>
                             <p class="hover-text">{hoverText || $_('advertise.b_ph_hover')}</p>
+                            {#if logo && hoverLogo}
+                                <img src={logo} alt="" class="hover-logo" style="left:{hoverLogoX}%;top:{hoverLogoY}%;width:{hoverLogoSize}px;height:{hoverLogoSize}px;{logoShape === 'circle' ? 'border-radius:50%;' : ''}{logoBg === 'black' ? 'background:#000;' : logoBg === 'clear' ? 'background:transparent;box-shadow:none;' : ''}" />
+                            {/if}
                         </div>
                     </div>
                     <!-- כרטיס מוצר מהחנות - בלי רצועת המחיר, כמו בטור -->
@@ -1841,6 +1875,11 @@
         padding: 0.75rem; text-align: center; transition: opacity 1500ms ease;
         pointer-events: none;
         z-index: 4;
+    }
+    .hover-logo {
+        position: absolute; transform: translate(-50%, -50%);
+        object-fit: contain; border-radius: 6px; background: white; padding: 3px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.35);
     }
     .hover-title { color: white; font-weight: 700; font-size: 0.95rem; margin: 0 0 0.4rem; }
     /* pre-line - ירידות שורה שהמפרסם הקליד נשמרות בתצוגה */
