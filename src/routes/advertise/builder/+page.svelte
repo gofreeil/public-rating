@@ -14,7 +14,7 @@
     import { _ } from 'svelte-i18n';
     import { adImgFit, AD_ZOOM_MIN, AD_ZOOM_MAX } from '$lib/adImageFit';
     import {
-        adStyleVars, logoCornerSide, logoBgStyle, logoSizeStyle, type AdStyle, type SubAlign,
+        adStyleVars, logoCornerSide, logoBgStyle, logoSizeStyle, lpLogoStyle, type AdStyle, type SubAlign, type LpLogoAlign, type LogoBg,
         DEFAULT_BAND_HEIGHT, BAND_MIN, BAND_MAX, TITLE_OFFSET_MIN, TITLE_OFFSET_MAX,
         DEFAULT_SUB_FONT_SIZE, SUB_FONT_SIZE_MIN, SUB_FONT_SIZE_MAX,
         DEFAULT_SUB_LINE_HEIGHT, SUB_LINE_HEIGHT_MIN, SUB_LINE_HEIGHT_MAX,
@@ -236,6 +236,10 @@
     let title = $state(edit?.title ?? '');
     let titleColor = $state(editStyle?.titleColor ?? '#ffffff');
     let titleFontSize = $state<number>(editStyle?.titleFontSize ?? 1.15);
+    // הלוגו בדף הנחיתה: יישור, רקע וגודל (כמו בעמוד הנחיתה בקהילה בשכונה)
+    let lpLogoAlign = $state<LpLogoAlign>(editStyle?.lpLogoAlign ?? 'right');
+    let lpLogoBg = $state<LogoBg | null>(editStyle?.lpLogoBg ?? null);
+    let lpLogoSize = $state<number | null>(editStyle?.lpLogoSize ?? null);
     let titleOffsetY = $state(editStyle?.titleOffsetY ?? 0);    // -20..+60 px
     let subtitle = $state(edit?.subtitle ?? '');
     let subFontSize = $state(editStyle?.subFontSize ?? DEFAULT_SUB_FONT_SIZE);
@@ -253,9 +257,9 @@
         logoShape,
         logoBg,
         logoSize,
-        lpLogoAlign: 'right',
-        lpLogoBg: null,
-        lpLogoSize: null,
+        lpLogoAlign,
+        lpLogoBg,
+        lpLogoSize,
         hoverLogo,
         hoverLogoX,
         hoverLogoY,
@@ -1109,6 +1113,31 @@
     <section class="rounded-2xl border border-white/10 bg-slate-800/80 p-4">
         <h2 class="font-black text-white">{$_('advertise.r_landing_title')}</h2>
         <p class="mb-3 text-xs text-gray-500">{$_('advertise.r_landing_help')}</p>
+        {#if logo}
+            <div class="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-slate-900/40 p-3 text-xs">
+                <span class="font-bold text-gray-300">לוגו בדף הנחיתה:</span>
+                <div class="inline-flex rounded-lg border border-white/10 bg-black/20 p-1">
+                    {#each [['right', 'b_pos_right'], ['center', ''], ['left', 'b_pos_left']] as [v, k] (v)}
+                        <button type="button" onclick={() => (lpLogoAlign = v as LpLogoAlign)}
+                            class="rounded-md px-2.5 py-1 font-bold transition-colors {lpLogoAlign === v ? 'bg-amber-500 text-black' : 'text-gray-300 hover:text-white'}">{k ? $_('advertise.' + k) : 'מרכז'}</button>
+                    {/each}
+                </div>
+                <div class="inline-flex rounded-lg border border-white/10 bg-black/20 p-1">
+                    {#each [['white', 'b_bg_white'], ['black', 'b_bg_black'], ['clear', 'b_bg_clear']] as [v, k] (v)}
+                        <button type="button" onclick={() => (lpLogoBg = v as LogoBg)}
+                            class="rounded-md px-2.5 py-1 font-bold transition-colors {(lpLogoBg ?? logoBg) === v ? 'bg-amber-500 text-black' : 'text-gray-300 hover:text-white'}">{$_('advertise.' + k)}</button>
+                    {/each}
+                </div>
+                <div class="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-black/20 px-2 py-1">
+                    <button type="button" aria-label="-" class="h-6 w-6 rounded-md bg-white/5 font-bold text-gray-300" onclick={() => (lpLogoSize = Math.max(30, (lpLogoSize ?? 64) - 6))}>−</button>
+                    <input type="range" min="30" max="140" step="2" class="w-20 accent-amber-500" value={lpLogoSize ?? 64} oninput={(e) => (lpLogoSize = +e.currentTarget.value)} />
+                    <button type="button" aria-label="+" class="h-6 w-6 rounded-md bg-white/5 font-bold text-gray-300" onclick={() => (lpLogoSize = Math.min(140, (lpLogoSize ?? 64) + 6))}>+</button>
+                </div>
+                <div class="flex min-w-full items-center rounded-lg p-2 bg-gradient-to-br {gradient}">
+                    <img src={logo} alt="" class="lp-logo-preview {logoShape === 'circle' ? 'is-circle' : ''}" style={lpLogoStyle(adStyle)} />
+                </div>
+            </div>
+        {/if}
         <div class="grid gap-3 sm:grid-cols-2">
             <label class="block sm:col-span-2">
                 <span class={labelCls}>{$_('advertise.l_headline_label')}</span>
@@ -1234,6 +1263,11 @@
 </form>
 
 <style>
+    .lp-logo-preview {
+        width: 64px; height: 64px; border-radius: 0.9rem; background: white; padding: 6px;
+        object-fit: contain; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    }
+    .lp-logo-preview.is-circle { border-radius: 9999px; }
     /* ============== העתק של עיצוב הבילדר בקהילה בשכונה ============== */
 
     /* ---- כרטיסי השלבים ---- */

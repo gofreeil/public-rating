@@ -10,6 +10,7 @@
     import { trackAdLanding, trackAdLead } from '$lib/ads/adTrack';
     import { gradientCss, gradientInk } from '$lib/ads/gradients';
     import { safeDataImage, safeHttpUrl } from '$lib/ads/sanitize';
+    import { parseAdStyle, lpLogoStyle, DEFAULT_AD_STYLE } from '$lib/adStyle';
     import Seo from '$lib/components/rating/Seo.svelte';
     import type { PageData } from './$types';
 
@@ -25,6 +26,8 @@
     const website = $derived(safeHttpUrl(lp.website));
     const heroImage = $derived(safeDataImage(lp.image) || safeDataImage(ad.mainImage));
     const logo = $derived(safeDataImage(ad.logo));
+    const adStyle = $derived(parseAdStyle(ad.adStyle) ?? DEFAULT_AD_STYLE);
+    const logoCircle = $derived(adStyle.logoShape === 'circle');
 
     const tel = $derived(lp.phone ? `tel:${lp.phone.replace(/[^\d+]/g, '')}` : '');
     const wa = $derived(lp.whatsapp ? `https://wa.me/${lp.whatsapp.replace(/[^\d]/g, '')}` : '');
@@ -76,12 +79,11 @@
                     <img
                         src={logo}
                         alt=""
-                        width="64"
-                        height="64"
                         decoding="async"
-                        class="mx-auto mb-3 h-16 w-16 rounded-full border-2 border-white/30 object-cover shadow-lg {heroImage
-                            ? 'md:mx-0'
-                            : ''}"
+                        class="al-logo mb-3 h-16 w-16 bg-white object-contain p-1.5 shadow-lg md:h-[84px] md:w-[84px] md:p-[7px] {logoCircle
+                            ? 'rounded-full'
+                            : 'rounded-[0.9rem] md:rounded-[1.1rem]'}"
+                        style={lpLogoStyle(adStyle)}
                     />
                 {/if}
                 <h1 class="text-2xl font-black sm:text-3xl">{lp.headline || ad.title}</h1>
