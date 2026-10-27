@@ -14,7 +14,7 @@
     import { _ } from 'svelte-i18n';
     import { adImgFit, AD_ZOOM_MIN, AD_ZOOM_MAX } from '$lib/adImageFit';
     import {
-        adStyleVars, logoCornerSide, logoBgStyle, type AdStyle, type SubAlign,
+        adStyleVars, logoCornerSide, logoBgStyle, logoSizeStyle, type AdStyle, type SubAlign,
         DEFAULT_BAND_HEIGHT, BAND_MIN, BAND_MAX, TITLE_OFFSET_MIN, TITLE_OFFSET_MAX,
         DEFAULT_SUB_FONT_SIZE, SUB_FONT_SIZE_MIN, SUB_FONT_SIZE_MAX,
         DEFAULT_SUB_LINE_HEIGHT, SUB_LINE_HEIGHT_MIN, SUB_LINE_HEIGHT_MAX,
@@ -37,6 +37,7 @@
     let logoOriginal = $state(edit?.logo ?? '');         // ההעלאה הגולמית - מקור לחיתוך
     let logoShape = $state<'square' | 'circle'>(editStyle?.logoShape ?? 'square');
     let logoBg = $state<'white' | 'black' | 'clear'>(editStyle?.logoBg ?? 'white');
+    let logoSize = $state<number>(editStyle?.logoSize ?? 36);
     let hasCircleCrop = $state(editStyle?.logoShape === 'circle');
     let logoPosition = $state<'right' | 'left' | 'cta'>(editStyle?.logoAnchor ?? 'right');
     // כל עוד המפרסם לא בחר מיקום בעצמו: כותרת ארוכה ← הלוגו מעל ה-CTA
@@ -55,7 +56,7 @@
     let logoFreeStyle = $derived(
         (logoFree
             ? `left:${logoFreeX}%; top:${logoFreeY}%; right:auto; bottom:auto; transform:translate(-50%,-50%);`
-            : '') + logoBgStyle(logoBg),
+            : '') + logoBgStyle(logoBg) + logoSizeStyle(logoSize),
     );
 
     let dragWrapW = 0, dragWrapH = 0;
@@ -230,6 +231,7 @@
     // ===== טקסטים וצבע =====
     let title = $state(edit?.title ?? '');
     let titleColor = $state(editStyle?.titleColor ?? '#ffffff');
+    let titleFontSize = $state<number>(editStyle?.titleFontSize ?? 1.15);
     let titleOffsetY = $state(editStyle?.titleOffsetY ?? 0);    // -20..+60 px
     let subtitle = $state(edit?.subtitle ?? '');
     let subFontSize = $state(editStyle?.subFontSize ?? DEFAULT_SUB_FONT_SIZE);
@@ -246,11 +248,13 @@
     let adStyle = $derived<AdStyle>({
         logoShape,
         logoBg,
+        logoSize,
         logoAnchor: logoPosition,
         logoX: logoFreeX,
         logoY: logoFreeY,
         bandHeight: diagHeight,
         titleOffsetY,
+        titleFontSize,
         titleColor,
         subFontSize,
         subLineHeight,
@@ -667,6 +671,14 @@
                                 </div>
                             </div>
                             <div>
+                                <p class="seg-label">{$_('advertise.b_logo_size')}</p>
+                                <div class="seg" style="align-items:center;gap:6px;padding:4px 8px;">
+                                    <button type="button" aria-label="-" onclick={() => (logoSize = Math.max(20, logoSize - 4))} class="seg-btn">−</button>
+                                    <input type="range" min="20" max="80" step="2" bind:value={logoSize} style="width:80px;accent-color:#f59e0b;" />
+                                    <button type="button" aria-label="+" onclick={() => (logoSize = Math.min(80, logoSize + 4))} class="seg-btn">+</button>
+                                </div>
+                            </div>
+                            <div>
                                 <p class="seg-label">{$_('advertise.b_logo_pos')}</p>
                                 <div class="seg">
                                     <button type="button" onclick={() => setLogoAnchor('right')} class="seg-btn" class:is-on={!logoFree && logoPosition === 'right'}>
@@ -784,6 +796,15 @@
                        class="text-input" />
                 <div class="mt-2 flex items-center justify-end gap-2 text-xs text-gray-500">
                     <span>{title.length}/40</span>
+                </div>
+
+                <div class="mt-4">
+                    <div class="mb-1.5 flex items-center justify-between">
+                        <p class="slider-label">{$_('advertise.b_title_size')} <span class="text-amber-300">{titleFontSize.toFixed(2)}</span></p>
+                        <button type="button" onclick={() => (titleFontSize = 1.15)} class="reset-link">{$_('advertise.b_reset_word')}</button>
+                    </div>
+                    <input type="range" min="0.8" max="1.8" step="0.05" bind:value={titleFontSize}
+                           class="w-full accent-amber-500" aria-label={$_('advertise.b_title_size')} />
                 </div>
 
                 <!-- הזזה אנכית של הכותרת על הבאנר -->
@@ -1000,7 +1021,7 @@
                              class:has-corner-logo-left={titleCornerSide === 'left'}
                              style:transform="translateY({titleOffsetY}px)" style:opacity={activeStep === 'hover' ? 0 : 1}>
                             {#if title}
-                                <h3 class="pro-title" style:color={titleColor}><span class="logo-avoid" aria-hidden="true"></span>{title}</h3>
+                                <h3 class="pro-title" style:color={titleColor} style:font-size={titleFontSize !== 1.15 ? `${titleFontSize}rem` : undefined}><span class="logo-avoid" aria-hidden="true"></span>{title}</h3>
                             {:else}
                                 <div class="placeholder-dashed placeholder-line">{$_('advertise.b_ph_title_step')}</div>
                             {/if}
