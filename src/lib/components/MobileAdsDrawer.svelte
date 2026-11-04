@@ -113,7 +113,7 @@
 
 	$effect(() => {
 		if (typeof window !== 'undefined' && tabY === 0) {
-			tabY = Math.round(window.innerHeight * 4 / 5);
+			tabY = Math.round(window.innerHeight * 0.62);
 		}
 	});
 
