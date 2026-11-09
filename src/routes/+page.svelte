@@ -71,9 +71,9 @@
     </section>
 
     <!-- b) כרטיסי קטגוריות -->
-    <section class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <section class="flex flex-wrap justify-center gap-3">
         {#each GROUPS as g (g.key)}
-            <a href={g.route} class="cat-card flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-slate-800/80 transition-colors">
+            <a href={g.route} class="cat-card flex w-full flex-col overflow-hidden sm:w-[calc((100%-1.5rem)/3)] sm:min-w-[260px] rounded-2xl border border-white/10 bg-slate-800/80 transition-colors">
                 <img src={g.photo} alt={g.photoAlt} width="800" height="450" class="aspect-video w-full object-cover" loading="lazy" decoding="async" />
                 <span class="flex flex-col gap-1 p-4">
                     <span class="text-center font-black text-white">{g.title}</span>
