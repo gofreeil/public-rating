@@ -196,11 +196,11 @@
                             ></div>
                         </div>
                         <div class="min-w-0 flex-1">
-                            <h1
+                            <div
                                 class="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-xl font-black text-transparent leading-tight"
                             >
                                 {tFn("welcome")}
-                            </h1>
+                            </div>
                             <p class="text-xs text-gray-400 leading-tight">
                                 {tFn("app_description")}
                             </p>
@@ -314,11 +314,11 @@
                     </div>
                 </div>
                 <a href="/" class="group">
-                    <h1
+                    <div
                         class="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-3xl font-bold text-transparent group-hover:opacity-80 transition-opacity"
                     >
                         {tFn("welcome")}
-                    </h1>
+                    </div>
                     <p class="text-lg text-gray-100 font-extrabold group-hover:opacity-80 transition-opacity">{tFn("app_description")}</p>
                 </a>
             </div>
