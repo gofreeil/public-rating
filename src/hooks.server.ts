@@ -54,6 +54,27 @@ const setStrApiCookie: Handle = async ({ event, resolve }) => {
  */
 const PUBLIC_IMAGE_PATH = /^\/api\/ad-image\/[^/]+\/[^/]+$/;
 
+// נתיבי סריקה של בוטים (וורדפרס/PHP/קבצי סודות) — לאתר הזה אין אף אחד מהם. בלי הקיצור כל
+// ניסיון כזה מרנדר את דף ה-404 המלא (כולל ה-layout) ועולה זמן CPU; עונים בשורה אחת, ו-s-maxage
+// נותן ל-CDN של Vercel לזכור את התשובה כך שחזרה על אותו נתיב לא מגיעה לפונקציה.
+const JUNK_PATH =
+    /\.(?:php\d*|aspx?|jsp|cgi)$|^\/(?:wp-[^/]*|wordpress|phpmyadmin|cgi-bin|\.env[^/]*|\.git|\.aws|\.ssh)(?:\/|$)/i;
+
+// עוגיית הסשן של Auth.js (גם בגרסה המאובטחת __Secure-, וגם כשהיא מפוצלת ל-.0/.1)
+const SESSION_COOKIE = /(?:^|;\s*)[^=;\s]*session-token[^=;]*=/;
+
+/**
+ * מבקר בלי עוגיית סשן הוא אנונימי בהכרח, ו-Auth.js היה מחזיר לו null בכל מקרה — אבל רק אחרי
+ * שבנה את כל ההגדרות מחדש (וזה קורה בכל בקשה, גם של בוטים). בלי עוגייה — null מיד.
+ * רץ אחרי authHandle, כך שנתיבי /auth/* (התחברות) ממשיכים להיות מטופלים כרגיל.
+ */
+const skipAuthWhenAnonymous: Handle = async ({ event, resolve }) => {
+    if (!SESSION_COOKIE.test(event.request.headers.get('cookie') ?? '')) {
+        (event.locals as unknown as Record<string, unknown>).auth = async () => null;
+    }
+    return resolve(event);
+};
+
 /**
  * עוטפים את ה-handle של Auth ב-try/catch.
  * אם ה-JWT קיים בעוגייה אבל לא תקין (למשל AUTH_SECRET שונה),
@@ -61,12 +82,21 @@ const PUBLIC_IMAGE_PATH = /^\/api\/ad-image\/[^/]+\/[^/]+$/;
  * הפתרון: אם handle זורק, נמשיך ב-resolve רגיל (משתמש אנונימי).
  */
 export const handle: Handle = async ({ event, resolve }) => {
+    if (event.request.method === 'GET' && JUNK_PATH.test(event.url.pathname)) {
+        return new Response('Not found', {
+            status: 404,
+            headers: {
+                'content-type': 'text/plain; charset=utf-8',
+                'cache-control': 'public, s-maxage=86400',
+            },
+        });
+    }
     if (PUBLIC_IMAGE_PATH.test(event.url.pathname)) {
         (event.locals as unknown as Record<string, unknown>).auth = async () => null;
         return await resolve(event);
     }
     try {
-        return await sequence(authHandle, checkBanned, setStrApiCookie)({ event, resolve });
+        return await sequence(authHandle, skipAuthWhenAnonymous, checkBanned, setStrApiCookie)({ event, resolve });
     } catch (err) {
         console.warn('[hooks] auth handle threw - continuing anonymously:', err);
         return await resolve(event);
