@@ -34,7 +34,6 @@
     "shortcuts": [
         { "name": "חברי כנסת ושרים", "url": "/knesset" },
         { "name": "שופטים", "url": "/judges" },
-        { "name": "עובדי ציבור", "url": "/public-servants" },
         { "name": "מצטייני הציבור", "url": "/top-rated" }
     ]
 }

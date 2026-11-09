@@ -403,7 +403,7 @@ async function fetchByCategory(category: string): Promise<StrapiItem[]> {
 /** כל המדורגים המאושרים */
 export async function listOfficials(): Promise<Official[]> {
     return cached('officials', async () =>
-        (await fetchByCategory(OFFICIAL_CATEGORY)).map(mapOfficial).filter((o) => o.approved),
+        (await fetchByCategory(OFFICIAL_CATEGORY)).map(mapOfficial).filter((o) => o.approved && o.group !== 'public_servants'),
     );
 }
 
@@ -414,7 +414,7 @@ export async function listPendingOfficials(): Promise<Official[]> {
 
 /** כמו listOfficials אבל בלי קאש — לבדיקת כפילויות בזמן-אמת (הצעת מדורג) */
 export async function listOfficialsFresh(): Promise<Official[]> {
-    return (await fetchByCategory(OFFICIAL_CATEGORY)).map(mapOfficial).filter((o) => o.approved);
+    return (await fetchByCategory(OFFICIAL_CATEGORY)).map(mapOfficial).filter((o) => o.approved && o.group !== 'public_servants');
 }
 
 /** כל הדירוגים בפלטפורמה (תקפים בלבד — עם ציון) */

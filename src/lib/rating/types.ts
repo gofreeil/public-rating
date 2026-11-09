@@ -71,19 +71,7 @@ export const GROUPS: Group[] = [
         blurb: 'הרשות השופטת — הכרעות, זמני טיפול והגינות דיונית',
         tally: '750 שופטים',
     },
-    {
-        key: 'public_servants',
-        route: '/public-servants',
-        title: 'עובדי ציבור',
-        singular: 'עובד ציבור',
-        icon: '🏢',
-        photo: '/images/groups/public-servants.webp',
-        photoAlt: 'בניין בנק ישראל בקריית הממשלה בירושלים',
-        orgLabel: 'משרד / רשות',
-        positions: ['מנכ"ל משרד', 'יועץ', 'נציב', 'מבקר', 'ראש רשות', 'חבר מועצה', 'פקיד בכיר'],
-        blurb: 'הפקידות הבכירה והרשויות — שירות, תקנים ושקיפות',
-        tally: '80 אלף עובדי מדינה',
-    },
+    // public_servants (עובדי ציבור) — הורד זמנית; להחזרה לשחזר את הרשומה מההיסטוריה
 ];
 
 export function groupByKey(key: string | undefined | null): Group | undefined {

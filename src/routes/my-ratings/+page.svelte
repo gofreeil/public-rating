@@ -66,7 +66,7 @@
                 הדירוג שלכם הוא הקול שלכם — בחרו לוח והתחילו
             </p>
             <div class="mt-4 flex flex-wrap justify-center gap-2">
-                {#each ['knesset', 'judges', 'public_servants'] as key (key)}
+                {#each ['knesset', 'judges'] as key (key)}
                     {@const g = groupByKey(key)}
                     {#if g}
                         <a href={g.route} class="rounded-full border border-white/10 bg-slate-800/80 px-4 py-1.5 text-sm font-bold text-white transition-colors hover:bg-white/10">
