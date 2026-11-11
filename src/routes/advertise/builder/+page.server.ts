@@ -40,6 +40,8 @@ export const load: PageServerLoad = async (event) => {
                     mainImage: ad.mainImage,
                     adStyle: ad.adStyle,
                     mainImageFit: ad.mainImageFit,
+                    mobileImage: ad.mobileImage,
+                    mobileImageFit: ad.mobileImageFit,
                     shop: ad.shop === true,
                     landing: ad.landing,
                 };

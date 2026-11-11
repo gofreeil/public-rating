@@ -62,6 +62,8 @@ export const POST: RequestHandler = async (event) => {
             mainImage: String(body.mainImage ?? ''),
             adStyle: body.adStyle,
             mainImageFit: body.mainImageFit,
+            mobileImage: String(body.mobileImage ?? ''),
+            mobileImageFit: body.mobileImageFit,
             landing: body.landing,
             requestedDurationDays: body.requestedDurationDays,
             ownerId: userId,

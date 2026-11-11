@@ -23,6 +23,8 @@
     import { AD_GRADIENTS, DEFAULT_GRADIENT_ID, normalizeGradientId } from '$lib/ads/gradients';
     import { compressImage, dataUrlBytes, fmtKb, MAX_AD_TOTAL_BYTES } from '$lib/ads/adImage';
     import Seo from '$lib/components/rating/Seo.svelte';
+    import AdCard from '$lib/components/rating/AdCard.svelte';
+    import MobileAdCard from '$lib/components/MobileAdCard.svelte';
     import type { PageData } from './$types';
 
     let { data }: { data: PageData } = $props();
@@ -232,6 +234,17 @@
     let mainImageZoom = $state(editFit?.z ?? 1);        // 1 = מילוי המשבצת
     let mainImageFit = $derived({ x: mainImageObjectX, y: mainImageObjectY, z: mainImageZoom });
 
+    // ===== תמונה ייעודית לנייד (שלב 7) =====
+    // המשבצת בנייד רחבה ונמוכה ובדסקטופ צרה וגבוהה; ריק = הנייד מציג את הראשית
+    const editMobileFit = edit?.mobileImageFit;
+    let mobileImage = $state(edit?.mobileImage ?? '');
+    let mobileImageObjectX = $state(editMobileFit?.x ?? 50);
+    let mobileImageObjectY = $state(editMobileFit?.y ?? 50);
+    let mobileImageZoom = $state(editMobileFit?.z ?? 1);
+    let mobileImageFit = $derived({ x: mobileImageObjectX, y: mobileImageObjectY, z: mobileImageZoom });
+    let previewMobileImage = $derived(mobileImage || mainImage);
+    let previewMobileFit = $derived(mobileImage ? mobileImageFit : mainImageFit);
+
     // ===== טקסטים וצבע =====
     let title = $state(edit?.title ?? '');
     let titleColor = $state(editStyle?.titleColor ?? '#ffffff');
@@ -245,6 +258,21 @@
     let subFontSize = $state(editStyle?.subFontSize ?? DEFAULT_SUB_FONT_SIZE);
     let subLineHeight = $state(editStyle?.subLineHeight ?? DEFAULT_SUB_LINE_HEIGHT);
     let subAlign = $state<SubAlign>(editStyle?.subAlign ?? 'right');
+    // הזזת הכותרת / הכיתוב / הכפתור בפופ-אפ הנייד (שלב 7), באחוזי רוחב הכרטיס
+    let mobTitleX = $state<number>(editStyle?.mobTitleX ?? 0);
+    let mobTitleY = $state<number>(editStyle?.mobTitleY ?? 0);
+    let mobSubX = $state<number>(editStyle?.mobSubX ?? 0);
+    let mobSubY = $state<number>(editStyle?.mobSubY ?? 0);
+    let mobCtaX = $state<number>(editStyle?.mobCtaX ?? 0);
+    let mobCtaY = $state<number>(editStyle?.mobCtaY ?? 0);
+    function moveMobile(key: 'title' | 'sub' | 'cta', x: number, y: number) {
+        if (key === 'title') { mobTitleX = x; mobTitleY = y; }
+        else if (key === 'sub') { mobSubX = x; mobSubY = y; }
+        else { mobCtaX = x; mobCtaY = y; }
+    }
+    function resetMobilePositions() {
+        mobTitleX = mobTitleY = mobSubX = mobSubY = mobCtaX = mobCtaY = 0;
+    }
     let hoverText = $state(edit?.hoverText ?? '');
     let cta = $state(edit ? edit.cta : 'הקלק לפרטים והזמנות');
     let gradient = $state(edit ? normalizeGradientId(edit.gradientId) : DEFAULT_GRADIENT_ID);
@@ -274,6 +302,7 @@
         subFontSize,
         subLineHeight,
         subAlign,
+        mobTitleX, mobTitleY, mobSubX, mobSubY, mobCtaX, mobCtaY,
     });
     // אותו כלל של האתר: לוגו בפינה העליונה ← הכותרת שומרת לו מקום
     let titleCornerSide = $derived(logoCornerSide(adStyle, Boolean(logo)));
@@ -287,12 +316,14 @@
     });
 
     // ===== השלבים והדמו החי =====
-    type Step = 'image' | 'logo' | 'title' | 'gradient' | 'subtitle' | 'hover';
-    const stepOrder: Step[] = ['image', 'logo', 'title', 'gradient', 'subtitle', 'hover'];
+    type Step = 'image' | 'logo' | 'title' | 'gradient' | 'subtitle' | 'hover' | 'preview';
+    const stepOrder: Step[] = ['image', 'logo', 'title', 'gradient', 'subtitle', 'hover', 'preview'];
     let activeStep = $state<Step>('image');
     let stepRefs: Record<Step, HTMLElement | null> = $state({
-        image: null, logo: null, title: null, gradient: null, subtitle: null, hover: null,
+        image: null, logo: null, title: null, gradient: null, subtitle: null, hover: null, preview: null,
     });
+    // שלב 7: מעבר בין תצוגת הנייד (הפופ-אפ) לתצוגת הדסקטופ (הכרטיס בטור)
+    let previewMode = $state<'mobile' | 'desktop'>('mobile');
 
     // הדמו "קופץ" לגובה השלב הפעיל
     let demoTop = $state(0);
@@ -348,16 +379,22 @@
     let isDraggingMain = $state(false);
     let isDraggingLogo = $state(false);
     let isDraggingLanding = $state(false);
+    let isDraggingMobile = $state(false);
+    type ImageTarget = 'main' | 'mobile' | 'logo' | 'landing';
     // השגיאה נקשרת לאזור ההעלאה שבו קרתה — מוצגת שם, לא בסקשן אחר
-    let imageError = $state<'' | 'main' | 'logo' | 'landing'>('');
+    let imageError = $state<'' | ImageTarget>('');
+    // תמונת הנייד מוצגת במשבצת קטנה (384x176) - תקרה נמוכה שומרת מקום לשאר המודעה
+    const MOBILE_MAX_BYTES = 120 * 1024;
 
-    async function processImageFile(file: File | null | undefined, target: 'main' | 'logo' | 'landing') {
+    async function processImageFile(file: File | null | undefined, target: ImageTarget) {
         if (!file) return;
         imageError = '';
         let url: string;
         try {
             // התקרות של האתר הזה: כל המודעה נשמרת כ-data URI בשורה אחת
-            url = await compressImage(file, target === 'logo' ? LOGO_MAX_BYTES : 220 * 1024);
+            url = target === 'mobile'
+                ? await compressImage(file, MOBILE_MAX_BYTES, 800)
+                : await compressImage(file, target === 'logo' ? LOGO_MAX_BYTES : 220 * 1024);
         } catch {
             imageError = target;
             return;
@@ -367,6 +404,11 @@
             mainImageObjectX = 50;
             mainImageObjectY = 50;
             mainImageZoom = 1;
+        } else if (target === 'mobile') {
+            mobileImage = url;
+            mobileImageObjectX = 50;
+            mobileImageObjectY = 50;
+            mobileImageZoom = 1;
         } else if (target === 'logo') {
             logoOriginal = url;
             logo = url;
@@ -376,29 +418,38 @@
             landingImage = url;
         }
     }
-    async function handleImage(e: Event, target: 'main' | 'logo' | 'landing') {
+    async function handleImage(e: Event, target: ImageTarget) {
         const input = e.currentTarget as HTMLInputElement;
         await processImageFile(input.files?.[0], target);
         input.value = '';
     }
-    function clearImage(target: 'main' | 'logo' | 'landing') {
+    function clearImage(target: ImageTarget) {
         if (target === 'main') { mainImage = ''; mainImageObjectX = 50; mainImageObjectY = 50; mainImageZoom = 1; }
+        else if (target === 'mobile') { mobileImage = ''; mobileImageObjectX = 50; mobileImageObjectY = 50; mobileImageZoom = 1; }
         else if (target === 'landing') landingImage = '';
         else { logo = ''; logoOriginal = ''; hasCircleCrop = false; }
     }
-    function nudgeMainImage(dir: 'up' | 'down' | 'left' | 'right') {
+    // אותם כלי מיקום/זום משרתים את התמונה הראשית ואת התמונה של הנייד
+    function nudgeMainImage(dir: 'up' | 'down' | 'left' | 'right', which: 'main' | 'mobile' = 'main') {
         const STEP = 8;
         const dy = dir === 'up' ? -STEP : dir === 'down' ? STEP : 0;
         const dx = dir === 'left' ? -STEP : dir === 'right' ? STEP : 0;
         const clamp = (v: number) => Math.min(100, Math.max(0, v));
-        mainImageObjectY = clamp(mainImageObjectY + dy);
-        mainImageObjectX = clamp(mainImageObjectX + dx);
+        if (which === 'main') {
+            mainImageObjectY = clamp(mainImageObjectY + dy);
+            mainImageObjectX = clamp(mainImageObjectX + dx);
+        } else {
+            mobileImageObjectY = clamp(mobileImageObjectY + dy);
+            mobileImageObjectX = clamp(mobileImageObjectX + dx);
+        }
     }
     /** זום בצעדים יחסיים; 1 = מילוי המשבצת (cover) */
-    function zoomMainImage(dir: 'in' | 'out') {
+    function zoomMainImage(dir: 'in' | 'out', which: 'main' | 'mobile' = 'main') {
         const FACTOR = 1.15;
-        const next = dir === 'in' ? mainImageZoom * FACTOR : mainImageZoom / FACTOR;
-        mainImageZoom = Math.round(Math.min(AD_ZOOM_MAX, Math.max(AD_ZOOM_MIN, next)) * 100) / 100;
+        const cur = which === 'main' ? mainImageZoom : mobileImageZoom;
+        const next = dir === 'in' ? cur * FACTOR : cur / FACTOR;
+        const clamped = Math.round(Math.min(AD_ZOOM_MAX, Math.max(AD_ZOOM_MIN, next)) * 100) / 100;
+        if (which === 'main') mainImageZoom = clamped; else mobileImageZoom = clamped;
     }
     function dragOver(e: DragEvent, setActive: (v: boolean) => void) {
         if (!e.dataTransfer?.types.includes('Files')) return;
@@ -411,7 +462,7 @@
         e.stopPropagation();
         setActive(false);
     }
-    async function handleDrop(e: DragEvent, target: 'main' | 'logo' | 'landing', setActive: (v: boolean) => void) {
+    async function handleDrop(e: DragEvent, target: ImageTarget, setActive: (v: boolean) => void) {
         e.preventDefault();
         e.stopPropagation();
         setActive(false);
@@ -457,7 +508,7 @@
     let error = $state('');
 
     const totalBytes = $derived(
-        dataUrlBytes(mainImage) + dataUrlBytes(logo) + dataUrlBytes(landingImage),
+        dataUrlBytes(mainImage) + dataUrlBytes(mobileImage) + dataUrlBytes(logo) + dataUrlBytes(landingImage),
     );
     // מעל התקרה השרת ידחה (413) — לכן חוסמים כבר כאן, עם הסבר
     const overweight = $derived(totalBytes > MAX_AD_TOTAL_BYTES);
@@ -480,6 +531,8 @@
             logo,
             adStyle,
             mainImageFit,
+            mobileImage,
+            mobileImageFit,
             requestedDurationDays: durationDays,
             landing: {
                 headline: headline || title,
@@ -1029,6 +1082,126 @@
 
                 <div class="step-nav-row">
                     <button type="button" class="step-nav-btn" onclick={() => advance(prevOf('hover'))}>
+                        {$_('advertise.b_prev_step')}
+                    </button>
+                    <button type="button" class="step-nav-btn" onclick={() => advance('preview')}>
+                        {$_('advertise.b_next_step')}
+                    </button>
+                </div>
+            </section>
+
+            <!-- =================== שלב 7: תצוגה מקדימה (נייד / דסקטופ) =================== -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <section bind:this={stepRefs.preview} class="step-card" onclick={() => focusStep('preview')} onfocusin={() => focusStep('preview')}>
+                <div class="step-head">
+                    <span class="step-num">7</span>
+                    <h2>{$_('advertise.b_s7_title')}</h2>
+                    {#if activeStep === 'preview'}<span class="tutorial-finger" aria-hidden="true">👇</span>{/if}
+                </div>
+                {#snippet previewSideControls()}
+                    <div class="preview-side-controls">
+                        <p class="preview-side-controls-help">{$_('advertise.b_preview_help')}</p>
+                        <div class="preview-side-toggle">
+                            {#each [
+                                { id: 'mobile', labelKey: 'b_mobile' },
+                                { id: 'desktop', labelKey: 'b_desktop' },
+                            ] as opt (opt.id)}
+                                <button type="button" onclick={() => (previewMode = opt.id as 'mobile' | 'desktop')}
+                                        aria-pressed={previewMode === opt.id}
+                                        class="preview-side-toggle-btn" class:is-active={previewMode === opt.id}>
+                                    {$_(`advertise.${opt.labelKey}`)}
+                                </button>
+                            {/each}
+                        </div>
+                    </div>
+                {/snippet}
+
+                {#if previewMode === 'mobile'}
+                    <!-- הפופ-אפ בנייד: אותו רכיב שהאתר מצייר (MobileAdCard), במצב עריכה -->
+                    <div class="preview-frame">
+                        <!-- תמונה ייעודית לנייד: המשבצת בנייד רחבה ונמוכה, ולכן תמונה
+                             שנראית מצוין בדסקטופ יכולה להיחתך רע כאן -->
+                        <div class="mobile-image-swap">
+                            <p class="mobile-image-swap-title">{$_('advertise.b_mobile_img_title')}</p>
+                            <p class="mobile-image-swap-help">{$_('advertise.b_mobile_img_help')}</p>
+                            {#if mobileImage}
+                                <div class="mobile-image-swap-frame"
+                                     class:dragging={isDraggingMobile}
+                                     ondragover={(e) => dragOver(e, (v) => (isDraggingMobile = v))}
+                                     ondragleave={(e) => dragLeave(e, (v) => (isDraggingMobile = v))}
+                                     ondrop={(e) => handleDrop(e, 'mobile', (v) => (isDraggingMobile = v))}>
+                                    <img src={mobileImage} alt={$_('advertise.b_mobile_img_title')} use:adImgFit={mobileImageFit} />
+                                    <button type="button" class="remove-x" onclick={() => clearImage('mobile')} aria-label={$_('advertise.b_remove_image')}>✕</button>
+                                    <button type="button" class="crop-arrow crop-arrow-up" onclick={() => nudgeMainImage('up', 'mobile')} aria-label={$_('advertise.b_nudge_up')}>▲</button>
+                                    <button type="button" class="crop-arrow crop-arrow-down" onclick={() => nudgeMainImage('down', 'mobile')} aria-label={$_('advertise.b_nudge_down')}>▼</button>
+                                    <button type="button" class="crop-arrow crop-arrow-left" onclick={() => nudgeMainImage('left', 'mobile')} aria-label={$_('advertise.b_nudge_left')}>◀</button>
+                                    <button type="button" class="crop-arrow crop-arrow-right" onclick={() => nudgeMainImage('right', 'mobile')} aria-label={$_('advertise.b_nudge_right')}>▶</button>
+                                    <button type="button" class="crop-reset" onclick={() => { mobileImageObjectX = 50; mobileImageObjectY = 50; mobileImageZoom = 1; }} aria-label={$_('advertise.b_reset_pos')}>⊙</button>
+                                    <button type="button" class="crop-zoom zoom-in" onclick={() => zoomMainImage('in', 'mobile')} aria-label={$_('advertise.b_zoom_in')}>＋</button>
+                                    <button type="button" class="crop-zoom zoom-out" onclick={() => zoomMainImage('out', 'mobile')} aria-label={$_('advertise.b_zoom_out')}>－</button>
+                                </div>
+                                <p class="mobile-image-swap-note">{$_('advertise.b_mobile_img_active')}</p>
+                            {:else}
+                                <label class="mobile-image-swap-drop"
+                                       class:dragging={isDraggingMobile}
+                                       ondragover={(e) => dragOver(e, (v) => (isDraggingMobile = v))}
+                                       ondragleave={(e) => dragLeave(e, (v) => (isDraggingMobile = v))}
+                                       ondrop={(e) => handleDrop(e, 'mobile', (v) => (isDraggingMobile = v))}>
+                                    <span class="text-2xl" aria-hidden="true">{isDraggingMobile ? '✨' : '📱'}</span>
+                                    <span class="mobile-image-swap-drop-main">
+                                        {isDraggingMobile ? $_('advertise.b_drop_here') : $_('advertise.b_mobile_img_upload')}
+                                    </span>
+                                    <span class="mobile-image-swap-drop-sub">{$_('advertise.b_click_or_drag')}</span>
+                                    <input type="file" accept="image/png,image/jpeg,image/webp" onchange={(e) => handleImage(e, 'mobile')} class="hidden" />
+                                </label>
+                            {/if}
+                            {#if imageError === 'mobile'}
+                                <p class="upload-err">{$_('advertise.b_err_image_read')}</p>
+                            {/if}
+                        </div>
+                        <div class="preview-with-side-caption">
+                            {@render previewSideControls()}
+                            <div class="phone-screen">
+                                <div class="phone-notch"></div>
+                                <div class="phone-content">
+                                    <div class="mobile-popup-slot">
+                                        <MobileAdCard
+                                            editable
+                                            {title} {subtitle} {cta} {gradient}
+                                            image={previewMobileImage}
+                                            imageFit={previewMobileFit}
+                                            {logo}
+                                            st={adStyle}
+                                            showCta={!shopCard}
+                                            placeholder={$_('advertise.b_main_image_alt')}
+                                            onedit={(f, v) => { if (f === 'title') title = v; else if (f === 'sub') subtitle = v; else cta = v.slice(0, 30); }}
+                                            onmove={moveMobile}
+                                        />
+                                        {#if mobTitleX || mobTitleY || mobSubX || mobSubY || mobCtaX || mobCtaY}
+                                            <button type="button" class="mobile-reset-pos" onclick={resetMobilePositions}>{$_('advertise.b_mobile_reset_pos')}</button>
+                                        {/if}
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="preview-caption-side">{$_('advertise.b_mobile_caption')} <b>{$_('advertise.b_mobile_edit_hint')}</b></p>
+                        </div>
+                    </div>
+                {:else}
+                    <!-- הכרטיס בטור הימני: אותו רכיב AdCard שהאתר מציג, כולל הריחוף -->
+                    <div class="preview-frame">
+                        <div class="preview-with-side-caption">
+                            {@render previewSideControls()}
+                            <div class="clean-card-wrap">
+                                <AdCard ad={{ title: title || $_('advertise.b_s3_title'), subtitle: subtitle || $_('advertise.b_ph_slogan'), hoverText, cta, gradientId: gradient, logo, mainImage, mainImageFit, adStyle, shop: shopCard }} />
+                            </div>
+                            <p class="preview-caption-side">{$_('advertise.b_desktop_caption')}</p>
+                        </div>
+                    </div>
+                {/if}
+
+                <div class="step-nav-row">
+                    <button type="button" class="step-nav-btn" onclick={() => advance(prevOf('preview'))}>
                         {$_('advertise.b_prev_step')}
                     </button>
                 </div>
@@ -1771,6 +1944,96 @@
         color: rgb(252,211,77); font-size: 0.72rem; font-weight: 700;
         text-decoration: underline; text-underline-offset: 2px; padding: 0;
     }
+
+    /* ---- שלב 7: תצוגה מקדימה (מסגרת טלפון + מעבר נייד/דסקטופ) ---- */
+    .preview-frame { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+    .preview-with-side-caption {
+        position: relative; display: flex; align-items: center; justify-content: center; width: 100%;
+    }
+    .preview-caption-side {
+        position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+        max-width: 130px; margin: 0; text-align: right;
+        color: #f1f5f9; font-size: 0.95rem; line-height: 1.5; font-weight: 600;
+        padding: 0.7rem 0.8rem;
+    }
+    .preview-side-controls {
+        position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+        max-width: 150px; display: flex; flex-direction: column; gap: 0.7rem;
+        padding: 0.7rem 0.8rem; z-index: 1;
+    }
+    .preview-side-controls-help {
+        margin: 0; color: #f1f5f9; font-size: 0.95rem; line-height: 1.5; text-align: right; font-weight: 600;
+    }
+    .preview-side-toggle {
+        display: inline-flex; border-radius: 0.55rem; border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(0,0,0,0.3); padding: 0.2rem; align-self: stretch; justify-content: center;
+    }
+    .preview-side-toggle-btn {
+        flex: 1; padding: 0.4rem; border-radius: 0.4rem; font-size: 0.72rem; font-weight: 700;
+        color: rgb(209,213,219); background: transparent; border: none; cursor: pointer;
+        font-family: inherit; white-space: nowrap; transition: background 0.15s, color 0.15s;
+    }
+    .preview-side-toggle-btn.is-active { background: rgb(245,158,11); color: #000; }
+    .preview-side-toggle-btn:not(.is-active):hover { color: #fff; }
+    @media (max-width: 1000px) {
+        /* במסך צר המיקום האבסולוטי היה עולה על הטלפון - עוברים לזרימה */
+        .preview-with-side-caption { flex-direction: column; row-gap: 0.75rem; }
+        .preview-caption-side { position: static; transform: none; max-width: none; text-align: center; }
+        .preview-side-controls { position: static; transform: none; max-width: none; order: -1; }
+        .preview-side-controls-help { text-align: center; }
+    }
+    .phone-screen {
+        width: 280px; height: 540px; max-width: 90vw;
+        background: #0b1224; border-radius: 2rem;
+        border: 8px solid #111827; box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.05);
+        position: relative; overflow: hidden;
+    }
+    .phone-notch {
+        position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+        width: 80px; height: 16px; background: #111827; border-radius: 0 0 12px 12px; z-index: 10;
+    }
+    .phone-content { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .mobile-popup-slot { width: 100%; max-width: 240px; }
+    .mobile-reset-pos {
+        display: block; margin: 0.4rem auto 0; font-size: 0.7rem; padding: 0.15rem 0.6rem; cursor: pointer;
+        border-radius: 9999px; background: rgba(255,255,255,0.08); color: #fbbf24; border: 1px solid rgba(251,191,36,0.4);
+    }
+    /* 144px - רוחב המשבצת האמיתי בטור הימני (w-36) */
+    .clean-card-wrap { width: 144px; }
+
+    /* ---- תמונה ייעודית לנייד (שלב 7) ---- */
+    .mobile-image-swap {
+        width: 100%; margin-bottom: 0.9rem; border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 0.9rem; background: rgba(255,255,255,0.04);
+        padding: 0.75rem 0.85rem; text-align: center;
+    }
+    .mobile-image-swap-title { margin: 0; color: white; font-weight: 900; font-size: 0.9rem; }
+    .mobile-image-swap-help { margin: 0.2rem 0 0.6rem; color: rgb(156,163,175); font-size: 0.72rem; line-height: 1.35; }
+    .mobile-image-swap-drop {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem;
+        width: 100%; max-width: 320px; margin: 0 auto;
+        padding: 1rem 0.9rem; border-radius: 0.8rem; cursor: pointer;
+        border: 2px dashed rgba(245,158,11,0.45); background: rgba(245,158,11,0.06);
+        color: rgb(253,230,138);
+        transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    }
+    .mobile-image-swap-drop:hover { background: rgba(245,158,11,0.14); border-color: rgba(245,158,11,0.8); }
+    .mobile-image-swap-drop.dragging {
+        border-color: rgb(34,197,94); background: rgba(34,197,94,0.12);
+        box-shadow: 0 0 0 4px rgba(34,197,94,0.18); transform: scale(1.01);
+    }
+    .mobile-image-swap-drop-main { font-weight: 800; font-size: 0.82rem; }
+    .mobile-image-swap-drop-sub { color: rgb(156,163,175); font-size: 0.68rem; }
+    /* אותו יחס בדיוק של משבצת התמונה בנייד, כדי שהחיתוך שנבחר כאן
+       יהיה החיתוך שרואים שם */
+    .mobile-image-swap-frame {
+        position: relative; width: 100%; max-width: 320px; margin: 0 auto;
+        aspect-ratio: 384 / 176; border-radius: 0.7rem; overflow: hidden;
+        border: 2px solid rgba(245,158,11,0.45);
+    }
+    .mobile-image-swap-frame.dragging { border-color: rgb(34,197,94); box-shadow: 0 0 0 4px rgba(34,197,94,0.2); }
+    .mobile-image-swap-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mobile-image-swap-note { margin: 0.45rem 0 0; color: rgb(134,239,172); font-size: 0.7rem; font-weight: 700; }
 
     /* ---- שתי העמודות + הדמו החי ---- */
     .builder-cols {

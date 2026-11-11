@@ -116,9 +116,30 @@ function readImageFit(x: Record<string, unknown>): AdImageFit {
     return parseAdImageFit(l._mainImageFit ?? l.mainImageFit ?? x.main_image_fit);
 }
 
+// תמונת הנייד: כאן היא יושבת ב-extra_fields.mobile_image (ליד main_image)
+// וה-fit שלה ב-landing._mobileImageFit. קהילה בשכונה שומרת את שתיהן בתוך
+// ה-landing (mobileImage / mobileImageFit), ולכן כרטיס שהופץ משם נקרא גם כך.
+function readMobileImage(x: Record<string, unknown>): string {
+    return safeDataImage(x.mobile_image) || safeDataImage(rawLanding(x).mobileImage);
+}
+
+function readMobileFit(x: Record<string, unknown>): AdImageFit {
+    const l = rawLanding(x);
+    return parseAdImageFit(l._mobileImageFit ?? l.mobileImageFit ?? x.mobile_image_fit);
+}
+
 /** דף הנחיתה לשמירה: התוכן המחוטא + העיצוב, מנורמל ב-parseAdStyle / parseAdImageFit */
-function storedLanding(landing: AdLanding, adStyle: unknown, fit: unknown): Record<string, unknown> {
-    const out: Record<string, unknown> = { ...landing, _mainImageFit: parseAdImageFit(fit) };
+function storedLanding(
+    landing: AdLanding,
+    adStyle: unknown,
+    fit: unknown,
+    mobileFit: unknown,
+): Record<string, unknown> {
+    const out: Record<string, unknown> = {
+        ...landing,
+        _mainImageFit: parseAdImageFit(fit),
+        _mobileImageFit: parseAdImageFit(mobileFit),
+    };
     const style = parseAdStyle(adStyle);
     if (style) out._adStyle = style;
     return out;
@@ -132,6 +153,7 @@ function mapAd(item: StrapiItem): SubmittedAd {
     })();
     const logo = safeDataImage(x.logo);
     const mainImage = safeDataImage(x.main_image);
+    const mobileImage = readMobileImage(x);
     const landing = normalizeLanding(x.landing);
 
     return {
@@ -144,10 +166,12 @@ function mapAd(item: StrapiItem): SubmittedAd {
         gradientId: normalizeGradientId(x.gradient_id),
         logo,
         mainImage,
+        mobileImage,
+        mobileImageFit: readMobileFit(x),
         // כל תמונות המודעה נכנסות לחותם: כולן מוגשות מ-/api/ad-image עם אותו
         // ?v=, ולכן החלפת אחת מהן חייבת להחליף אותו - אחרת קאש ה-immutable
         // יחזיק ישנה
-        imgVersion: imageStamp(logo, mainImage, landing.image, ...landing.products.map((p) => p.image)),
+        imgVersion: imageStamp(logo, mainImage, mobileImage, landing.image, ...landing.products.map((p) => p.image)),
         adStyle: readAdStyle(x),
         mainImageFit: readImageFit(x),
         shop: typeof x.shop_product === 'string' && x.shop_product !== '',
@@ -218,17 +242,18 @@ function withoutReplaced(list: SubmittedAd[]): SubmittedAd[] {
 // והתמונה נשמרת בקאש immutable של הדפדפן ושל הקצה.
 // ============================================================
 
-/** logo/main = כרטיס הטור; landing/product-<n> = דף הנחיתה */
-export type AdImageKind = 'logo' | 'main' | 'landing' | `product-${number}`;
+/** logo/main = כרטיס הטור; mobile = הפופ-אפ בנייד; landing/product-<n> = דף הנחיתה */
+export type AdImageKind = 'logo' | 'main' | 'mobile' | 'landing' | `product-${number}`;
 
 export function isAdImageKind(v: string | undefined): v is AdImageKind {
     if (!v) return false;
-    return v === 'logo' || v === 'main' || v === 'landing' || /^product-\d+$/.test(v);
+    return v === 'logo' || v === 'main' || v === 'mobile' || v === 'landing' || /^product-\d+$/.test(v);
 }
 
 function pickImage(ad: SubmittedAd, kind: AdImageKind): string {
     if (kind === 'logo') return ad.logo;
     if (kind === 'main') return ad.mainImage;
+    if (kind === 'mobile') return ad.mobileImage;
     if (kind === 'landing') return ad.landing.image;
     const idx = Number(kind.slice('product-'.length));
     return ad.landing.products[idx]?.image ?? '';
@@ -269,6 +294,8 @@ export function toApprovedPublic(ad: SubmittedAd): ApprovedAdPublic {
         mainImage: adImageUrl(ad, 'main'),
         adStyle: ad.adStyle,
         mainImageFit: ad.mainImageFit,
+        mobileImage: adImageUrl(ad, 'mobile'),
+        mobileImageFit: ad.mobileImageFit,
         shop: ad.shop === true,
     };
 }
@@ -446,6 +473,9 @@ export interface SubmitAdInput {
     /** העיצוב מהבילדר — מנורמל ב-parseAdStyle לפני שמירה */
     adStyle: unknown;
     mainImageFit: unknown;
+    /** תמונה ייעודית לנייד (אופציונלי) + המיקום/זום שלה */
+    mobileImage?: string;
+    mobileImageFit?: unknown;
     landing: unknown;
     requestedDurationDays: unknown;
     ownerId: string;
@@ -555,8 +585,10 @@ export async function submitAd(input: SubmitAdInput): Promise<SubmitAdResult> {
     const landing = normalizeLanding(input.landing);
     const logo = safeDataImage(input.logo);
     const mainImage = safeDataImage(input.mainImage);
+    const mobileImage = safeDataImage(input.mobileImage);
 
-    const bytes = dataUriBytes(logo) + dataUriBytes(mainImage) + landingBytes(landing);
+    const bytes =
+        dataUriBytes(logo) + dataUriBytes(mainImage) + dataUriBytes(mobileImage) + landingBytes(landing);
     if (bytes > MAX_AD_BYTES) throw new AdTooLargeError(bytes);
 
     // מפרסם חוזר: מחפשים לפני היצירה, כדי שהרשומה החדשה עצמה לא תיספר
@@ -581,7 +613,8 @@ export async function submitAd(input: SubmitAdInput): Promise<SubmitAdResult> {
                 gradient_id: normalizeGradientId(input.gradientId),
                 logo,
                 main_image: mainImage,
-                landing: storedLanding(landing, input.adStyle, input.mainImageFit),
+                mobile_image: mobileImage,
+                landing: storedLanding(landing, input.adStyle, input.mainImageFit, input.mobileImageFit),
                 submitted_by: { name: clamp(input.ownerName, 60) },
                 contact_email: safeEmail(input.contactEmail),
                 submitted_at: new Date().toISOString(),
@@ -652,13 +685,17 @@ export async function updateAdContent(
         mainImage: string;
         adStyle: unknown;
         mainImageFit: unknown;
+        mobileImage?: string;
+        mobileImageFit?: unknown;
         landing: unknown;
     },
 ): Promise<void> {
     const landing = normalizeLanding(patch.landing);
     const logo = safeDataImage(patch.logo);
     const mainImage = safeDataImage(patch.mainImage);
-    const bytes = dataUriBytes(logo) + dataUriBytes(mainImage) + landingBytes(landing);
+    const mobileImage = safeDataImage(patch.mobileImage);
+    const bytes =
+        dataUriBytes(logo) + dataUriBytes(mainImage) + dataUriBytes(mobileImage) + landingBytes(landing);
     if (bytes > MAX_AD_BYTES) throw new AdTooLargeError(bytes);
 
     await mergeExtra(
@@ -669,7 +706,8 @@ export async function updateAdContent(
             gradient_id: normalizeGradientId(patch.gradientId),
             logo,
             main_image: mainImage,
-            landing: storedLanding(landing, patch.adStyle, patch.mainImageFit),
+            mobile_image: mobileImage,
+            landing: storedLanding(landing, patch.adStyle, patch.mainImageFit, patch.mobileImageFit),
             edited_at: new Date().toISOString(),
             bytes,
         },

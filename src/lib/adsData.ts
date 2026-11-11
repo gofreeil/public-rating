@@ -5,6 +5,9 @@
 // (דירוג ציבורי) במודעה של קהילה בשכונה.
 // ============================================================
 
+import type { AdStyle } from './adStyle';
+import type { AdImageFit } from './adImageFit';
+
 export interface Ad {
     /** פרסומות הרשת ממוספרות; מודעה של מפרסם משולם נושאת את מזהה המסמך */
     id: number | string;
@@ -22,6 +25,13 @@ export interface Ad {
     hover?: string;         // טקסט tooltip בריחוף מעל כפתור ה-CTA
     /** יעד פנימי באתר (דף נחיתה של מפרסם) - נפתח באותה לשונית ובלי noopener */
     internal?: boolean;
+    /** מיקום+זום התמונה הראשית כפי שנבחרו בבילדר (מודעה משולמת) */
+    imageFit?: AdImageFit;
+    /**
+     * פרסומת משולמת מהבילדר: הפופ-אפ בנייד מצויר בדיוק כמו התצוגה בשלב 7
+     * (לוגו + העיצוב שנשמר). gradient = זוג מחלקות from/to מהפלטה הסגורה.
+     */
+    card?: { logo: string; style: AdStyle; gradient: string };
 }
 
 export const ads: Ad[] = [

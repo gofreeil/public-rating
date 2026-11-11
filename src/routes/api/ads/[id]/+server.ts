@@ -66,6 +66,8 @@ export const PUT: RequestHandler = async (event) => {
             mainImage: String(body.mainImage ?? ''),
             adStyle: body.adStyle,
             mainImageFit: body.mainImageFit,
+            mobileImage: String(body.mobileImage ?? ''),
+            mobileImageFit: body.mobileImageFit,
             landing: body.landing,
         });
         // העריכה לא חוזרת לתור (ראו למעלה) — הצוות חייב לדעת עליה. עריכה

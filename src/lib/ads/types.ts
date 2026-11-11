@@ -71,6 +71,10 @@ export interface SubmittedAd {
     gradientId: string;
     logo: string;
     mainImage: string;
+    /** תמונה ייעודית לפופ-אפ בנייד (data URI); ריק = הנייד מציג את mainImage */
+    mobileImage: string;
+    /** מיקום וזום תמונת הנייד, כפי שנבחרו בבילדר */
+    mobileImageFit: AdImageFit;
     /**
      * חותם התוכן של כל תמונות המודעה — משמש כ-?v= בכתובת שמגישה אותן
      * (/api/ad-image), כדי שקאש "לנצח" יתחלף ברגע שתמונה מוחלפת.
@@ -137,6 +141,9 @@ export interface ApprovedAdPublic {
     /** העיצוב מהבילדר; null במודעות שנשלחו לפני שהוא נשמר */
     adStyle: AdStyle | null;
     mainImageFit: AdImageFit;
+    /** תמונה ייעודית לנייד (כתובת, לא base64); ריק = משתמשים ב-mainImage */
+    mobileImage?: string;
+    mobileImageFit?: AdImageFit;
     /** מספר המקום בלוח (1-based) — נקבע במסך הניהול, מחושב תמיד בשרת */
     slot?: number;
     /** שכפל פרסומת: מקומות נוספים בלוח (1-based) שבהם אותה מודעה מוצגת */

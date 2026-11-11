@@ -8,7 +8,9 @@
 
 import { browser } from '$app/environment';
 import { AD_SLOTS, type AdSlotStyle } from './slots';
-import { gradientCss } from './gradients';
+import { gradientCss, normalizeGradientId } from './gradients';
+import { parseAdStyle, legacyAdStyle } from '$lib/adStyle';
+import { parseAdImageFit } from '$lib/adImageFit';
 import { registerPaidAds } from '$lib/adPopupStore';
 import type { ApprovedAdPublic } from './types';
 
@@ -52,10 +54,21 @@ function registerToPopup(list: ApprovedAdPublic[]): void {
                 cta:         a.shop ? '' : a.cta || a.title,
                 href:        `/ads/${a.id}`,
                 internal:    true,
-                image:       a.mainImage,
                 color:       '',
                 colorCss:    gradientCss(a.gradientId),
                 hover:       a.hoverText,
+                // תמונה ייעודית לנייד אם המפרסם העלה אחת - אחרת הראשית, במיקום שנבחר לה
+                image:       a.mobileImage || a.mainImage,
+                imageFit:    parseAdImageFit(a.mobileImage ? a.mobileImageFit : a.mainImageFit),
+                // הפופ-אפ מצויר מהעיצוב שהמפרסם קבע (כולל הזזת הטקסטים בנייד).
+                // כרטיס מוצר מהחנות נשאר בתצוגה הישנה - התמונה היא הקישור.
+                card:        a.shop
+                    ? undefined
+                    : {
+                          logo: a.logo,
+                          style: parseAdStyle(a.adStyle) ?? legacyAdStyle(a.title),
+                          gradient: normalizeGradientId(a.gradientId),
+                      },
             })),
     );
 }
