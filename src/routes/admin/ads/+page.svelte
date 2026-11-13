@@ -8,6 +8,7 @@
     import { absDate } from '$lib/rating/time';
     import Seo from '$lib/components/rating/Seo.svelte';
     import AdCardPreview from '$lib/components/AdCardPreview.svelte';
+    import AdRemoveDialog from '$lib/components/AdRemoveDialog.svelte';
     import type { ActionData, PageData } from './$types';
 
     let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -83,6 +84,19 @@
     let trashPreview = $state<any>(null);
     function openTrashPreview(t: any) {
         trashPreview = t.card ?? data.rows.find((a) => a.id === t.id) ?? null;
+    }
+
+    // "מחק" פותח חלון עם כרטיס הפרסומת שנמחקת - לראות בדיוק מה מוחקים
+    let removeAsk = $state<{ form: HTMLFormElement; ad: any } | null>(null);
+    function askRemove(e: MouseEvent, ad: any, question = '') {
+        const form = (e.currentTarget as HTMLButtonElement).form;
+        if (form && ad) { e.preventDefault(); removeAsk = { form, ad }; return; }
+        if (question && !confirm(question)) e.preventDefault();
+    }
+    function finishRemove() {
+        const form = removeAsk?.form;
+        removeAsk = null;
+        form?.requestSubmit();
     }
 
     // תצוגה מקדימה של הכרטיס כפי שהוא באמת מוצג בטור הפרסומות באתר:
@@ -916,16 +930,11 @@
                                 method="POST"
                                 action="?/remove"
                                 class="mr-auto"
-                                use:enhance={({ cancel }) => {
-                                    if (!confirm(`להעביר את "${ad.title}" לאשפה? אפשר לשחזר אותה משם.`)) {
-                                        cancel();
-                                        return;
-                                    }
-                                    return async ({ update }) => await update();
-                                }}
+                                use:enhance
                             >
                                 <input type="hidden" name="id" value={ad.id} />
-                                <button type="submit" class="cursor-pointer text-xs text-red-400/80 hover:text-red-300">
+                                <button type="submit" class="cursor-pointer text-xs text-red-400/80 hover:text-red-300"
+                                        onclick={(e) => askRemove(e, ad, `להעביר את "${ad.title}" לאשפה? אפשר לשחזר אותה משם.`)}>
                                     🗑 הסרה
                                 </button>
                             </form>
@@ -1232,7 +1241,7 @@
                                                 <input type="hidden" name="id" value={s.id} />
                                                 <button type="submit"
                                                         class="h-7 w-full inline-flex items-center justify-center px-1 rounded-lg bg-red-600/20 border border-red-500/40 text-red-300 text-[11px] font-black hover:bg-red-600/30 whitespace-nowrap"
-                                                        onclick={(e) => { if (!confirm(`להעביר את "${s.title}" לאשפה? אפשר לשחזר אותה משם.`)) e.preventDefault(); }}>
+                                                        onclick={(e) => askRemove(e, data.rows.find((a) => a.id === s.id), `להעביר את "${s.title}" לאשפה? אפשר לשחזר אותה משם.`)}>
                                                     🗑 מחק
                                                 </button>
                                             </form>
@@ -1333,7 +1342,8 @@
                         </form>
                         <form method="POST" action="?/remove" use:enhance>
                             <input type="hidden" name="id" value={t.id} />
-                            <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10" title="העברה לאשפה — אפשר לשחזר">🗑 הסרה</button>
+                            <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10" title="העברה לאשפה — אפשר לשחזר"
+                                    onclick={(e) => askRemove(e, t.card ?? data.rows.find((a) => a.id === t.id))}>🗑 הסרה</button>
                         </form>
                     {/if}
                 </div>
@@ -1503,6 +1513,11 @@
             </p>
         </div>
     </div>
+{/if}
+
+<!-- "מחק": חלון אישור עם כרטיס הפרסומת שנמחקת -->
+{#if removeAsk}
+    <AdRemoveDialog ad={removeAsk.ad} onremove={finishRemove} onclose={() => (removeAsk = null)} />
 {/if}
 
 <svelte:window
