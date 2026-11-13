@@ -17,6 +17,7 @@
     // ===== טאבים, חיפוש, מיון ובחירה רב-פריטית — כמו בגמ"ח הארצי =====
     type Tab = 'pending' | 'live' | 'inactive' | 'trash';
     let activeTab = $state<Tab>('pending');
+    let trashOpen = $state(false);
     let searchQuery = $state('');
     // 'default' = הממתינות לפי הגעה, שעל האוויר לפי המקום בטור
     let sortOrder = $state<'default' | 'newest' | 'oldest'>('default');
@@ -530,43 +531,7 @@
             {#if data.trash.length === 0}
                 <p class="rounded-2xl border border-dashed border-white/10 py-8 text-center text-sm text-gray-500 italic">האשפה ריקה</p>
             {/if}
-            {#each data.trash as t (t.id)}
-                <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                    <div class="flex min-w-0 flex-col gap-0.5">
-                        <button type="button" onclick={() => openTrashPreview(t)} title="תצוגה מקדימה של הפרסומת"
-                                class="cursor-pointer text-right text-sm font-black text-white hover:text-amber-300">{t.title}</button>
-                        <span class="flex items-center gap-1.5 text-xs text-gray-400">
-                            <span class="rounded-full px-2 py-0.5 text-[11px] font-black
-                                         {t.kind === 'deleted' ? 'bg-red-500/15 text-red-300' : 'bg-amber-500/15 text-amber-300'}">{t.kind === 'deleted' ? 'הוסרה' : 'פג התוקף'}</span>
-                            {fmtDay(t.at)} · {t.advertiserName}
-                        </span>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-1.5">
-                        {#if t.kind === 'deleted'}
-                            <form method="POST" action="?/restore" use:enhance>
-                                <input type="hidden" name="id" value={t.id} />
-                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black bg-emerald-600 text-white hover:bg-emerald-500" title="חזרה למצב שלפני ההסרה">♻ שחזר</button>
-                            </form>
-                            {#if data.superAdmin}
-                                <form method="POST" action="?/purge" use:enhance={({ cancel }) => confirmPurge(t.title, cancel)}>
-                                    <input type="hidden" name="id" value={t.id} />
-                                    <button type="submit" class="cursor-pointer rounded-lg border border-red-500/40 bg-red-600/20 px-3 py-1.5 text-xs font-black text-red-300 hover:bg-red-600/30">✕ מחק לצמיתות</button>
-                                </form>
-                            {/if}
-                        {:else}
-                            <form method="POST" action="?/approve" use:enhance>
-                                <input type="hidden" name="id" value={t.id} />
-                                <input type="hidden" name="duration_days" value={t.requestedDurationDays ?? ''} />
-                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black bg-emerald-600 text-white hover:bg-emerald-500" title="פרסום מחדש לתקופה חדשה מהיום, באותו מקום בלוח">♻ חדש</button>
-                            </form>
-                            <form method="POST" action="?/remove" use:enhance>
-                                <input type="hidden" name="id" value={t.id} />
-                                <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10" title="העברה לאשפה — אפשר לשחזר">🗑 הסרה</button>
-                            </form>
-                        {/if}
-                    </div>
-                </div>
-            {/each}
+            {@render trashRows()}
         </section>
         {#if trashPreview}
             <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
@@ -1335,6 +1300,67 @@
             </div>
         {/if}
     </details>
+
+    {#snippet trashRows()}
+        {#each data.trash as t (t.id)}
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                <div class="flex min-w-0 flex-col gap-0.5">
+                    <button type="button" onclick={() => openTrashPreview(t)} title="תצוגה מקדימה של הפרסומת"
+                            class="cursor-pointer text-right text-sm font-black text-white hover:text-amber-300">{t.title}</button>
+                    <span class="flex items-center gap-1.5 text-xs text-gray-400">
+                        <span class="rounded-full px-2 py-0.5 text-[11px] font-black
+                                     {t.kind === 'deleted' ? 'bg-red-500/15 text-red-300' : 'bg-amber-500/15 text-amber-300'}">{t.kind === 'deleted' ? 'הוסרה' : 'פג התוקף'}</span>
+                        {fmtDay(t.at)} · {t.advertiserName}
+                    </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-1.5">
+                    {#if t.kind === 'deleted'}
+                        <form method="POST" action="?/restore" use:enhance>
+                            <input type="hidden" name="id" value={t.id} />
+                            <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black bg-emerald-600 text-white hover:bg-emerald-500" title="חזרה למצב שלפני ההסרה">♻ שחזר</button>
+                        </form>
+                        {#if data.superAdmin}
+                            <form method="POST" action="?/purge" use:enhance={({ cancel }) => confirmPurge(t.title, cancel)}>
+                                <input type="hidden" name="id" value={t.id} />
+                                <button type="submit" class="cursor-pointer rounded-lg border border-red-500/40 bg-red-600/20 px-3 py-1.5 text-xs font-black text-red-300 hover:bg-red-600/30">✕ מחק לצמיתות</button>
+                            </form>
+                        {/if}
+                    {:else}
+                        <form method="POST" action="?/approve" use:enhance>
+                            <input type="hidden" name="id" value={t.id} />
+                            <input type="hidden" name="duration_days" value={t.requestedDurationDays ?? ''} />
+                            <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black bg-emerald-600 text-white hover:bg-emerald-500" title="פרסום מחדש לתקופה חדשה מהיום, באותו מקום בלוח">♻ חדש</button>
+                        </form>
+                        <form method="POST" action="?/remove" use:enhance>
+                            <input type="hidden" name="id" value={t.id} />
+                            <button type="submit" class="cursor-pointer rounded-lg px-3 py-1.5 text-xs font-black border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10" title="העברה לאשפה — אפשר לשחזר">🗑 הסרה</button>
+                        </form>
+                    {/if}
+                </div>
+            </div>
+        {/each}
+    {/snippet}
+
+    <!-- ============================================================ -->
+    <!-- אשפה — קומה מתקפלת: כל המחוקים + שחזור, סגורה עד לחיצה        -->
+    <!-- ============================================================ -->
+    <section class="rounded-2xl border border-white/10 bg-slate-800/80">
+        <button type="button" onclick={() => (trashOpen = !trashOpen)} aria-expanded={trashOpen}
+                class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-right">
+            <span aria-hidden="true">🗑</span>
+            <h2 class="text-lg font-black text-white">אשפה</h2>
+            <span class="rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-xs font-bold text-gray-300">{data.trash.length}</span>
+            <span class="mr-auto text-xs text-gray-500">{trashOpen ? '▲' : '▼'}</span>
+        </button>
+        {#if trashOpen}
+            <div class="flex flex-col gap-2 border-t border-white/10 p-3">
+                {#if data.trash.length === 0}
+                    <p class="py-4 text-center text-sm text-gray-500 italic">האשפה ריקה</p>
+                {/if}
+                {@render trashRows()}
+            </div>
+        {/if}
+    </section>
 
     <!-- תצוגה מקדימה צפה בריחוף על כותרת מודעה שעל האוויר (דסקטופ בלבד) -->
     {#if hoverPreview}
