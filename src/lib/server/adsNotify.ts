@@ -135,3 +135,41 @@ export async function notifyAdminsAdEdited(info: {
         console.warn('[ads] ad-edit notification failed:', err instanceof Error ? err.message : err);
     }
 }
+
+/**
+ * בקשת עזרה בעיצוב מהסטודיו ("דורש עזרה - פנה לתמיכה"): הודעה לכל האדמינים
+ * עם הבעיה, זהות הפונה ותקציר הטיוטה. best-effort: מחזיר true רק כשלפחות
+ * נמען אחד קיבל, כדי שהסטודיו לא יבשר "נשלח" כשאיש לא קיבל.
+ */
+export async function notifyAdminsDesignHelp(info: {
+    problem: string;
+    contact?: string;
+    draftSummary?: string;
+    userName?: string | null;
+    userEmail?: string | null;
+    userId?: string | null;
+}): Promise<boolean> {
+    try {
+        const receivers = await resolveAdminUserIds();
+        if (receivers.length === 0) {
+            console.warn('[ads] no notify recipient resolved — skipping design-help notification');
+            return false;
+        }
+        const who = [info.userName, info.userEmail, info.userId ? `id:${info.userId}` : '']
+            .filter(Boolean)
+            .join(' · ') || info.contact || 'משתמש לא מזוהה';
+        const content =
+            `🆘 בקשת עזרה בעיצוב פרסומת — ${SITE_NAME}\n` +
+            `מי פנה: ${who}\n` +
+            `הבעיה: "${info.problem}"\n` +
+            (info.draftSummary ? `מצב הטיוטה: ${info.draftSummary}\n` : '') +
+            `קישור לסטודיו: rating.gofreeil.com/advertise/builder`;
+        await Promise.all(receivers.map(receiver =>
+            strapiPost('/api/messages', { data: { receiver, content, read: false } })
+        ));
+        return true;
+    } catch (err) {
+        console.warn('[ads] design-help notification failed:', err instanceof Error ? err.message : err);
+        return false;
+    }
+}

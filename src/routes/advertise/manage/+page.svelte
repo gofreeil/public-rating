@@ -73,7 +73,7 @@
                 </a>
             {/if}
         </h1>
-        <a href="/advertise/builder" class="btn-premium rounded-xl px-4 py-2 text-sm font-bold text-white">
+        <a href="/advertise" class="btn-premium rounded-xl px-4 py-2 text-sm font-bold text-white">
             ➕ פרסומת חדשה
         </a>
     </header>
@@ -101,7 +101,7 @@
             <p class="mt-1 text-sm text-gray-400">
                 עצבו פרסומת, שלחו לאישור, והיא תופיע בטור הפרסומות עם דף נחיתה משלכם באתר
             </p>
-            <a href="/advertise/builder" class="btn-premium mt-4 inline-block rounded-xl px-5 py-2 text-sm font-bold text-white">
+            <a href="/advertise" class="btn-premium mt-4 inline-block rounded-xl px-5 py-2 text-sm font-bold text-white">
                 🎨 לעיצוב הפרסומת
             </a>
         </div>

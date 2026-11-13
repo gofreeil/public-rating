@@ -9,7 +9,7 @@
 
 import { redirect } from '@sveltejs/kit';
 import { adPlans } from '$lib/ads/plans';
-import { isAdmin } from '$lib/server/auth';
+import { isAdmin, isSuperAdmin } from '$lib/server/auth';
 import { getAd } from '$lib/server/ads';
 import type { PageServerLoad } from './$types';
 
@@ -51,5 +51,15 @@ export const load: PageServerLoad = async (event) => {
         }
     }
 
-    return { plans: adPlans, name: session.user.name ?? '', editAd, editMissing: Boolean(editId) && !editAd };
+    return {
+        plans: adPlans,
+        name: session.user.name ?? '',
+        // אותה צורה כמו ב-layoutUser של קהילה בשכונה: הסטודיו ממלא ממנה
+        // אימייל ושם ברירת מחדל בדף הנחיתה ובבקשת העזרה
+        layoutUser: { email: session.user.email ?? null, phone: null, nickname: session.user.name ?? null },
+        // סופר-אדמין נכנס לסטודיו בלי לבחור מסלול (בדיקות / הפצה)
+        isSuperAdmin: isSuperAdmin(session),
+        editAd,
+        editMissing: Boolean(editId) && !editAd,
+    };
 };

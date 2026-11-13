@@ -95,6 +95,8 @@ export const LIMITS = {
     adSubmit: { max: 3, windowMs: HOUR },
     /** עריכת פרסומת קיימת בידי בעליה */
     adEdit: { max: 10, windowMs: HOUR },
+    /** בקשת עזרה בעיצוב פרסומת - מפעילה הודעה לצוות */
+    adHelp: { max: 5, windowMs: HOUR },
 } as const;
 
 export type LimitName = keyof typeof LIMITS;
