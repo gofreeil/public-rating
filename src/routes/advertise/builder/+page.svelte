@@ -23,7 +23,7 @@
     import { logoClearance } from "$lib/logoClearance";
     import { normalizeGradientId } from "$lib/ads/gradients";
     import { planLabel } from "$lib/ads/plans";
-    import { AD_DRAFT_KEY, clearAdSubmitted, getAdEditTarget, setAdEditTarget, clearAdEditTarget, getAdPlanDays } from "$lib/adDraft";
+    import { AD_DRAFT_KEY, clearAdSubmitted, getAdEditTarget, setAdEditTarget, clearAdEditTarget, getAdPlanDays, setAdEditReturn } from "$lib/adDraft";
 
     // ===== Page payload (logged-in user prefill + admin status + ad being edited) =====
     let { data } = $props<{
@@ -873,6 +873,8 @@
         if (editId) {
             const continuingSameAd = getAdEditTarget() === editId;
             setAdEditTarget(editId);
+            // "ערוך" ממסך הניהול: אחרי השמירה מציעים חזרה אליו (נתיב פנימי בלבד)
+            setAdEditReturn(new URLSearchParams(location.search).get("return"));
             shopEdit = data?.editAd?.shop === true;
             if (data?.editAd && !continuingSameAd) applyEditedAd(data.editAd);
             else if (data?.editMissing) editLoadState = "failed";

@@ -554,7 +554,8 @@ export const he = {
         "r_done_title_edit": "השינויים נשמרו!",
         "r_done_body": "הצוות יבחן את הפרסומת וייצור איתכם קשר לתיאום התשלום. הפרסומת עולה לאוויר רק לאחר אישור.",
         "r_done_body_edit": "הפרסומת עודכנה. אם היא כבר מאושרת - השינוי כבר מוצג באתר, בלי אישור נוסף.",
-        "r_my_ads": "הפרסומות שלי"
+        "r_my_ads": "הפרסומות שלי",
+        "r_back_admin": "↩ חזרה לניהול הפרסומות"
     },
     "components": {
         "close": "סגור",
@@ -1115,7 +1116,8 @@ export const en = {
         "r_done_title_edit": "Changes saved!",
         "r_done_body": "The team will review the ad and contact you to arrange payment. The ad goes live only after approval.",
         "r_done_body_edit": "The ad was updated. If it is already approved, the change is already live, with no further approval.",
-        "r_my_ads": "My ads"
+        "r_my_ads": "My ads",
+        "r_back_admin": "↩ Back to ads management"
     },
     "components": {
         "close": "Close",
@@ -1676,7 +1678,8 @@ export const ru = {
         "r_done_title_edit": "Изменения сохранены!",
         "r_done_body": "Команда рассмотрит рекламу и свяжется с вами для согласования оплаты. Реклама выходит только после одобрения.",
         "r_done_body_edit": "Реклама обновлена. Если она уже одобрена - изменение уже на сайте, без повторного одобрения.",
-        "r_my_ads": "Мои объявления"
+        "r_my_ads": "Мои объявления",
+        "r_back_admin": "↩ Назад к управлению рекламой"
     },
     "components": {
         "close": "Закрыть",

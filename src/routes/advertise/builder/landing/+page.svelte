@@ -17,7 +17,7 @@
     import { normalizeGradientId } from "$lib/ads/gradients";
     import { dataUrlBytes, fmtKb, MAX_AD_TOTAL_BYTES } from "$lib/ads/adImage";
     import { normalizePlanDays } from "$lib/ads/plans";
-    import { AD_DRAFT_KEY, markAdSubmitted, clearAdSubmitted, getAdEditTarget, clearAdEditTarget, getAdPlanDays } from "$lib/adDraft";
+    import { AD_DRAFT_KEY, markAdSubmitted, clearAdSubmitted, getAdEditTarget, clearAdEditTarget, getAdPlanDays, getAdEditReturn, clearAdEditReturn } from "$lib/adDraft";
 
     let { data } = $props<{
         data: {
@@ -33,6 +33,10 @@
     let durationDays = $state<number>(30);
     // עריכה של פרסומת קיימת (PUT) - היעד נקבע בבילדר מ-?edit=<id>
     let editTarget = $state<string | null>(null);
+    /** מסך הניהול שממנו נפתחה העריכה (למשל /admin/ads) - כפתור חזרה בסיום */
+    let editReturn = $state<string | null>(null);
+    /** מזהה הפרסומת שנשמרה הרגע - נשלח חזרה למסך הניהול להדגשה */
+    let editedId = $state<string | null>(null);
     // שדה דבש - מוסתר מהמשתמש, ממולא רק בידי בוט
     let companyUrl = $state("");
 
@@ -249,6 +253,7 @@
         if (!browser) return;
         // אותו כלל כמו בבילדר: סופר-אדמין / מסלול שנבחר במחירון / עריכת פרסומת קיימת
         editTarget = getAdEditTarget();
+        editReturn = editTarget ? getAdEditReturn() : null;
         const plan = getAdPlanDays();
         if (plan) durationDays = normalizePlanDays(plan);
         accessGranted = isSuperAdmin || plan !== null || editTarget !== null;
@@ -579,11 +584,13 @@
                 throw new Error(await extractServerError(res));
             }
             editedDone = editTarget !== null;
+            editedId = editTarget;
             submitted = true;
             // מכאן הטיוטה כבר אצל המנהל - האזור האישי מפסיק לנדנד "סיים את עריכתו"
             markAdSubmitted();
             // יעד העריכה נצרך - שליחה עתידית לא תתקשר בטעות לפרסומת הזו
             clearAdEditTarget();
+            clearAdEditReturn();
         } catch (e) {
             // fetch rejects with a TypeError ("Failed to fetch") on a network
             // failure - show a Hebrew connectivity message instead of English.
@@ -1064,6 +1071,11 @@
                         <a href="/" class="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold transition-colors">
                             {$_("advertise.l_home")}
                         </a>
+                        {#if editReturn && editedId}
+                            <a href="{editReturn}?adEdited={encodeURIComponent(editedId)}" class="px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-bold transition-colors">
+                                {$_("advertise.r_back_admin")}
+                            </a>
+                        {/if}
                         <a href="/advertise/manage" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold transition-colors">
                             {$_("advertise.r_my_ads")}
                         </a>

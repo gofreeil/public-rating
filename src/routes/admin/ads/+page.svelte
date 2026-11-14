@@ -2,8 +2,10 @@
     // ניהול הפרסומות — אישור, דחייה, הארכה, הסרה והזנה ידנית
     import { enhance } from '$app/forms';
     import { invalidateAll } from '$app/navigation';
+    import { page } from '$app/state';
     import { onDestroy, onMount } from 'svelte';
-    import { AD_GRADIENTS, gradientCss } from '$lib/ads/gradients';
+    import { AD_GRADIENTS } from '$lib/ads/gradients';
+    import { adImgFit, parseAdImageFit } from '$lib/adImageFit';
     import { heMatches } from '$lib/rating/heSearch';
     import { absDate } from '$lib/rating/time';
     import Seo from '$lib/components/rating/Seo.svelte';
@@ -16,12 +18,14 @@
     let showCreate = $state(false);
 
     // ===== טאבים, חיפוש, מיון ובחירה רב-פריטית — כמו בגמ"ח הארצי =====
-    type Tab = 'pending' | 'live' | 'inactive' | 'trash';
+    type Tab = 'pending' | 'approved' | 'rejected' | 'trash';
     let activeTab = $state<Tab>('pending');
     let trashOpen = $state(false);
     let searchQuery = $state('');
-    // 'default' = הממתינות לפי הגעה, שעל האוויר לפי המקום בטור
-    let sortOrder = $state<'default' | 'newest' | 'oldest'>('default');
+    // 'display' = הסדר שבו הפרסומות מוצגות באתר (לפי המקום בטור).
+    // רק במיון הזה אפשר להחליף מקום - אחרת החצים היו מזיזים ביחס לתצוגה אחרת.
+    let sortOrder = $state<'display' | 'newest' | 'oldest'>('display');
+    let canDelete = $derived(data.superAdmin);
 
     let selected = $state<Set<string>>(new Set());
     function toggleSelect(id: string) {
@@ -37,6 +41,13 @@
         activeTab = t;
         clearSelection();
     }
+    function selectAllVisible(ids: string[]) {
+        selected = new Set([...selected, ...ids]);
+    }
+    function fmtDate(s?: string) {
+        if (!s) return '';
+        return new Date(s).toLocaleString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
 
     // עריכת הטקסטים בשורה (כותרת, משנה, כפתור, ריחוף)
     let editingId = $state<string | null>(null);
@@ -45,6 +56,18 @@
         editingId = ad.id;
         edit = { title: ad.title, subtitle: ad.subtitle, cta: ad.cta, hoverText: ad.hoverText };
     }
+    function cancelEdit() { editingId = null; }
+    /**
+     * "ערוך" בטבלת התזמון פותח את הפרסומת בסטודיו. השמירה שם מעדכנת אותה
+     * במקום (בלי גרסה שממתינה לאישור) וחוזרת לכאן עם ?adEdited=<id>.
+     */
+    function studioEditHref(id: string): string {
+        return `/advertise/builder?edit=${encodeURIComponent(id)}&return=${encodeURIComponent('/admin/ads')}`;
+    }
+    /** הפרסומת שנשמרה הרגע בסטודיו - הודעת הצלחה והדגשת השורה שלה */
+    let justEditedId = $derived(page.url.searchParams.get('adEdited') ?? '');
+    let justEditedTitle = $derived(data.rows.find((a) => a.id === justEditedId)?.title ?? '');
+    let lastRefresh = $state(Date.now());
 
     // רענון אוטומטי כל 30 שניות: חתימה קלה מ-/admin/ads/signal, ו-invalidateAll
     // (שמושך מחדש את כל המודעות עם התמונות) רק כשהיא השתנתה
@@ -57,7 +80,7 @@
         if (m) {
             const ad = data.rows.find((a) => a.id === decodeURIComponent(m[1]));
             if (ad) {
-                activeTab = ad.status === 'pending' ? 'pending' : ad.status === 'approved' && !ad.expired ? 'live' : 'inactive';
+                activeTab = ad.status === 'pending' ? 'pending' : ad.status === 'approved' && !ad.expired ? 'approved' : ad.status === 'rejected' ? 'rejected' : 'trash';
                 setTimeout(() => document.getElementById(`ad-${ad.id}`)?.scrollIntoView({ block: 'center' }), 50);
             }
         }
@@ -69,7 +92,10 @@
                 const { sig } = (await res.json()) as { sig?: string };
                 if (typeof sig !== 'string') return;
                 // הפעימה הראשונה רק לומדת את המצב — הדף הרגע נטען
-                if (lastSig !== null && sig !== lastSig) await invalidateAll();
+                if (lastSig !== null && sig !== lastSig) {
+                    await invalidateAll();
+                    lastRefresh = Date.now();
+                }
                 lastSig = sig;
             } catch {
                 /* תקלת רשת זמנית — ננסה בפעימה הבאה */
@@ -110,8 +136,7 @@
     );
     let hoverPreview = $state<{ id: string; x: number; y: number } | null>(null);
     let modalPreviewId = $state<string | null>(null);
-    const PREVIEW_W = 144; // מידות הכרטיס האמיתי בטור (w-36 × h-[470px])
-    const PREVIEW_H = 470;
+    const PREVIEW_W = 144, PREVIEW_H = 490; // מידות הכרטיס האמיתי בטור (w-36 × h-[490px])
     function openHoverPreview(e: MouseEvent, id: string) {
         if (!previewableById.has(id)) return;
         // מסך מגע — אין ריחוף אמיתי; ההקשה פותחת את המודאל במקום
@@ -239,15 +264,39 @@
 
     // חלון הקציבה: כל פרטי התקופה והתשלום של המודעה + קציבה מהירה
     // במסלולים או תאריך תפוגה שרירותי. נפתח מכפתור "קצוב" (סופר-אדמין בלבד).
-    let durationModal = $state<any | null>(null);
+    //
+    // החלון נגזר מהנתונים החיים (לפי מזהה) ולא מצילום של השורה ברגע הפתיחה:
+    // אחרי "קצוב" הדף נטען מחדש, והתאריכים בחלון מתעדכנים מול העיניים.
+    let durationModalId = $state<string | null>(null);
+    let durationModal = $derived(
+        durationModalId ? (data.rows.find((a) => a.id === durationModalId) ?? null) : null,
+    );
+    /** המסלול שנבחר בבורר - כדי להציג את התפוגה שתצא ממנו עוד לפני הלחיצה */
+    let selectedDays = $state(30);
+    /** האם נשלח טופס מהחלון הפתוח - רק אז מציגים בו את תוצאת הפעולה */
+    let modalSubmitted = $state(false);
     /** תאריך ISO → ערך של <input type="date"> */
     const toDateInput = (iso?: string) => (iso ? iso.slice(0, 10) : '');
-    function openDurationModal(ad: any) {
-        durationModal = ad;
+    function openDurationModal(ad: { id: string; durationDays: number }) {
+        durationModalId = ad.id;
+        selectedDays = ad.durationDays || 30;
+        modalSubmitted = false;
     }
-    /** סגירת החלון עם שליחת טופס מתוכו — הנתונים כבר נתפסו ע"י enhance */
-    function closeOnSubmit() {
-        durationModal = null;
+    function closeDurationModal() { durationModalId = null; }
+    // אחרי שהשרת ענה והנתונים התרעננו - הבורר מיישר קו עם המסלול השמור
+    $effect(() => {
+        const d = durationModal?.durationDays;
+        if (d) selectedDays = d;
+    });
+    /** התפוגה שתצא מהמסלול שנבחר - אותו חישוב כמו בשרת (מיום האישור) */
+    let previewExpiry = $derived(
+        durationModal?.decidedAt
+            ? new Date(new Date(durationModal.decidedAt).getTime() + selectedDays * 86_400_000)
+            : null,
+    );
+    /** שליחת טופס מתוך החלון: החלון נשאר פתוח, הנתונים מתרעננים והתוצאה מוצגת בו */
+    function submitInModal() {
+        modalSubmitted = true;
         return async ({ update }: { update: () => Promise<void> }) => update();
     }
     /** תווית סטטוס תשלום לחלון הקציבה */
@@ -259,9 +308,8 @@
 
     const pending = $derived(data.rows.filter((a) => a.status === 'pending'));
     const liveAds = $derived(data.rows.filter((a) => a.status === 'approved' && !a.expired));
-    const inactive = $derived(
-        data.rows.filter((a) => a.status === 'rejected' || (a.status === 'approved' && a.expired)),
-    );
+    const rejected = $derived(data.rows.filter((a) => a.status === 'rejected'));
+    let canReorder = $derived(sortOrder === 'display' && !searchQuery.trim());
 
     /** חיפוש + מיון על הרשימה של הטאב הפעיל */
     function applyFilter<T extends (typeof data.rows)[number]>(list: T[], bySlot = false): T[] {
@@ -269,7 +317,7 @@
         const filtered = q
             ? list.filter((a) => heMatches(q, a.title, a.subtitle, a.submittedByName, a.contactEmail, a.landing.phone))
             : [...list];
-        if (sortOrder === 'default') {
+        if (sortOrder === 'display') {
             return bySlot ? filtered.sort((x, y) => (x.slot ?? 999) - (y.slot ?? 999)) : filtered;
         }
         return filtered.sort((x, y) => {
@@ -280,41 +328,20 @@
     const visibleList = $derived(
         activeTab === 'pending'
             ? applyFilter(pending)
-            : activeTab === 'live'
+            : activeTab === 'approved'
               ? applyFilter(liveAds, true)
-              : activeTab === 'inactive'
-                ? applyFilter(inactive)
+              : activeTab === 'rejected'
+                ? applyFilter(rejected)
                 : [],
     );
     const visibleSelectedIds = $derived([...selected].filter((id) => visibleList.some((a) => a.id === id)));
-
-    const STAT_CARDS = $derived([
-        { label: 'ממתינות', n: data.stats.pending, cls: 'border-amber-500/30 bg-amber-500/5 text-amber-200' },
-        { label: 'אושרו', n: data.stats.approved, cls: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-200' },
-        { label: 'נדחו', n: data.stats.rejected, cls: 'border-red-500/30 bg-red-500/5 text-red-200' },
-        { label: 'נשלחו השבוע', n: data.stats.submittedThisWeek, cls: 'border-blue-500/30 bg-blue-500/5 text-blue-200' },
-        { label: 'אושרו השבוע', n: data.stats.approvedThisWeek, cls: 'border-purple-500/30 bg-purple-500/5 text-purple-200' },
-    ]);
 
     function confirmPurge(title: string, cancel: () => void) {
         if (!confirm(`למחוק לצמיתות את "${title}"? אין דרך חזרה.`)) cancel();
     }
 
-    const TABS = $derived([
-        { key: 'pending' as const, label: `⏳ ממתינות (${pending.length})`, on: 'bg-amber-500 text-black' },
-        { key: 'live' as const, label: `✅ על האוויר (${liveAds.length})`, on: 'bg-emerald-500 text-black' },
-        { key: 'inactive' as const, label: `❌ לא פעילות (${inactive.length})`, on: 'bg-red-500 text-white' },
-        { key: 'trash' as const, label: `🗑 אשפה (${data.trash.length})`, on: 'bg-gray-200 text-black' },
-    ]);
-
     const inputCls =
         'w-full rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-blue-400/60 focus:outline-none';
-
-    const TONE: Record<string, string> = {
-        pending: 'border-amber-400/30 bg-amber-500/[0.06]',
-        approved: 'border-emerald-400/25 bg-emerald-500/[0.05]',
-        rejected: 'border-white/10 bg-slate-800/80 opacity-70',
-    };
 
     // ===== טבלת תזמון הפרסומות - כמו בגמ"ח הארצי =====
     // מסודרת לפי תאריך הפרסום - החדשות בראש
@@ -338,46 +365,74 @@
 
 <Seo title="ניהול פרסומות" description="אישור וניהול הפרסומות באתר" noindex />
 
-<div class="flex flex-col gap-3">
-    <header class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="text-lg font-black text-white">📢 ניהול פרסומות</h2>
-        <div class="flex flex-wrap items-center gap-2 text-xs text-gray-400">
-            <span>{data.live} על האוויר מתוך {data.slotCount} משבצות</span>
-            <button type="button" onclick={() => invalidateAll()} title="רענן עכשיו"
-                    class="cursor-pointer rounded-lg border border-amber-500/40 bg-amber-500/15 px-2.5 py-1 font-bold text-amber-200 hover:bg-amber-500/25">
+<div class="mx-auto flex max-w-6xl flex-col gap-4 md:gap-5">
+    <!-- כותרת -->
+    <header class="flex flex-wrap items-start gap-3 justify-between">
+        <div class="min-w-0">
+            <h2 class="text-2xl md:text-3xl font-black text-white mb-1">📢 ניהול פרסומות</h2>
+            <p class="text-xs md:text-sm text-gray-400">
+                פרסומות שנשלחו על־ידי משתמשים - אשר/דחה לפני פרסום באתר · {data.live} על האוויר מתוך {data.slotCount} משבצות
+            </p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            <button type="button"
+                    onclick={() => { invalidateAll(); lastRefresh = Date.now(); }}
+                    class="cursor-pointer px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs font-bold hover:bg-amber-500/25"
+                    title="רענן עכשיו">
                 🔄 רענן
             </button>
-            <label class="flex cursor-pointer items-center gap-1">
+            <label class="text-xs text-gray-400 flex items-center gap-1.5 cursor-pointer">
                 <input type="checkbox" bind:checked={autoRefresh} class="accent-amber-500" />
                 רענון אוטומטי
             </label>
         </div>
     </header>
 
-    <!-- מונים (כמו בגמ"ח הארצי) -->
-    <section class="grid grid-cols-3 gap-2 sm:grid-cols-5">
-        {#each STAT_CARDS as c (c.label)}
-            <div class="rounded-xl border px-2 py-1.5 text-center {c.cls}">
-                <div class="text-[10px] font-bold opacity-80">{c.label}</div>
-                <div class="text-xl leading-tight font-black">{c.n}</div>
-            </div>
-        {/each}
-    </section>
-
     {#if data.backendUnavailable}
-        <p class="rounded-xl border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
-            ⚠️ לא ניתן לטעון את הפרסומות כרגע — הבאקאנד אינו זמין
-        </p>
+        <div class="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            ⚠️ הבאקאנד (Strapi) לא זמין כרגע - הרשימות והסטטיסטיקות עשויות להיות חלקיות. נסה לרענן בעוד רגע.
+        </div>
     {/if}
 
+    <!-- סטטיסטיקות -->
+    <section class="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-3">
+        <div class="rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-center">
+            <div class="text-[10px] md:text-xs text-amber-300 font-bold uppercase tracking-wide">ממתינות</div>
+            <div class="text-2xl md:text-3xl font-black text-amber-200">{data.stats.pending}</div>
+        </div>
+        <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-3 py-2.5 text-center">
+            <div class="text-[10px] md:text-xs text-emerald-300 font-bold uppercase tracking-wide">פורסמו</div>
+            <div class="text-2xl md:text-3xl font-black text-emerald-200">{data.stats.approved}</div>
+        </div>
+        <div class="rounded-xl border border-red-500/30 bg-red-500/5 px-3 py-2.5 text-center">
+            <div class="text-[10px] md:text-xs text-red-300 font-bold uppercase tracking-wide">נדחו</div>
+            <div class="text-2xl md:text-3xl font-black text-red-200">{data.stats.rejected}</div>
+        </div>
+        <div class="rounded-xl border border-blue-500/30 bg-blue-500/5 px-3 py-2.5 text-center">
+            <div class="text-[10px] md:text-xs text-blue-300 font-bold uppercase tracking-wide">השבוע נשלחו</div>
+            <div class="text-2xl md:text-3xl font-black text-blue-200">{data.stats.submittedThisWeek}</div>
+        </div>
+        <div class="rounded-xl border border-purple-500/30 bg-purple-500/5 px-3 py-2.5 text-center col-span-2 md:col-span-1">
+            <div class="text-[10px] md:text-xs text-purple-300 font-bold uppercase tracking-wide">השבוע אושרו</div>
+            <div class="text-2xl md:text-3xl font-black text-purple-200">{data.stats.approvedThisWeek}</div>
+        </div>
+    </section>
+
+    <!-- הודעות -->
     {#if form?.success}
-        <p class="rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+        <div class="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-emerald-200 text-sm font-bold">
             ✅ {form.message}
-        </p>
-    {:else if form?.error}
-        <p class="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            {form.error}
-        </p>
+        </div>
+    {/if}
+    {#if justEditedId && !form}
+        <div class="rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-emerald-200 text-sm font-bold">
+            ✅ השינויים {justEditedTitle ? `ב"${justEditedTitle}"` : 'בפרסומת'} נשמרו ומוצגים באתר
+        </div>
+    {/if}
+    {#if form && 'error' in form && form.error}
+        <div class="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-red-200 text-sm font-bold">
+            ❌ {form.error}
+        </div>
     {/if}
 
     <!-- ---- הזנה ידנית ---- -->
@@ -485,68 +540,92 @@
     </section>
 
     <!-- טאבים -->
-    <div class="flex gap-1.5 overflow-x-auto pb-1">
-        {#each TABS as t (t.key)}
-            <button type="button" onclick={() => setTab(t.key)}
-                    class="cursor-pointer whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-black transition-all
-                           {activeTab === t.key ? t.on : 'border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10'}">
-                {t.label}
-            </button>
-        {/each}
+    <div class="flex gap-1.5 md:gap-2 overflow-x-auto pb-1">
+        <button type="button" onclick={() => setTab('pending')}
+                class="cursor-pointer px-4 py-2 rounded-xl font-black text-sm whitespace-nowrap transition-all
+                       {activeTab === 'pending' ? 'bg-amber-500 text-black' : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'}">
+            ⏳ ממתינות ({data.stats.pending})
+        </button>
+        <button type="button" onclick={() => setTab('approved')}
+                class="cursor-pointer px-4 py-2 rounded-xl font-black text-sm whitespace-nowrap transition-all
+                       {activeTab === 'approved' ? 'bg-emerald-500 text-black' : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'}">
+            ✅ פורסמו ({liveAds.length})
+        </button>
+        <button type="button" onclick={() => setTab('rejected')}
+                class="cursor-pointer px-4 py-2 rounded-xl font-black text-sm whitespace-nowrap transition-all
+                       {activeTab === 'rejected' ? 'bg-red-500 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'}">
+            ❌ נדחו ({data.stats.rejected})
+        </button>
+        <button type="button" onclick={() => setTab('trash')}
+                title="פרסומות שנמחקו או שפג תוקפן - לשחזור או לחידוש"
+                class="cursor-pointer px-4 py-2 rounded-xl font-black text-sm whitespace-nowrap transition-all
+                       {activeTab === 'trash' ? 'bg-gray-200 text-black' : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'}">
+            🗑 אשפה ({data.trash.length})
+        </button>
     </div>
 
     {#if activeTab !== 'trash'}
         <!-- חיפוש + מיון -->
-        <div class="flex flex-wrap gap-2">
-            <input type="search" bind:value={searchQuery} placeholder="🔎 חיפוש לפי כותרת, מפרסם, אימייל או טלפון…"
-                   class="min-w-[200px] flex-1 {inputCls}" />
-            <select bind:value={sortOrder} class="rounded-xl border border-white/10 bg-slate-800/80 px-3 py-2 text-sm text-white">
-                <option value="default" class="bg-slate-900">{activeTab === 'live' ? 'לפי המקום בטור' : 'סדר ברירת מחדל'}</option>
-                <option value="newest" class="bg-slate-900">חדש לישן</option>
-                <option value="oldest" class="bg-slate-900">ישן לחדש</option>
+        <div class="flex flex-wrap gap-2 md:gap-3">
+            <input type="text" bind:value={searchQuery}
+                   placeholder="🔎 חיפוש לפי כותרת, מפרסם, אימייל או טלפון..."
+                   class="flex-1 min-w-[200px] px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white text-sm placeholder:text-gray-500 focus:outline-none focus:border-amber-400/50" />
+            <select bind:value={sortOrder}
+                    class="px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400/50">
+                <option value="display" style="background:#fff;color:#111">סדר התצוגה באתר</option>
+                <option value="newest" style="background:#fff;color:#111">חדש לישן</option>
+                <option value="oldest" style="background:#fff;color:#111">ישן לחדש</option>
             </select>
         </div>
     {/if}
 
-    <!-- בחירה רב-פריטית (ממתינות) -->
+    <!-- שורת בחירה רב־פריטית (רק ב-pending) -->
     {#if activeTab === 'pending' && visibleList.length > 0}
-        <div class="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5">
-            <button type="button" onclick={() => (selected = new Set([...selected, ...visibleList.map((a) => a.id)]))}
+        <div class="flex flex-wrap items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10">
+            <button type="button"
+                    onclick={() => selectAllVisible(visibleList.map((a) => a.id))}
                     class="cursor-pointer text-xs font-bold text-amber-300 hover:text-amber-200">
                 בחר הכל ({visibleList.length})
             </button>
-            <span class="text-xs text-gray-600">·</span>
-            <button type="button" onclick={clearSelection} class="cursor-pointer text-xs font-bold text-gray-400 hover:text-gray-300">נקה</button>
+            <span class="text-gray-600 text-xs">·</span>
+            <button type="button" onclick={clearSelection}
+                    class="cursor-pointer text-xs font-bold text-gray-400 hover:text-gray-300">
+                נקה
+            </button>
             {#if visibleSelectedIds.length > 0}
-                <span class="mr-2 text-xs text-gray-300">נבחרו {visibleSelectedIds.length}</span>
-                <form method="POST" action="?/bulkApprove" use:enhance={() => async ({ update }) => { clearSelection(); await update(); }}>
+                <span class="text-xs text-gray-300 mr-2">נבחרו {visibleSelectedIds.length}</span>
+                <form method="POST" action="?/bulkApprove" use:enhance={() => async ({ update }) => { clearSelection(); await update(); }}
+                      class="inline-flex">
                     <input type="hidden" name="ids" value={visibleSelectedIds.join(',')} />
-                    <button type="submit" class="cursor-pointer rounded-lg bg-emerald-500 px-3 py-1 text-xs font-black text-black hover:bg-emerald-400">
-                        ✅ אשר את הנבחרות
+                    <button type="submit"
+                            class="cursor-pointer px-3 py-1.5 rounded-lg bg-emerald-500 text-black font-black text-xs hover:bg-emerald-400">
+                        ✅ אשר את הנבחרים
                     </button>
                 </form>
-                <form method="POST" action="?/bulkReject" class="flex gap-1"
-                      use:enhance={() => async ({ update }) => { clearSelection(); await update(); }}>
+                <form method="POST" action="?/bulkReject" use:enhance={() => async ({ update }) => { clearSelection(); await update(); }}
+                      class="inline-flex gap-1">
                     <input type="hidden" name="ids" value={visibleSelectedIds.join(',')} />
-                    <input type="text" name="reason" maxlength="300" placeholder="סיבת דחייה (לא חובה)"
-                           class="w-40 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-xs text-white" />
-                    <button type="submit" class="cursor-pointer rounded-lg bg-red-600 px-3 py-1 text-xs font-black text-white hover:bg-red-500">
-                        ❌ דחה את הנבחרות
+                    <input type="text" name="reason" maxlength="300" placeholder="סיבת דחייה (אופציונלי)"
+                           class="px-2 py-1 rounded-lg bg-black/30 border border-white/10 text-white text-xs w-40" />
+                    <button type="submit"
+                            class="cursor-pointer px-3 py-1.5 rounded-lg bg-red-600 text-white font-black text-xs hover:bg-red-500">
+                        ❌ דחה את הנבחרים
                     </button>
                 </form>
             {/if}
         </div>
     {/if}
 
+    <!-- רשימה -->
     {#if activeTab === 'trash'}
-        <!-- אשפה: הוסרה = שחזור למצב הקודם (המקום והתוקף נשמרו); פגה = חידוש לתקופה חדשה.
-             מחיקה לצמיתות — סופר-אדמין בלבד, ורק ממה שכבר באשפה -->
-        <section class="flex flex-col gap-2">
-            {#if data.trash.length === 0}
-                <p class="rounded-2xl border border-dashed border-white/10 py-8 text-center text-sm text-gray-500 italic">האשפה ריקה</p>
-            {/if}
+        <!-- אשפה: נמחקה = שחזור למצב הקודם (המקום והתוקף נשמרו); פגה = חידוש לתקופה חדשה.
+             מחיקה לצמיתות - סופר-אדמין בלבד, ורק ממה שכבר באשפה -->
+        {#if data.trash.length === 0}
+            <div class="text-center py-12 text-gray-500 text-sm italic border border-dashed border-white/10 rounded-2xl">האשפה ריקה</div>
+        {/if}
+        <div class="grid gap-2">
             {@render trashRows()}
-        </section>
+        </div>
         {#if trashPreview}
             <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4" role="presentation"
@@ -561,447 +640,331 @@
             </div>
         {/if}
     {:else if visibleList.length === 0}
-        <div class="rounded-2xl border border-dashed border-white/10 bg-slate-800/80 p-6 text-center">
-            <p class="font-bold text-white">
-                {searchQuery ? 'לא נמצאו תוצאות לחיפוש'
-                    : activeTab === 'pending' ? 'אין פרסומות שממתינות לאישור'
-                    : activeTab === 'live' ? 'אין פרסומות על האוויר'
-                    : 'אין פרסומות לא פעילות'}
-            </p>
-            {#if activeTab === 'live' && !searchQuery}
-                <p class="mt-1 text-sm text-gray-400">כל {data.slotCount} המשבצות בטור הימני פנויות</p>
-            {/if}
+        <div class="text-center py-12 text-gray-500 text-sm italic border border-dashed border-white/10 rounded-2xl">
+            {searchQuery ? 'לא נמצאו תוצאות לחיפוש' :
+             activeTab === 'pending' ? 'אין פרסומות שממתינות לאישור' :
+             activeTab === 'approved' ? 'עוד לא פורסמו פרסומות' : 'אין פרסומות שנדחו'}
         </div>
     {:else}
-            <section class="flex flex-col gap-2">
-                {#each visibleList as ad (ad.id)}
-                    <article id="ad-{ad.id}" class="flex scroll-mt-24 flex-col gap-2 rounded-2xl border p-3 {TONE[ad.status]}">
-                        <div class="flex flex-wrap items-center gap-2">
-                            {#if activeTab === 'pending'}
-                                <input type="checkbox" checked={selected.has(ad.id)} onchange={() => toggleSelect(ad.id)}
-                                       aria-label="בחירת {ad.title}" class="h-4 w-4 cursor-pointer accent-amber-500" />
-                            {/if}
-                            <span
-                                class="h-8 w-8 shrink-0 rounded-lg"
-                                style="background: {gradientCss(ad.gradientId)}"
-                                aria-hidden="true"
-                            ></span>
-                            <span class="min-w-0">
-                                <!-- מודעה שעל האוויר: ריחוף על הכותרת = הכרטיס האמיתי צף;
-                                     הקשה = מודאל עם הכרטיס + קישור לדף הנחיתה -->
-                                {#if previewableById.has(ad.id)}
-                                    <button
-                                        type="button"
-                                        onmouseenter={(e) => openHoverPreview(e, ad.id)}
-                                        onmouseleave={() => (hoverPreview = null)}
-                                        onclick={() => {
-                                            hoverPreview = null;
-                                            modalPreviewId = ad.id;
-                                        }}
-                                        title="תצוגה מקדימה של הפרסומת כפי שהיא מוצגת באתר"
-                                        class="block max-w-full cursor-pointer truncate text-right font-bold text-white underline decoration-dotted decoration-white/30 underline-offset-2 hover:text-amber-300"
-                                    >
-                                        {ad.title}
-                                    </button>
-                                {:else}
-                                    <span class="block truncate font-bold text-white">{ad.title}</span>
-                                {/if}
-                                <span class="block truncate text-xs text-gray-400">{ad.subtitle}</span>
+        <div class="grid gap-3 md:gap-4">
+            {#each visibleList as ad, adIndex (ad.id)}
+                <article id="ad-{ad.id}" class="scroll-mt-24 rounded-2xl border border-white/10 bg-white/5 p-3 md:p-5">
+                    {#if activeTab === 'approved'}
+                        {@const slotN = ad.slot ?? adIndex + 1}
+                        <!-- מיקום הפרסומת בטור הפרסומות באתר + החלפת מקום -->
+                        <div class="flex items-center gap-2 mb-3 pb-3 border-b border-white/10 flex-wrap">
+                            <span class="inline-flex items-center justify-center min-w-7 h-7 px-1.5 rounded-lg border border-black/20 font-black text-sm whitespace-nowrap"
+                                  style="background:{slotOptionBg(slotN)};color:#111"
+                                  title="רביעייה {slotGroupLetter(slotN)}׳ · המשבצת ה{slotPosName(slotN)} בטור">
+                                {slotN} · {slotGroupLetter(slotN)}׳
                             </span>
-
-                            {#if ad.editedAfterDecision}
-                                <span class="rounded-full border border-amber-400/40 bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-300">
-                                    ✏️ נערכה אחרי האישור
-                                </span>
-                            {/if}
-                            {#if ad.expired}
-                                <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-[11px] text-gray-400">
-                                    פג תוקף
-                                </span>
-                            {:else if ad.status === 'approved'}
-                                <span class="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-300">
-                                    {ad.daysLeft} ימים נותרו
-                                </span>
-                            {/if}
-                            {#if ad.paused}
-                                <span class="rounded-full border border-blue-400/40 bg-blue-500/15 px-2 py-0.5 text-[11px] font-bold text-blue-300">
-                                    ⏸ מושהית — {ad.pausedDaysLeft ?? 0} ימים שמורים
-                                </span>
-                            {/if}
-
-                            <!-- מפרסם חוזר ששיפר את המודעה שלו: לא בקשה חדשה -->
-                            {#if ad.replacesAdId && ad.status === 'pending'}
-                                <span class="rounded-full border border-blue-400/40 bg-blue-500/15 px-2 py-0.5 text-[11px] font-bold text-blue-200">
-                                    🔄 עדכון למודעה קיימת{ad.replacesTitle ? ` — קודמת: "${ad.replacesTitle}"` : ''}
-                                </span>
-                            {:else if ad.supersededBy}
-                                <span class="rounded-full border border-white/15 bg-slate-800/80 px-2 py-0.5 text-[11px] font-bold text-gray-300">
-                                    🔄 גרסה ישנה — הוחלפה בגרסה מעודכנת
-                                </span>
-                            {/if}
-
-                            <span class="mr-auto text-xs text-gray-500">
-                                {ad.submittedAt ? absDate(ad.submittedAt) : ''}
+                            <span class="text-[11px] md:text-xs text-gray-400 font-bold">
+                                מקום {slotN} מתוך {data.slotCount} בטור הפרסומות
                             </span>
-                        </div>
-
-                        {#if editingId === ad.id}
-                            <!-- עריכת הטקסטים בשורה (כמו בגמ"ח הארצי) — תמונות ועיצוב נשארים של המפרסם -->
-                            <form method="POST" action="?/update" class="grid gap-1.5 rounded-xl border border-amber-400/30 bg-black/20 p-2 sm:grid-cols-2"
-                                  use:enhance={() => async ({ result, update }) => { if (result.type === 'success') editingId = null; await update(); }}>
-                                <input type="hidden" name="id" value={ad.id} />
-                                <input name="title" bind:value={edit.title} maxlength="40" required placeholder="כותרת" class="{inputCls} font-bold" />
-                                <input name="subtitle" bind:value={edit.subtitle} maxlength="70" placeholder="שורת משנה" class={inputCls} />
-                                <input name="cta" bind:value={edit.cta} maxlength="30" placeholder="טקסט הכפתור" class={inputCls} />
-                                <input name="hoverText" bind:value={edit.hoverText} maxlength="90" placeholder="טקסט ריחוף" class={inputCls} />
-                                <div class="flex gap-2 sm:col-span-2">
-                                    <button type="submit" class="cursor-pointer rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-black text-black">💾 שמור</button>
-                                    <button type="button" onclick={() => (editingId = null)} class="cursor-pointer rounded-lg bg-white/10 px-3 py-1.5 text-xs text-gray-300">ביטול</button>
-                                </div>
-                            </form>
-                        {/if}
-
-                        {#if ad.status === 'approved' && !ad.expired && ad.slotIndex >= 0}
-                            {@const slotN = ad.slot ?? ad.slotIndex + 1}
-                            <!-- המקום המספרי הקבוע של המודעה בלוח + בורר מקום עם
-                                 אזהרת מקום תפוס והחלפה. הסדר בטור הימני נגזר
-                                 בדיוק ממספרי המקומות האלה. -->
-                            <div class="flex flex-wrap items-center gap-2 border-t border-white/10 pt-2">
-                                <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-lg border border-black/20 px-1.5 text-xs font-black whitespace-nowrap"
-                                      style="background:{slotOptionBg(slotN)};color:#111"
-                                      title="רביעייה {slotGroupLetter(slotN)}׳ · המשבצת ה{slotPosName(slotN)} בטור">
-                                    {slotN} · {slotGroupLetter(slotN)}׳
-                                </span>
-                                <span class="text-xs font-bold text-gray-400">
-                                    מקום {ad.slot} מתוך {data.slotCount} בלוח
-                                </span>
-                                <form method="POST" action="?/setSlot" use:enhance class="flex flex-wrap items-center gap-1.5">
-                                    <input type="hidden" name="id" value={ad.id} />
-                                    <select
-                                        name="slot"
-                                        onchange={(e) => onSlotPick(e, ad)}
-                                        class="rounded-lg border border-white/10 bg-slate-800/80 px-1.5 py-1 text-xs text-white focus:border-blue-400/60 focus:outline-none"
-                                    >
-                                        <!-- כל רביעייה תחת כותרת משלה — הקשר מספר↔רביעייה קריא במילים, לא רק
-                                             בצבע; מקום תפוס שומר את צבע הרביעייה ומסומן באדום מודגש -->
-                                        {#each groupSlotOptions(slotOptions) as grp (grp.letter)}
-                                            <optgroup label="— רביעייה {grp.letter}׳ · המשבצת ה{slotPosName(grp.nums[0])} בטור —">
-                                                {#each grp.nums as n (n)}
-                                                    {@const occ = slotOccupants.get(n)}
-                                                    {@const takenByOther = !!occ && occ.id !== ad.id}
-                                                    <option value={n} selected={n === ad.slot}
-                                                            style="background:{slotOptionBg(n)};color:{takenByOther ? '#b91c1c' : '#111'};font-weight:{takenByOther ? '700' : '400'}">
-                                                        {slotOptionLabel(n, ad.id)}
-                                                    </option>
-                                                {/each}
-                                            </optgroup>
-                                        {/each}
-                                    </select>
-                                    <button
-                                        type="submit"
-                                        onclick={(e) => confirmSlotMove(e, ad)}
-                                        title="העבר למקום שנבחר; מקום תפוס — תתבקש לאשר החלפה בין השתיים"
-                                        class="cursor-pointer rounded-xl border border-purple-400/40 bg-purple-500/15 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-purple-200 hover:bg-purple-500/25"
-                                    >
-                                        ⇄ העבר
-                                    </button>
-                                    {#if slotWarning[ad.id]}
-                                        <span class="max-w-[240px] text-[11px] leading-snug font-bold text-amber-300">
-                                            ⚠ {slotWarning[ad.id]}
-                                        </span>
-                                    {/if}
-                                </form>
-                                <div class="mr-auto flex items-center gap-1">
+                            {#if canReorder}
+                                <div class="flex items-center gap-1.5 mr-auto">
                                     <form method="POST" action="?/move" use:enhance>
                                         <input type="hidden" name="id" value={ad.id} />
                                         <input type="hidden" name="dir" value="up" />
-                                        <button
-                                            type="submit"
-                                            disabled={ad.slotIndex === 0}
-                                            title="העלה משבצת אחת"
-                                            class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
-                                        >▲ למעלה</button>
+                                        <button type="submit" disabled={adIndex === 0}
+                                                class="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 border border-white/15 text-gray-200 font-black text-xs hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                                title="העלה מקום אחד למעלה">
+                                            ▲ למעלה
+                                        </button>
                                     </form>
                                     <form method="POST" action="?/move" use:enhance>
                                         <input type="hidden" name="id" value={ad.id} />
                                         <input type="hidden" name="dir" value="down" />
-                                        <button
-                                            type="submit"
-                                            disabled={ad.slotIndex === ad.slotTotal - 1}
-                                            title="הורד משבצת אחת"
-                                            class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"
-                                        >▼ למטה</button>
+                                        <button type="submit" disabled={adIndex === visibleList.length - 1}
+                                                class="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 border border-white/15 text-gray-200 font-black text-xs hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed"
+                                                title="הורד מקום אחד למטה">
+                                            ▼ למטה
+                                        </button>
                                     </form>
                                 </div>
+                            {:else}
+                                <span class="text-[10px] text-gray-500 mr-auto">
+                                    כדי להחליף מקום - בחר מיון "סדר התצוגה באתר" ונקה את החיפוש
+                                </span>
+                            {/if}
+                        </div>
+                    {/if}
+                    <div class="flex flex-col md:flex-row gap-3 md:gap-4">
+                        {#if activeTab === 'pending'}
+                            <label class="flex-shrink-0 inline-flex items-start pt-1 cursor-pointer">
+                                <input type="checkbox"
+                                       checked={selected.has(ad.id)}
+                                       onchange={() => toggleSelect(ad.id)}
+                                       aria-label="בחירת {ad.title}"
+                                       class="w-5 h-5 accent-amber-500" />
+                            </label>
+                        {/if}
+
+                        {#if ad.mainImage}
+                            <!-- אותו מיקום/זום שהמפרסם קבע בבילדר - המנהל מאשר את מה שבאמת יוצג -->
+                            <div class="relative overflow-hidden w-full md:w-40 h-32 md:h-40 rounded-xl border border-white/10 flex-shrink-0">
+                                <img src={ad.mainImage} alt={ad.title}
+                                     class="w-full h-full object-cover"
+                                     use:adImgFit={parseAdImageFit(ad.mainImageFit)} />
+                            </div>
+                        {/if}
+                        {#if ad.mobileImage}
+                            <!-- התמונה הייעודית לפופ-אפ בנייד (אם הוגדרה) - באותו מיקום/זום שנבחר לה -->
+                            <div class="relative flex-shrink-0 w-full md:w-24 h-32 md:h-40">
+                                <div class="relative overflow-hidden h-full w-24 mx-auto md:mx-0 rounded-xl border border-sky-400/30">
+                                    <img src={ad.mobileImage} alt="{ad.title} - נייד"
+                                         class="w-full h-full object-cover"
+                                         use:adImgFit={parseAdImageFit(ad.mobileImageFit)} />
+                                </div>
+                                <span class="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-[9px] font-black text-sky-300">📱 נייד</span>
                             </div>
                         {/if}
 
-                        <!-- פרטי המפרסם: מסך מאחורי הרשאה, ולכן מותר כאן -->
-                        <p class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-400">
-                            {#if ad.submittedByName}<span>מפרסם: {ad.submittedByName}</span>{/if}
-                            {#if ad.contactEmail}<span>קשר: {ad.contactEmail}</span>{/if}
-                            {#if ad.landing.phone}<span>טלפון: {ad.landing.phone}</span>{/if}
-                            {#if ad.bytes > 0}<span>{Math.round(ad.bytes / 1024)}KB</span>{/if}
-                        </p>
-
-                        {#if ad.status === 'approved' && ad.stats.impressions > 0}
-                            <p class="flex flex-wrap gap-2 text-[11px]">
-                                <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">
-                                    👁 {ad.stats.impressions} חשיפות
-                                </span>
-                                <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">
-                                    🖱 {ad.stats.clicks} קליקים ({(ad.stats.ctr * 100).toFixed(1)}%)
-                                </span>
-                                <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">
-                                    📄 {ad.stats.landing} צפיות בנחיתה
-                                </span>
-                                <span class="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">
-                                    📞 {ad.stats.leads} פניות
-                                </span>
-                            </p>
-                        {/if}
-
-                        {#if ad.landing.website}
-                            <!--
-                              כתובת של מודעה שטרם אושרה לא הופכת לקישור.
-                              במקור היא רונדרה כ-href גם בתור האישורים, וזה
-                              הפך את מסך האדמין ליעד: כתובת javascript: הייתה
-                              מתבצעת בדפדפן שלו בלחיצה.
-                            -->
-                            {#if ad.status === 'approved'}
-                                <a
-                                    href={ad.landing.website}
-                                    target="_blank"
-                                    rel="noopener noreferrer nofollow"
-                                    class="text-xs text-blue-400 hover:text-blue-300"
-                                >🌐 {ad.landing.website}</a>
-                            {:else}
-                                <span class="rounded-lg border border-white/10 bg-black/20 px-2 py-1 font-mono text-xs break-all text-gray-400">
-                                    🌐 {ad.landing.website}
-                                </span>
-                            {/if}
-                        {/if}
-
-                        {#if ad.rejectionReason}
-                            <p class="text-xs text-red-300/80">סיבת הדחייה: {ad.rejectionReason}</p>
-                        {/if}
-
-                        <div class="flex flex-wrap items-center gap-2 border-t border-white/5 pt-2">
-                            <a
-                                href="/ads/{ad.id}"
-                                target="_blank"
-                                rel="noopener"
-                                class="rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
-                            >👁 תצוגה מקדימה</a>
-                            {#if editingId !== ad.id}
-                                <button type="button" onclick={() => startEdit(ad)}
-                                        class="cursor-pointer rounded-xl border border-blue-400/40 bg-blue-500/15 px-3 py-1.5 text-xs font-bold text-blue-200 hover:bg-blue-500/25">
-                                    ✏️ {ad.status === 'pending' ? 'ערוך לפני אישור' : 'ערוך'}
-                                </button>
-                            {/if}
-
-                            {#if ad.status !== 'approved' || ad.expired}
-                                <form method="POST" action="?/approve" use:enhance class="flex items-center gap-1">
+                        <div class="flex-1 min-w-0">
+                            {#if editingId === ad.id}
+                                <form method="POST" action="?/update"
+                                      use:enhance={() => async ({ result, update }) => { if (result.type === 'success') editingId = null; await update(); }}
+                                      class="space-y-2">
                                     <input type="hidden" name="id" value={ad.id} />
-                                    <select name="duration_days" class="rounded-lg border border-white/10 bg-slate-800/80 px-2 py-1 text-xs text-white">
-                                        {#each data.plans as p (p.days)}
-                                            <option value={p.days} selected={p.days === ad.requestedDurationDays} class="bg-slate-900">
-                                                {p.label}
-                                            </option>
-                                        {/each}
-                                    </select>
-                                    <button type="submit" class="cursor-pointer rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-200 hover:bg-emerald-500/25">
-                                        {ad.replacesLive ? '✓ אישור והחלפת הישנה' : '✓ אישור'}
-                                    </button>
+                                    <input type="text" name="title" bind:value={edit.title} maxlength="40" required
+                                           class="w-full px-3 py-1.5 rounded-lg bg-black/40 border border-amber-400/40 text-white font-bold text-base" />
+                                    <input type="text" name="subtitle" bind:value={edit.subtitle} maxlength="70"
+                                           class="w-full px-3 py-1.5 rounded-lg bg-black/40 border border-white/10 text-white text-sm" />
+                                    <input type="text" name="cta" bind:value={edit.cta} maxlength="30" placeholder="טקסט CTA"
+                                           class="w-full px-3 py-1.5 rounded-lg bg-black/40 border border-white/10 text-white text-xs" />
+                                    <!-- textarea ולא input: המפרסם יכול לרדת שורה בטקסט ה-hover,
+                                         ו-input היה משטח את ירידות השורה בכל שמירה של האדמין -->
+                                    <textarea name="hoverText" bind:value={edit.hoverText} maxlength="90" placeholder="טקסט hover" rows="2"
+                                              class="w-full px-3 py-1.5 rounded-lg bg-black/40 border border-white/10 text-white text-xs resize-y"></textarea>
+                                    <div class="flex gap-2">
+                                        <button type="submit"
+                                                class="cursor-pointer px-3 py-1.5 rounded-lg bg-amber-500 text-black font-black text-xs">
+                                            💾 שמור
+                                        </button>
+                                        <button type="button" onclick={cancelEdit}
+                                                class="cursor-pointer px-3 py-1.5 rounded-lg bg-white/10 text-gray-300 text-xs">
+                                            ביטול
+                                        </button>
+                                    </div>
                                 </form>
-                                <!-- מפרסם שבאמת רוצה שתי מודעות במקביל, ולא שדרג את הקיימת -->
-                                {#if ad.replacesLive}
-                                    <form method="POST" action="?/approve" use:enhance class="flex items-center gap-1">
-                                        <input type="hidden" name="id" value={ad.id} />
-                                        <input type="hidden" name="keepPrevious" value="1" />
-                                        <input type="hidden" name="duration_days" value={ad.requestedDurationDays} />
+                            {:else}
+                                <!-- מפרסם חוזר ששיפר את הפרסומת שלו: לא בקשה חדשה אלא גרסה
+                                     מעודכנת, והאישור מחליף את הישנה במקום להוסיף פרסומת שנייה -->
+                                {#if ad.replacesAdId && ad.status === 'pending'}
+                                    <div class="mb-2 rounded-lg border border-blue-400/40 bg-blue-500/10 px-2.5 py-1.5">
+                                        <p class="text-[11px] md:text-xs font-black text-blue-200 m-0">
+                                            🔄 עדכון לפרסומת קיימת{ad.replacesTitle ? ` - גרסה קודמת: "${ad.replacesTitle}"` : ''}
+                                        </p>
+                                        <p class="text-[10px] md:text-[11px] text-blue-100/70 m-0 mt-0.5">
+                                            {ad.replacesLive
+                                                ? 'עם האישור הגרסה הזו נכנסת במקום הישנה, באותו מקום בטור ועם אותו תאריך סיום - הישנה יורדת מהאתר.'
+                                                : 'למפרסם אין כרגע פרסומת פעילה על האתר - האישור פשוט יפרסם את הגרסה הזו.'}
+                                        </p>
+                                    </div>
+                                {:else if ad.supersededBy}
+                                    <div class="mb-2 rounded-lg border border-gray-500/40 bg-white/5 px-2.5 py-1.5">
+                                        <p class="text-[11px] md:text-xs font-black text-gray-300 m-0">
+                                            🔄 גרסה ישנה - הוחלפה בגרסה מעודכנת של המפרסם
+                                        </p>
+                                    </div>
+                                {/if}
+                                <!-- פרסומת שעל האוויר: ריחוף על הכותרת = הכרטיס האמיתי צף;
+                                     הקשה = מודאל עם הכרטיס + קישור לדף הנחיתה -->
+                                {#if previewableById.has(ad.id)}
+                                    <h3 class="text-base md:text-lg font-black text-white mb-1">
                                         <button
-                                            type="submit"
-                                            title="הישנה תישאר באוויר וזו תתווסף לידה"
-                                            class="cursor-pointer rounded-xl border border-white/15 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
-                                        >
-                                            ➕ אישור כמודעה נוספת
-                                        </button>
-                                    </form>
-                                {/if}
-                            {:else}
-                                <form method="POST" action="?/extend" use:enhance class="flex items-center gap-1">
-                                    <input type="hidden" name="id" value={ad.id} />
-                                    <select name="duration_days" class="rounded-lg border border-white/10 bg-slate-800/80 px-2 py-1 text-xs text-white">
-                                        {#each data.plans as p (p.days)}
-                                            <option value={p.days} class="bg-slate-900">{p.label}</option>
-                                        {/each}
-                                    </select>
-                                    <button type="submit" class="cursor-pointer rounded-xl border border-blue-400/40 bg-blue-500/15 px-3 py-1.5 text-xs font-bold text-blue-200 hover:bg-blue-500/25">
-                                        ⏱ הארכה
-                                    </button>
-                                </form>
-
-                                <!-- חלון הקציבה: פרטי תשלום ותאריכים + שינוי תקופה/תפוגה.
-                                     שמור לסופר-אדמין — אדמין רגיל לא רואה את הכפתור -->
-                                {#if data.superAdmin}
-                                    <button type="button"
-                                            onclick={() => openDurationModal(ad)}
-                                            class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10"
-                                            title="פרטי התקופה והתשלום + שינוי תקופה או תאריך תפוגה">
-                                        ✂ קצוב
-                                    </button>
-                                {/if}
-                            {/if}
-
-                            {#if ad.status === 'approved' && !ad.expired}
-                                {#if ad.paused}
-                                    <form method="POST" action="?/resume" use:enhance>
-                                        <input type="hidden" name="id" value={ad.id} />
-                                        <button type="submit" class="cursor-pointer rounded-xl border border-emerald-400/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-200 hover:bg-emerald-500/25"
-                                                title="הימים השמורים נספרים מהיום">
-                                            ▶ המשך
-                                        </button>
-                                    </form>
+                                            type="button"
+                                            onmouseenter={(e) => openHoverPreview(e, ad.id)}
+                                            onmouseleave={() => (hoverPreview = null)}
+                                            onclick={() => { hoverPreview = null; modalPreviewId = ad.id; }}
+                                            title="תצוגה מקדימה של הפרסומת כפי שהיא מוצגת באתר"
+                                            class="cursor-pointer text-right font-black underline decoration-dotted decoration-white/30 underline-offset-2 hover:text-amber-300"
+                                        >{ad.title}</button>
+                                    </h3>
                                 {:else}
-                                    <form
-                                        method="POST"
-                                        action="?/pause"
-                                        use:enhance={({ cancel }) => {
-                                            if (!confirm(`להשהות את "${ad.title}"? היא תרד מהאוויר והימים שנותרו יישמרו לה.`)) {
-                                                cancel();
-                                                return;
-                                            }
-                                            return async ({ update }) => await update();
-                                        }}
-                                    >
-                                        <input type="hidden" name="id" value={ad.id} />
-                                        <button type="submit" class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10">
-                                            ⏸ השהה
-                                        </button>
-                                    </form>
+                                    <h3 class="text-base md:text-lg font-black text-white mb-1">{ad.title}</h3>
                                 {/if}
-                            {/if}
-
-                            {#if ad.status === 'approved' && !ad.expired}
-                                <!-- הורדה מהאוויר בלי מחיקה: המודעה חוזרת לממתינות -->
-                                <form
-                                    method="POST"
-                                    action="?/unapprove"
-                                    use:enhance={({ cancel }) => {
-                                        if (!confirm(`להוריד את "${ad.title}" מהאתר ולהחזיר לממתינות?`)) {
-                                            cancel();
-                                            return;
-                                        }
-                                        return async ({ update }) => await update();
-                                    }}
-                                >
-                                    <input type="hidden" name="id" value={ad.id} />
-                                    <button type="submit" class="cursor-pointer rounded-xl border border-amber-400/40 bg-amber-500/15 px-3 py-1.5 text-xs font-bold text-amber-200 hover:bg-amber-500/25">
-                                        ⏸ הורד מהאתר
-                                    </button>
-                                </form>
-                            {/if}
-
-                            {#if ad.status !== 'rejected'}
-                                <form method="POST" action="?/reject" use:enhance class="flex items-center gap-1">
-                                    <input type="hidden" name="id" value={ad.id} />
-                                    <input
-                                        name="reason"
-                                        placeholder="סיבה (לא חובה)"
-                                        maxlength="300"
-                                        class="w-36 rounded-lg border border-white/10 bg-slate-800/80 px-2 py-1 text-xs text-white placeholder-gray-600"
-                                    />
-                                    <button type="submit" class="cursor-pointer rounded-xl border border-white/10 bg-slate-800/80 px-3 py-1.5 text-xs font-bold text-gray-300 hover:bg-white/10">
-                                        ✕ דחייה
-                                    </button>
-                                </form>
-                                                        {:else}
-                                <!-- דחייה בטעות — חזרה לתור הממתינות -->
-                                <form method="POST" action="?/unreject" use:enhance>
-                                    <input type="hidden" name="id" value={ad.id} />
-                                    <button type="submit" class="cursor-pointer rounded-xl border border-amber-400/40 bg-amber-500/15 px-3 py-1.5 text-xs font-bold text-amber-200 hover:bg-amber-500/25">
-                                        ↩️ החזר לממתינות
-                                    </button>
-                                </form>
-                            {/if}
-
-                            <form
-                                method="POST"
-                                action="?/remove"
-                                class="mr-auto"
-                                use:enhance
-                            >
-                                <input type="hidden" name="id" value={ad.id} />
-                                <button type="submit" class="cursor-pointer text-xs text-red-400/80 hover:text-red-300"
-                                        onclick={(e) => askRemove(e, ad, `להעביר את "${ad.title}" לאשפה? אפשר לשחזר אותה משם.`)}>
-                                    🗑 הסרה
-                                </button>
-                            </form>
-                            <!-- שכפל פרסומת (סופר-אדמין): אותה פרסומת גם במקומות נוספים — למשל
-                                 2 ו-6 (אותה רביעייה), כך שהיא נשארת באותה משבצת ולא מתחלפת בסבב.
-                                 תג ⧉ = שכפול קיים; לחיצה עליו מבטלת אותו -->
-                            {#if data.superAdmin && ad.status === 'approved' && typeof ad.slot === 'number'}
-                                {@const dup = dupOptions(ad)}
-                                {#if (ad.extraSlots ?? []).length + dup.same.length + dup.rest.length > 0}
-                                    <div style="display: contents">
-                                        {#each ad.extraSlots ?? [] as n (n)}
-                                            <form method="POST" action="?/removeExtraSlot" use:enhance>
-                                                <input type="hidden" name="id" value={ad.id} />
-                                                <input type="hidden" name="slot" value={n} />
-                                                <button
-                                                    type="submit"
-                                                    class="inline-flex h-6 cursor-pointer items-center gap-1 rounded-lg border border-black/20 px-1.5 text-xs font-black whitespace-nowrap hover:opacity-80"
-                                                    style="background:{slotOptionBg(n)};color:#111"
-                                                    title="שכפול במקום {n} (רביעייה {slotGroupLetter(n)}׳ · המשבצת ה{slotPosName(n)} בטור) — לחיצה מבטלת את השכפול"
-                                                >
-                                                    ⧉ {n} · {slotGroupLetter(n)}׳ <span class="text-red-700">✕</span>
-                                                </button>
-                                            </form>
-                                        {/each}
-                                        {#if dup.same.length + dup.rest.length > 0}
-                                            <form method="POST" action="?/addExtraSlot" use:enhance>
-                                                <input type="hidden" name="id" value={ad.id} />
-                                                <select
-                                                    name="slot"
-                                                    aria-label="שכפל פרסומת"
-                                                    onchange={(e) => e.currentTarget.form?.requestSubmit()}
-                                                    class="rounded-lg border border-sky-500/40 bg-sky-500/15 px-1.5 py-1 text-xs font-black text-sky-200 focus:border-sky-400/60 focus:outline-none"
-                                                >
-                                                    <option value="" selected disabled>⧉ שכפל פרסומת</option>
-                                                    {#if dup.same.length > 1}
-                                                        <option value="same" style="background:#fff;color:#111;font-weight:700">
-                                                            ★ קבועה בכל הרביעייה ({dup.same.join(', ')})
-                                                        </option>
-                                                    {/if}
-                                                    {#if dup.same.length > 0}
-                                                        <optgroup label="★ אותה רביעייה (אותה משבצת)">
-                                                            {#each dup.same as n (n)}
-                                                                <option value={n} style="background:{slotOptionBg(n)};color:#111">
-                                                                    {n} · {slotPosName(n)}
-                                                                </option>
-                                                            {/each}
-                                                        </optgroup>
-                                                    {/if}
-                                                    {#each groupSlotOptions(dup.rest) as grp (grp.letter)}
-                                                        <optgroup label="— רביעייה {grp.letter}׳ —">
-                                                            {#each grp.nums as n (n)}
-                                                                <option value={n} style="background:{slotOptionBg(n)};color:#111">
-                                                                    {n} · {slotPosName(n)}
-                                                                </option>
-                                                            {/each}
-                                                        </optgroup>
-                                                    {/each}
-                                                </select>
-                                            </form>
+                                <p class="text-xs md:text-sm text-gray-300 mb-1">{ad.subtitle}</p>
+                                {#if ad.cta}
+                                    <p class="text-[10px] md:text-xs text-amber-300 mb-2">CTA: {ad.cta}</p>
+                                {/if}
+                                {#if ad.hoverText}
+                                    <p class="text-[10px] md:text-xs text-gray-500 mb-2">Hover: {ad.hoverText}</p>
+                                {/if}
+                                <div class="text-[10px] md:text-xs text-gray-400 space-y-0.5">
+                                    {#if ad.submittedByName}<div>👤 {ad.submittedByName}</div>{/if}
+                                    {#if ad.contactEmail}<div>📧 {ad.contactEmail}</div>{/if}
+                                    <div>📅 נשלח: {fmtDate(ad.submittedAt)}</div>
+                                    {#if ad.decidedAt}<div>🕒 הוחלט: {fmtDate(ad.decidedAt)}</div>{/if}
+                                    {#if ad.editedAfterDecision}<div class="text-amber-300">✏️ נערכה אחרי האישור</div>{/if}
+                                    {#if ad.status === 'approved' && !ad.expired}
+                                        <div class="text-emerald-300">
+                                            ⏳ {ad.daysLeft} ימים נותרו{#if ad.paused} · <span class="text-blue-300 font-bold">⏸ מושהית ({ad.pausedDaysLeft ?? 0} ימים שמורים)</span>{/if}
+                                        </div>
+                                    {/if}
+                                    {#if ad.landing.phone}<div>☎️ {ad.landing.phone}</div>{/if}
+                                    {#if ad.landing.website}
+                                        <!--
+                                          כתובת של מודעה שטרם אושרה לא הופכת לקישור.
+                                          במקור היא רונדרה כ-href גם בתור האישורים, וזה
+                                          הפך את מסך האדמין ליעד: כתובת javascript: הייתה
+                                          מתבצעת בדפדפן שלו בלחיצה.
+                                        -->
+                                        {#if ad.status === 'approved'}
+                                            <div><a href={ad.landing.website} target="_blank" rel="noopener noreferrer nofollow"
+                                                    class="text-blue-400 hover:text-blue-300">🌐 {ad.landing.website}</a></div>
+                                        {:else}
+                                            <div class="break-all">🌐 {ad.landing.website}</div>
                                         {/if}
+                                    {/if}
+                                    {#if ad.landing.address}<div>📍 {ad.landing.address}</div>{/if}
+                                    {#if ad.bytes > 0}<div>💾 {Math.round(ad.bytes / 1024)}KB</div>{/if}
+                                    {#if ad.rejectionReason}<div class="text-red-300">❌ סיבת דחייה: {ad.rejectionReason}</div>{/if}
+                                </div>
+                                {#if ad.status === 'approved' && ad.stats.impressions > 0}
+                                    <div class="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                                        <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">👁 {ad.stats.impressions} חשיפות</span>
+                                        <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">🖱 {ad.stats.clicks} קליקים ({(ad.stats.ctr * 100).toFixed(1)}%)</span>
+                                        <span class="rounded-full border border-white/10 bg-slate-800/80 px-2 py-0.5 text-gray-400">📄 {ad.stats.landing} צפיות בנחיתה</span>
+                                        <span class="rounded-full border border-emerald-400/25 bg-emerald-500/10 px-2 py-0.5 text-emerald-300">📞 {ad.stats.leads} פניות</span>
                                     </div>
                                 {/if}
                             {/if}
                         </div>
-                    </article>
-                {/each}
-            </section>
+                    </div>
+
+                    {#if editingId !== ad.id}
+                        <details class="mt-3 text-xs text-gray-300">
+                            <summary class="cursor-pointer text-amber-300 font-bold">תצוגה מקדימה של דף הנחיתה</summary>
+                            <div class="mt-2 p-3 rounded-lg bg-black/40 border border-white/10 space-y-2">
+                                {#if ad.landing.headline}<p class="font-bold text-white">{ad.landing.headline}</p>{/if}
+                                {#if ad.landing.pitch}<p>{ad.landing.pitch}</p>{/if}
+                                {#if ad.landing.advantages?.some((a: string) => a?.trim())}
+                                    <ul class="list-disc pr-5">
+                                        {#each ad.landing.advantages as a}
+                                            {#if a?.trim()}<li>{a}</li>{/if}
+                                        {/each}
+                                    </ul>
+                                {/if}
+                                <!-- preview=1: הכרטיס הזה מוצג גם ב"ממתינות" ו"נדחו",
+                                     ושם /ads/<id> חסום לציבור. השרת פותח אותו לאדמין בלבד. -->
+                                <a href={`/ads/${ad.id}?preview=1`} target="_blank" rel="noopener noreferrer"
+                                   class="inline-block mt-2 px-3 py-1.5 rounded-lg bg-white/10 text-amber-300 font-bold hover:bg-white/15">
+                                    פתח את דף הנחיתה המלא →
+                                </a>
+                            </div>
+                        </details>
+
+                        <!-- פעולות לפי טאב -->
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            {#if activeTab === 'pending'}
+                                <form method="POST" action="?/approve" use:enhance class="flex items-center gap-1.5">
+                                    <input type="hidden" name="id" value={ad.id} />
+                                    <select name="duration_days" aria-label="מסלול פרסום"
+                                            class="px-2 py-2 rounded-xl bg-black/30 border border-white/10 text-white text-xs">
+                                        {#each data.plans as p (p.days)}
+                                            <option value={p.days} selected={p.days === ad.requestedDurationDays} style="background:#fff;color:#111">
+                                                {p.label}
+                                            </option>
+                                        {/each}
+                                    </select>
+                                    <button type="submit"
+                                            class="cursor-pointer px-4 py-2 rounded-xl bg-emerald-500 text-black font-black text-sm hover:bg-emerald-400"
+                                            title={ad.replacesLive ? 'אשר את הגרסה החדשה במקום הישנה' : 'אשר ופרסם בטור הפרסומות'}>
+                                        {ad.replacesLive ? '✅ אשר והחלף את הישנה' : '✅ אשר ופרסם'}
+                                    </button>
+                                </form>
+                                {#if ad.replacesLive}
+                                    <!-- מפרסם שבאמת רוצה שתי פרסומות במקביל, ולא שדרג את הקיימת -->
+                                    <form method="POST" action="?/approve" use:enhance>
+                                        <input type="hidden" name="id" value={ad.id} />
+                                        <input type="hidden" name="keepPrevious" value="1" />
+                                        <input type="hidden" name="duration_days" value={ad.requestedDurationDays} />
+                                        <button type="submit"
+                                                class="cursor-pointer px-4 py-2 rounded-xl bg-white/5 border border-white/15 text-gray-300 font-black text-sm hover:bg-white/10"
+                                                title="הישנה תישאר על האתר וזו תתווסף לידה">
+                                            ➕ אשר כפרסומת נוספת
+                                        </button>
+                                    </form>
+                                {/if}
+                                <button type="button" onclick={() => startEdit(ad)}
+                                        class="cursor-pointer px-4 py-2 rounded-xl bg-blue-500/20 border border-blue-500/40 text-blue-200 font-black text-sm hover:bg-blue-500/30">
+                                    ✏️ ערוך לפני אישור
+                                </button>
+                                <form method="POST" action="?/reject" use:enhance class="flex gap-2 flex-1 min-w-[220px]">
+                                    <input type="hidden" name="id" value={ad.id} />
+                                    <input type="text" name="reason" maxlength="300" placeholder="סיבת דחייה (אופציונלי)"
+                                           class="flex-1 px-3 py-2 rounded-xl bg-black/30 border border-white/10 text-white text-sm" />
+                                    <button type="submit"
+                                            class="cursor-pointer px-4 py-2 rounded-xl bg-red-600 text-white font-black text-sm hover:bg-red-500">
+                                        ❌ דחה
+                                    </button>
+                                </form>
+                            {:else if activeTab === 'approved'}
+                                <a href={`/ads/${ad.id}`} target="_blank" rel="noopener"
+                                   class="px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 font-black text-sm hover:bg-amber-500/25">
+                                    פתח דף נחיתה
+                                </a>
+                                <button type="button" onclick={() => startEdit(ad)}
+                                        class="cursor-pointer px-4 py-2 rounded-xl bg-blue-500/20 border border-blue-500/40 text-blue-200 font-black text-sm hover:bg-blue-500/30">
+                                    ✏️ ערוך
+                                </button>
+                                <!-- הארכה: מוסיפה ימים על התקופה הקיימת -->
+                                <form method="POST" action="?/extend" use:enhance class="flex items-center gap-1.5">
+                                    <input type="hidden" name="id" value={ad.id} />
+                                    <select name="duration_days" aria-label="הארכה"
+                                            class="px-2 py-2 rounded-xl bg-black/30 border border-white/10 text-white text-xs">
+                                        {#each data.plans as p (p.days)}
+                                            <option value={p.days} style="background:#fff;color:#111">{p.label}</option>
+                                        {/each}
+                                    </select>
+                                    <button type="submit"
+                                            class="cursor-pointer px-4 py-2 rounded-xl bg-white/5 border border-white/15 text-gray-300 font-black text-sm hover:bg-white/10">
+                                        ⏱ הארכה
+                                    </button>
+                                </form>
+                                <form method="POST" action="?/unapprove" use:enhance>
+                                    <input type="hidden" name="id" value={ad.id} />
+                                    <button type="submit"
+                                            class="cursor-pointer px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-200 font-black text-sm hover:bg-amber-500/30"
+                                            onclick={(e) => { if (!confirm('להוריד את הפרסומת מהאתר ולהחזיר אותה לממתינות?')) e.preventDefault(); }}>
+                                        ⏸ הורד מהאתר
+                                    </button>
+                                </form>
+                                {#if canDelete}
+                                    <form method="POST" action="?/remove" use:enhance>
+                                        <input type="hidden" name="id" value={ad.id} />
+                                        <button type="submit"
+                                                class="cursor-pointer px-4 py-2 rounded-xl bg-red-600/20 border border-red-500/40 text-red-300 font-black text-sm hover:bg-red-600/30"
+                                                onclick={(e) => askRemove(e, ad, 'להעביר את הפרסומת לאשפה? אפשר לשחזר אותה משם.')}>
+                                            🗑 מחק
+                                        </button>
+                                    </form>
+                                {/if}
+                            {:else}
+                                <form method="POST" action="?/unreject" use:enhance>
+                                    <input type="hidden" name="id" value={ad.id} />
+                                    <button type="submit"
+                                            class="cursor-pointer px-4 py-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-200 font-black text-sm hover:bg-amber-500/30">
+                                        ↩️ החזר לממתינות
+                                    </button>
+                                </form>
+                                {#if canDelete}
+                                    <form method="POST" action="?/remove" use:enhance>
+                                        <input type="hidden" name="id" value={ad.id} />
+                                        <button type="submit"
+                                                class="cursor-pointer px-4 py-2 rounded-xl bg-red-600/20 border border-red-500/40 text-red-300 font-black text-sm hover:bg-red-600/30"
+                                                onclick={(e) => askRemove(e, ad, 'להעביר את הפרסומת לאשפה? אפשר לשחזר אותה משם.')}>
+                                            🗑 מחק
+                                        </button>
+                                    </form>
+                                {/if}
+                            {/if}
+                        </div>
+                    {/if}
+                </article>
+            {/each}
+        </div>
     {/if}
 
     <!-- ============================================================ -->
@@ -1071,7 +1034,7 @@
                             {@const rowSlots = s.slot && !slotOptions.includes(s.slot)
                                 ? [...slotOptions, s.slot].sort((a, b) => a - b)
                                 : slotOptions}
-                            <tr class="border-t border-white/10 hover:bg-white/5">
+                            <tr id="sched-{s.id}" class="border-t border-white/10 hover:bg-white/5 {s.id === justEditedId ? 'bg-emerald-500/10' : ''}">
                                 <!-- מספר המקום בטור + העברה ישירה למקום אחר (מקום תפוס - מתחלפות).
                                      פריסה אנכית צרה - כדי שכל הטבלה תיכנס ברוחב המסך בלי גלילה -->
                                 <td class="px-2 py-2">
@@ -1198,11 +1161,20 @@
                                              שמור לסופר-אדמין (כמו המחיקה) - אדמין רגיל לא רואה את הכפתור -->
                                         {#if data.superAdmin && rowById.has(s.id)}
                                             <button type="button"
-                                                    onclick={() => openDurationModal(rowById.get(s.id))}
+                                                    onclick={() => openDurationModal(rowById.get(s.id)!)}
                                                     class="h-7 w-full inline-flex items-center justify-center px-1 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-200 text-[11px] font-black hover:bg-blue-500/30 whitespace-nowrap"
                                                     title="פרטי התקופה והתשלום + שינוי תקופה או תאריך תפוגה">
                                                 ⏱ קצוב
                                             </button>
+                                        {/if}
+
+                                        <!-- קיצור דרך לעריכה בסטודיו: השמירה שם מעדכנת את הפרסומת באתר -->
+                                        {#if rowById.has(s.id)}
+                                            <a href={studioEditHref(s.id)}
+                                               class="h-7 w-full inline-flex items-center justify-center px-1 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-200 text-[11px] font-black hover:bg-indigo-500/30 whitespace-nowrap"
+                                               title="פתיחת הפרסומת בסטודיו - השמירה מעדכנת אותה באתר">
+                                                ✏️ ערוך
+                                            </a>
                                         {/if}
 
                                         {#if s.state === 'paused'}
@@ -1439,15 +1411,15 @@
     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm"
          role="presentation"
-         onclick={() => (durationModal = null)}>
+         onclick={closeDurationModal}>
         <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div class="my-auto w-full max-w-md rounded-2xl border border-white/15 bg-slate-900 p-5 shadow-2xl"
              role="dialog" aria-modal="true" aria-label="קציבת תקופת פרסום" tabindex="-1"
              onclick={(e) => e.stopPropagation()}>
             <div class="mb-3 flex items-start justify-between gap-2">
                 <h3 class="text-base leading-snug font-black text-white">⏱ קציבת תקופה — {m.title}</h3>
-                <button type="button" onclick={() => (durationModal = null)}
-                        class="shrink-0 rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs font-black text-gray-200 hover:bg-white/20">
+                <button type="button" onclick={closeDurationModal}
+                        class="shrink-0 cursor-pointer rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs font-black text-gray-200 hover:bg-white/20">
                     ✕
                 </button>
             </div>
@@ -1455,8 +1427,8 @@
             <!-- מה המפרסם שילם ומתי — כל הנתונים במקום אחד -->
             <dl class="mb-4 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
                 <dt class="font-bold text-gray-500">מפרסם</dt>
-                <dd class="font-bold text-gray-200">{m.submittedBy?.name || m.advertiserName || '-'}
-                    {#if m.submittedBy?.email}<span class="font-normal text-gray-500">· {m.submittedBy.email}</span>{/if}
+                <dd class="font-bold text-gray-200">{m.submittedByName || '-'}
+                    {#if m.contactEmail}<span class="font-normal text-gray-500">· {m.contactEmail}</span>{/if}
                 </dd>
                 <dt class="font-bold text-gray-500">מסלול שנרכש</dt>
                 <dd class="font-bold text-gray-200">
@@ -1480,14 +1452,25 @@
                 </dd>
             </dl>
 
+            <!-- תוצאת הפעולה האחרונה שנשלחה מהחלון - ההודעה הכללית של הדף מוסתרת מאחוריו -->
+            {#if modalSubmitted && form?.success}
+                <div class="mb-3 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-emerald-200 text-xs font-bold">
+                    ✅ {form.message}
+                </div>
+            {:else if modalSubmitted && form && 'error' in form && form.error}
+                <div class="mb-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-red-200 text-xs font-bold">
+                    ❌ {form.error}
+                </div>
+            {/if}
+
             <!-- דרך 1: קציבה במסלול ימים, נספרת מיום האישור -->
-            <form method="POST" action="?/setDuration" use:enhance={closeOnSubmit} class="mb-2 flex items-center gap-2">
+            <form method="POST" action="?/setDuration" use:enhance={submitInModal} class="mb-2 flex items-center gap-2">
                 <input type="hidden" name="id" value={m.id} />
                 <label class="shrink-0 text-xs font-bold text-gray-400" for="dur-days">תקופה מיום האישור</label>
-                <select id="dur-days" name="duration_days"
+                <select id="dur-days" name="duration_days" bind:value={selectedDays}
                         class="flex-1 rounded-lg border border-white/10 bg-slate-800/80 px-2 py-1.5 text-xs text-white">
                     {#each mDurOptions as d (d)}
-                        <option value={d} selected={d === m.durationDays} class="bg-slate-900">{d} ימים</option>
+                        <option value={d} class="bg-slate-900">{d} ימים</option>
                     {/each}
                 </select>
                 <button type="submit"
@@ -1496,8 +1479,16 @@
                 </button>
             </form>
 
+            <!-- התפוגה שתצא מהמסלול שנבחר - מתעדכנת עם כל שינוי בבורר, לפני הלחיצה -->
+            {#if previewExpiry && selectedDays !== m.durationDays}
+                <p class="mb-2 text-[11px] font-bold {previewExpiry.getTime() < Date.now() ? 'text-red-300' : 'text-blue-200'}">
+                    {selectedDays} ימים מיום האישור = תפוגה ב-{fmtDay(previewExpiry.toISOString())}
+                    {#if previewExpiry.getTime() < Date.now()}(כבר עבר - הפרסומת תרד מיד){/if}
+                </p>
+            {/if}
+
             <!-- דרך 2: תאריך תפוגה שרירותי — המודעה יורדת בסוף היום שנבחר -->
-            <form method="POST" action="?/setExpiry" use:enhance={closeOnSubmit} class="flex items-center gap-2">
+            <form method="POST" action="?/setExpiry" use:enhance={submitInModal} class="flex items-center gap-2">
                 <input type="hidden" name="id" value={m.id} />
                 <label class="shrink-0 text-xs font-bold text-gray-400" for="dur-date">או תאריך תפוגה</label>
                 <input id="dur-date" type="date" name="expires" required value={toDateInput(m.expiresAt)}
@@ -1525,7 +1516,8 @@
         if (e.key === 'Escape') {
             modalPreviewId = null;
             hoverPreview = null;
-            durationModal = null;
+            closeDurationModal();
+            removeAsk = null;
         }
     }}
 />

@@ -11,6 +11,7 @@ import { isAdmin } from '$lib/server/auth';
 import {
     approveAd,
     isExpired,
+    listApproved,
     listForOwner,
     pauseAd,
     rejectAd,
@@ -46,6 +47,15 @@ export const load: PageServerLoad = async (event) => {
         stats = {};
     }
 
+    // מספר המקום בטור של כל מאושרת (כמו "מקום 3 בטור" ב"הפרסומות שלי" של קהילה).
+    // הרשימה הציבורית כבר נושאת את החישוב ומגיעה מהקאש; כשל בה לא מפיל את הדף
+    const slotById = new Map<string, number>();
+    try {
+        for (const a of await listApproved()) if (typeof a.slot === 'number') slotById.set(a.id, a.slot);
+    } catch {
+        /* בלי מספר מקום - השורה פשוט לא מציגה אותו */
+    }
+
     const now = Date.now();
     return {
         sent: event.url.searchParams.get('sent') === '1',
@@ -65,6 +75,7 @@ export const load: PageServerLoad = async (event) => {
                 /** באוויר ממש: מאושרת, בתוקף ולא מושהית */
                 live: ad.status === 'approved' && !expired && !ad.paused,
                 expiresAt: ad.expiresAt,
+                slot: slotById.get(ad.id) ?? null,
                 daysLeft: ad.expiresAt
                     ? Math.ceil((new Date(ad.expiresAt).getTime() - now) / 86_400_000)
                     : 0,

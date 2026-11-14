@@ -42,6 +42,27 @@ export function clearAdEditTarget(): void {
     try { localStorage.removeItem(AD_EDIT_TARGET_KEY); } catch { /* ignore */ }
 }
 
+/**
+ * לאן חוזרים אחרי שמירת עריכה: מסך הניהול פותח את הסטודיו עם
+ * ?edit=<id>&return=/admin/ads, ובסיום מוצג שם כפתור חזרה. רק נתיב פנימי.
+ */
+export const AD_EDIT_RETURN_KEY = 'pr_ad_builder_edit_return_v1';
+
+export function setAdEditReturn(path: string | null): void {
+    try {
+        if (path && path.startsWith('/') && !path.startsWith('//')) localStorage.setItem(AD_EDIT_RETURN_KEY, path);
+        else localStorage.removeItem(AD_EDIT_RETURN_KEY);
+    } catch { /* ignore */ }
+}
+
+export function getAdEditReturn(): string | null {
+    try { return localStorage.getItem(AD_EDIT_RETURN_KEY) || null; } catch { return null; }
+}
+
+export function clearAdEditReturn(): void {
+    try { localStorage.removeItem(AD_EDIT_RETURN_KEY); } catch { /* ignore */ }
+}
+
 /** המסלול שנבחר במחירון, או null כשלא נבחר (הערך עצמו מנורמל בשרת) */
 export function getAdPlanDays(): number | null {
     try {
