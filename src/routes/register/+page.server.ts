@@ -3,6 +3,7 @@ import { registerWithCredentials } from '$lib/server/db';
 import { strapiRegister } from '$lib/server/strapiClient';
 import { oauthEnabled } from '../../auth';
 import type { Actions, PageServerLoad } from './$types';
+import { SHARED_COOKIE, sharedCookieOptions } from '$lib/server/recovery';
 
 export const load: PageServerLoad = async (event) => {
     const session = await event.locals.auth();
@@ -15,7 +16,7 @@ export const load: PageServerLoad = async (event) => {
 };
 
 export const actions: Actions = {
-    default: async ({ request, cookies }) => {
+    default: async ({ request, cookies, url }) => {
         const formData        = await request.formData();
         const username        = (formData.get('username')       as string)?.trim();
         const email           = (formData.get('email')          as string)?.trim().toLowerCase();
@@ -66,6 +67,8 @@ export const actions: Actions = {
                 path:     '/',
                 maxAge:   60 * 60 * 24 * 7, // 7 ימים
             });
+            // מזוהה מיד בכל אתרי הרשת (*.gofreeil.com)
+            cookies.set(SHARED_COOKIE, strapiJwt, sharedCookieOptions(url));
         }
 
         // welcome=new מפעיל את מסך "ברוכים המצטרפים" עם רשת האתרים אחרי ההתחברות

@@ -3,6 +3,7 @@ import { getUserByEmail } from '$lib/server/db';
 import { strapiLogin, getStrapiMe, bestStrapiName, friendlyName } from '$lib/server/strapiClient';
 import { oauthEnabled } from '../../auth';
 import type { PageServerLoad, Actions } from './$types';
+import { SHARED_COOKIE, sharedCookieOptions } from '$lib/server/recovery';
 
 export const load: PageServerLoad = async (event) => {
     const session = await event.locals.auth();
@@ -68,6 +69,8 @@ export const actions: Actions = {
                 path:     '/',
                 maxAge:   60 * 60 * 24 * 7, // 7 ימים
             });
+            // מזוהה מיד בכל אתרי הרשת (*.gofreeil.com)
+            cookies.set(SHARED_COOKIE, jwt, sharedCookieOptions(event.url));
         } catch {
             return fail(401, { error: 'סיסמה שגויה. נסה שוב.' });
         }
