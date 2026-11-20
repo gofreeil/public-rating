@@ -22,7 +22,9 @@ function readCookie(cookieHeader: string | null | undefined, name: string): stri
 
 // .trim() — ערך שהודבק ל-Vercel עם שורה חדשה/רווח בסוף שולח ל-Google client_id שבור
 // ("The OAuth client was not found"), ובמקרה של רווחים בלבד אף עוקף את בדיקת oauthEnabled.
-const AUTH_SECRET         = (process.env.AUTH_SECRET         ?? '').trim();
+// AUTH_SECRET בכוונה בלי trim — הוא מצפין את הסשנים ונגזרת ממנו סיסמת ה-Strapi של
+// משתמשי OAuth; כל שינוי בערך (גם רווח/שורה חדשה) מנתק את כולם.
+const AUTH_SECRET         = process.env.AUTH_SECRET         ?? '';
 const AUTH_GOOGLE_ID      = (process.env.AUTH_GOOGLE_ID      ?? '').trim();
 const AUTH_GOOGLE_SECRET  = (process.env.AUTH_GOOGLE_SECRET  ?? '').trim();
 const AUTH_FACEBOOK_ID    = (process.env.AUTH_FACEBOOK_ID    ?? '').trim();
