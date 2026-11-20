@@ -20,11 +20,13 @@ function readCookie(cookieHeader: string | null | undefined, name: string): stri
     return null;
 }
 
-const AUTH_SECRET         = process.env.AUTH_SECRET         ?? '';
-const AUTH_GOOGLE_ID      = process.env.AUTH_GOOGLE_ID      ?? '';
-const AUTH_GOOGLE_SECRET  = process.env.AUTH_GOOGLE_SECRET  ?? '';
-const AUTH_FACEBOOK_ID    = process.env.AUTH_FACEBOOK_ID    ?? '';
-const AUTH_FACEBOOK_SECRET= process.env.AUTH_FACEBOOK_SECRET?? '';
+// .trim() — ערך שהודבק ל-Vercel עם שורה חדשה/רווח בסוף שולח ל-Google client_id שבור
+// ("The OAuth client was not found"), ובמקרה של רווחים בלבד אף עוקף את בדיקת oauthEnabled.
+const AUTH_SECRET         = (process.env.AUTH_SECRET         ?? '').trim();
+const AUTH_GOOGLE_ID      = (process.env.AUTH_GOOGLE_ID      ?? '').trim();
+const AUTH_GOOGLE_SECRET  = (process.env.AUTH_GOOGLE_SECRET  ?? '').trim();
+const AUTH_FACEBOOK_ID    = (process.env.AUTH_FACEBOOK_ID    ?? '').trim();
+const AUTH_FACEBOOK_SECRET= (process.env.AUTH_FACEBOOK_SECRET?? '').trim();
 
 // ============================================================
 // קבלת JWT של Strapi עבור משתמשי OAuth
