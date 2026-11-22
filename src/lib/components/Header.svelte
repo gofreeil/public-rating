@@ -17,6 +17,7 @@
     import { fade } from "svelte/transition";
     import { ads, type Ad } from "$lib/adsData";
     import FullAdModal from "$lib/components/FullAdModal.svelte";
+    import SignupTip from "$lib/components/SignupTip.svelte";
 
     let { currentUser, onLogout, onShowAuth, pendingCount = 0 }: Props = $props();
 
@@ -164,6 +165,8 @@
 	let _loc = $state(get(locale));
 	$effect(() => locale.subscribe(l => (_loc = l)));
 	const tFn = (k: string) => { void _loc; return get(t)(k); };
+	// בועת "לא רשום עדיין?" כתובה בעברית — מוצגת רק כשהאתר בעברית
+	const isHebrew = $derived(String(_loc || 'he').startsWith('he'));
 
 </script>
 
@@ -269,12 +272,15 @@
                                 {/if}
                             </a>
                         {:else}
-                            <button
-                                onclick={onShowAuth}
-                                class="h-9 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-[11px] font-bold text-white shadow-lg active:scale-95"
-                            >
-                                {tFn("login_register")}
-                            </button>
+                            <span class="relative inline-flex flex-shrink-0">
+                                <button
+                                    onclick={onShowAuth}
+                                    class="h-9 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-[11px] font-bold text-white shadow-lg active:scale-95"
+                                >
+                                    {tFn("login_register")}
+                                </button>
+                                <SignupTip onopen={onShowAuth} from="#4f46e5" to="#2563eb" hidden={!isHebrew} />
+                            </span>
                         {/if}
                     </div>
                 </div>
@@ -443,12 +449,16 @@
                             </a>
                         </div>
                     {:else}
-                        <button
-                            onclick={onShowAuth}
-                            class="transform rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 font-medium text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl"
-                        >
-                            {tFn("login_register")}
-                        </button>
+                        <!-- אורח: יד ובועה "לא רשום עדיין?" תלויות מתחת לכפתור (בעברית בלבד) -->
+                        <span class="relative inline-flex flex-shrink-0">
+                            <button
+                                onclick={onShowAuth}
+                                class="transform rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-3 font-medium text-white shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl"
+                            >
+                                {tFn("login_register")}
+                            </button>
+                            <SignupTip onopen={onShowAuth} from="#4f46e5" to="#2563eb" hidden={!isHebrew} />
+                        </span>
                     {/if}
                 </div>
             {/if}
