@@ -1,4 +1,5 @@
 <script lang="ts">
+	import FirstTimeTip from '$lib/components/FirstTimeTip.svelte';
 	import { signIn } from '@auth/sveltekit/client';
 	import { get } from 'svelte/store';
 	import { t, locale } from 'svelte-i18n';
@@ -115,13 +116,6 @@
 					<p class="text-gray-400 text-sm">{tFn("login_subtitle")}</p>
 				</div>
 
-				<!-- הודעה למשתמש חדש: הכניסה עם Google/Facebook היא גם ההרשמה -->
-				{#if !data.ssoName}
-					<p class="mb-6 text-center text-amber-200 text-[13px] sm:text-sm font-bold leading-relaxed">
-						👋 פעם ראשונה כאן? כניסה עם Google או Facebook יוצרת לך חשבון בלחיצה אחת.
-					</p>
-				{/if}
-
 				<!-- הודעת שגיאה -->
 				{#if data.error}
 					<div id="login-error" role="alert" class="mb-6 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-center">
@@ -176,6 +170,11 @@
 						<span class="text-xs text-gray-500">{tFn("or")}</span>
 						<div class="flex-1 h-px bg-white/10"></div>
 					</div>
+					{/if}
+
+					<!-- משתמש חדש: בועה עם יד שמצביעה על כפתור Google — הכניסה היא גם ההרשמה -->
+					{#if !data.ssoName && (data.oauth?.google || data.oauth?.facebook)}
+						<FirstTimeTip text="פעם ראשונה כאן? כניסה עם Google או Facebook יוצרת לך חשבון בלחיצה אחת." />
 					{/if}
 
 					{#if data.oauth?.google}
